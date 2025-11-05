@@ -14,12 +14,7 @@ COPY turbo.json ./
 # Install ALL dependencies (including devDependencies for build)
 RUN npm ci
 
-# Install backend dependencies separately to ensure they're all there
-WORKDIR /app/apps/backend
-RUN npm ci --omit=dev
-
 # Copy Prisma schema and generate client
-WORKDIR /app
 COPY apps/backend/prisma ./apps/backend/prisma
 RUN cd apps/backend && npx prisma generate
 
