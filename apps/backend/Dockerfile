@@ -11,10 +11,15 @@ COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY turbo.json ./
 
-# Install dependencies
+# Install ALL dependencies (including devDependencies for build)
 RUN npm ci
 
+# Install backend dependencies separately to ensure they're all there
+WORKDIR /app/apps/backend
+RUN npm ci --omit=dev
+
 # Copy Prisma schema and generate client
+WORKDIR /app
 COPY apps/backend/prisma ./apps/backend/prisma
 RUN cd apps/backend && npx prisma generate
 
