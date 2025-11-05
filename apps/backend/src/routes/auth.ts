@@ -251,6 +251,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       // Generate new token pair
       const tokens = generateTokenPair({
+        id: user.id,
         userId: user.id,
         email: user.email,
       });
