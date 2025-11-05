@@ -24,7 +24,6 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
-        sync: false
       - key: JWT_EXPIRES_IN
         value: 7d
       # Add these manually in Render Dashboard if using OAuth:
