@@ -263,6 +263,15 @@ export class BadgeService {
   }
 
   /**
+   * Get specific badge by ID
+   */
+  async getBadgeById(id: string) {
+    return await prisma.badge.findUnique({
+      where: { id },
+    });
+  }
+
+  /**
    * Get user's earned badges with progress
    */
   async getUserBadges(userId: string) {
