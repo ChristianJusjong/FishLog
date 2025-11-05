@@ -9,7 +9,7 @@ services:
     env: docker
     dockerfilePath: ./apps/backend/Dockerfile
     dockerContext: .
-    plan: starter # Free tier, upgrade to starter ($7/mo) for production
+    plan: free # Free tier (spins down after 15 min of inactivity)
     region: oregon # Choose: oregon, frankfurt, singapore
     branch: main
     healthCheckPath: /health
