@@ -44,12 +44,12 @@ RUN adduser --system --uid 1001 fastify
 # Copy necessary files
 COPY --from=builder /app/apps/backend/dist ./dist
 COPY --from=builder /app/apps/backend/node_modules ./node_modules
-COPY --from=builder /app/node_modules ./root_node_modules
 COPY --from=builder /app/apps/backend/prisma ./prisma
 COPY --from=builder /app/apps/backend/package.json ./
+COPY --from=builder /app/apps/backend/docker-entrypoint.sh ./docker-entrypoint.sh
 
-# Ensure npx can find prisma
-RUN ln -s /app/root_node_modules/.bin/prisma /usr/local/bin/prisma || true
+# Make entrypoint executable
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Change ownership after all files are copied
 RUN chown -R fastify:nodejs /app
@@ -69,4 +69,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the application
-CMD ["node", "dist/index.js"]
+CMD ["/app/docker-entrypoint.sh"]
