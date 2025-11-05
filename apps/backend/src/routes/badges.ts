@@ -104,7 +104,7 @@ export async function badgeRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const userId = request.user.id;
+      const userId = request.user?.id || request.user?.userId || '';
       const badges = await badgeService.getUserBadges(userId);
       return badges;
     }
@@ -157,9 +157,7 @@ export async function badgeRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
 
-      const badge = await fastify.prisma.badge.findUnique({
-        where: { id },
-      });
+      const badge = await badgeService.getBadgeById(id);
 
       if (!badge) {
         return reply.code(404).send({ error: 'Badge not found' });
@@ -217,6 +215,12 @@ export async function badgeRoutes(fastify: FastifyInstance) {
               badge: {
                 type: ['object', 'null'],
               },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
             },
           },
           404: {

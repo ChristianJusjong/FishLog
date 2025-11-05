@@ -32,3 +32,6 @@ export async function authenticateToken(
     });
   }
 }
+
+// Export alias for compatibility
+export const authenticate = authenticateToken;
