@@ -101,6 +101,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       // Generate JWT tokens
       const tokens = generateTokenPair({
+        id: user.id,
         userId: user.id,
         email: user.email,
       });
@@ -202,6 +203,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       // Generate JWT tokens
       const tokens = generateTokenPair({
+        id: user.id,
         userId: user.id,
         email: user.email,
       });
@@ -339,6 +341,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       // Generate JWT tokens
       const tokens = generateTokenPair({
+        id: user.id,
         userId: user.id,
         email: user.email,
       });
@@ -396,6 +399,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       // Generate JWT tokens
       const tokens = generateTokenPair({
+        id: user.id,
         userId: user.id,
         email: user.email,
       });
@@ -456,6 +460,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       // Generate JWT tokens
       const tokens = generateTokenPair({
+        id: user.id,
         userId: user.id,
         email: user.email,
       });
