@@ -1,0 +1,44 @@
+# Render.com Blueprint
+# This file defines all services for FishLog on Render.com
+# Deploy with: Connect GitHub repo and Render will auto-detect this file
+
+services:
+  # Backend API Service
+  - type: web
+    name: fishlog-backend
+    env: docker
+    dockerfilePath: ./apps/backend/Dockerfile
+    dockerContext: .
+    plan: starter # Free tier, upgrade to starter ($7/mo) for production
+    region: oregon # Choose: oregon, frankfurt, singapore
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fishlog-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # Add these manually in Render Dashboard if using OAuth:
+      # - GOOGLE_CLIENT_ID
+      # - GOOGLE_CLIENT_SECRET
+      # - CLOUDINARY_CLOUD_NAME
+      # - CLOUDINARY_API_KEY
+      # - CLOUDINARY_API_SECRET
+
+databases:
+  # PostgreSQL Database with PostGIS
+  - name: fishlog-db
+    databaseName: fishlog
+    plan: free # Free 90 days, then $7/mo for starter
+    region: oregon # Same region as backend for lowest latency
+    postgresMajorVersion: 16
+    # PostGIS extension will be enabled via init script

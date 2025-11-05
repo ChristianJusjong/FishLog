@@ -1,0 +1,202 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security scans every day at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  # SAST - Static Application Security Testing
+  semgrep:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/javascript
+            p/typescript
+            p/react
+            p/nodejs
+
+  # Dependency scanning
+  snyk:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=medium
+
+  # Container scanning
+  trivy-container:
+    name: Trivy Container Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -f apps/backend/Dockerfile -t fishlog-backend:test .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'fishlog-backend:test'
+          format: 'sarif'
+          output: 'trivy-container-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-container-results.sarif'
+
+  # Secrets scanning
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # License compliance
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install license-checker
+        run: npm install -g license-checker
+
+      - name: Check licenses
+        run: |
+          echo "Checking licenses in root..."
+          license-checker --summary
+
+          echo "Checking licenses in backend..."
+          cd apps/backend
+          license-checker --summary --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0"
+
+          echo "Checking licenses in mobile..."
+          cd ../mobile
+          license-checker --summary --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0"
+
+  # OWASP Dependency Check
+  owasp-dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'FishLog'
+          path: '.'
+          format: 'HTML'
+          args: >
+            --enableRetired
+            --enableExperimental
+
+      - name: Upload OWASP results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: owasp-dependency-check-report
+          path: reports/
+
+  # Security headers check
+  security-headers:
+    name: Security Headers Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check security headers
+        run: |
+          echo "Add security headers check after deployment"
+          # curl -I https://your-app-url.com | grep -i "security\|x-frame\|x-content\|strict-transport"
+
+  # Summary report
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [semgrep, snyk, trivy-container, gitleaks, license-check]
+    if: always()
+
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "# Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Security scans completed for commit ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Semgrep: ${{ needs.semgrep.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Snyk: ${{ needs.snyk.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Trivy: ${{ needs.trivy-container.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Gitleaks: ${{ needs.gitleaks.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- License Check: ${{ needs.license-check.result }}" >> $GITHUB_STEP_SUMMARY

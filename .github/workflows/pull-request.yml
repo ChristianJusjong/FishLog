@@ -1,0 +1,305 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  # PR title and description validation
+  validate-pr:
+    name: Validate PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+
+      - name: Check PR size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const total = additions + deletions;
+
+            let label = '';
+            if (total < 100) label = 'size/small';
+            else if (total < 500) label = 'size/medium';
+            else if (total < 1000) label = 'size/large';
+            else label = 'size/xlarge';
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: [label]
+            });
+
+            if (total > 1000) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: '⚠️ This PR is very large (>1000 lines changed). Consider breaking it into smaller PRs for easier review.'
+              });
+            }
+
+  # Code quality checks
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for console.log statements
+        run: |
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -E "^\+.*console\.(log|debug|info|warn)" | grep -v "//.*console\.(log|debug|info|warn)"; then
+            echo "::warning::Found console.log statements in the changes. Consider removing them before merging."
+          fi
+
+      - name: Check for TODO comments
+        run: |
+          TODOS=$(git diff origin/${{ github.base_ref }}...HEAD | grep -E "^\+.*TODO|FIXME|XXX" || true)
+          if [ ! -z "$TODOS" ]; then
+            echo "::warning::Found TODO/FIXME comments in the changes:"
+            echo "$TODOS"
+          fi
+
+  # Performance impact check
+  performance-check:
+    name: Performance Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend
+        working-directory: apps/backend
+        run: |
+          npm run build
+          ls -lh dist/
+
+      - name: Check bundle size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const distPath = path.join(process.cwd(), 'apps/backend/dist');
+
+            if (fs.existsSync(distPath)) {
+              const files = fs.readdirSync(distPath);
+              let totalSize = 0;
+
+              files.forEach(file => {
+                const stats = fs.statSync(path.join(distPath, file));
+                totalSize += stats.size;
+              });
+
+              const sizeMB = (totalSize / 1024 / 1024).toFixed(2);
+              console.log(`Backend bundle size: ${sizeMB} MB`);
+
+              if (totalSize > 50 * 1024 * 1024) {
+                core.warning(`Backend bundle size (${sizeMB} MB) is quite large. Consider optimization.`);
+              }
+            }
+
+  # Documentation check
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for documentation updates
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const hasCodeChanges = files.some(f =>
+              f.filename.match(/\.(ts|tsx|js|jsx)$/) &&
+              !f.filename.includes('test') &&
+              !f.filename.includes('spec')
+            );
+
+            const hasDocChanges = files.some(f =>
+              f.filename.match(/\.(md|mdx)$/) ||
+              f.filename.includes('README')
+            );
+
+            if (hasCodeChanges && !hasDocChanges) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: '📝 This PR includes code changes but no documentation updates. Consider updating relevant documentation if needed.'
+              });
+            }
+
+  # Breaking changes detector
+  breaking-changes:
+    name: Breaking Changes Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for breaking changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title.toLowerCase();
+            const body = (pr.body || '').toLowerCase();
+
+            const breakingKeywords = [
+              'breaking change',
+              'breaking:',
+              'breaking',
+              'major version',
+              'incompatible',
+              'removed api'
+            ];
+
+            const hasBreaking = breakingKeywords.some(keyword =>
+              title.includes(keyword) || body.includes(keyword)
+            );
+
+            if (hasBreaking) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['breaking-change']
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: '⚠️ **BREAKING CHANGE DETECTED**\n\nThis PR contains breaking changes. Please ensure:\n- Version is bumped accordingly\n- Migration guide is included\n- All stakeholders are notified'
+              });
+            }
+
+  # Auto-label based on files changed
+  auto-label:
+    name: Auto Label
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Label based on changed files
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+
+  # Checklist for reviewers
+  review-checklist:
+    name: Review Checklist
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Post review checklist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+
+            const hasChecklist = comments.some(c => c.body.includes('Review Checklist'));
+
+            if (!hasChecklist && context.payload.action === 'opened') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: `## Review Checklist
+
+            Please ensure the following before approving:
+
+            - [ ] Code follows project style guidelines
+            - [ ] Tests are included for new functionality
+            - [ ] Documentation is updated
+            - [ ] No console.log or debug statements
+            - [ ] Security considerations reviewed
+            - [ ] Performance impact considered
+            - [ ] Database migrations are backward compatible
+            - [ ] Error handling is appropriate
+            - [ ] API changes are backward compatible or properly versioned
+            - [ ] Environment variables are documented
+
+            **Security Checks:**
+            - [ ] No sensitive data exposed
+            - [ ] Input validation implemented
+            - [ ] Authentication/authorization properly handled
+            - [ ] SQL injection prevention in place
+            - [ ] XSS protection implemented
+
+            **Performance Checks:**
+            - [ ] Database queries optimized
+            - [ ] No N+1 query problems
+            - [ ] Caching strategy appropriate
+            - [ ] Bundle size impact acceptable`
+              });
+            }

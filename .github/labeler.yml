@@ -1,0 +1,45 @@
+# Auto-labeling configuration for PRs
+
+backend:
+  - apps/backend/**/*
+  - apps/backend/**/*.ts
+  - apps/backend/**/*.js
+
+mobile:
+  - apps/mobile/**/*
+  - apps/mobile/**/*.tsx
+  - apps/mobile/**/*.ts
+
+database:
+  - apps/backend/prisma/**/*
+  - "**/migrations/**/*"
+
+documentation:
+  - "**/*.md"
+  - docs/**/*
+
+ci/cd:
+  - .github/workflows/**/*
+  - .github/**/*
+  - "**/.dockerignore"
+  - "**/Dockerfile"
+  - docker-compose*.yml
+
+dependencies:
+  - "**/package.json"
+  - "**/package-lock.json"
+  - "**/yarn.lock"
+
+tests:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/*.spec.tsx"
+  - "**/__tests__/**/*"
+
+configuration:
+  - "**/*.config.js"
+  - "**/*.config.ts"
+  - "**/tsconfig.json"
+  - "**/.eslintrc*"
+  - "**/.prettierrc*"

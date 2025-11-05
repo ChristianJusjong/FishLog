@@ -1,0 +1,105 @@
+version: 2
+updates:
+  # Root workspace dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "your-username-here"
+    labels:
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      # Ignore major version updates for stable packages
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+
+  # Backend dependencies
+  - package-ecosystem: "npm"
+    directory: "/apps/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "your-username-here"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "automated"
+    commit-message:
+      prefix: "chore(backend)"
+    groups:
+      fastify:
+        patterns:
+          - "@fastify/*"
+      prisma:
+        patterns:
+          - "@prisma/*"
+          - "prisma"
+
+  # Mobile dependencies
+  - package-ecosystem: "npm"
+    directory: "/apps/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "your-username-here"
+    labels:
+      - "dependencies"
+      - "mobile"
+      - "automated"
+    commit-message:
+      prefix: "chore(mobile)"
+    groups:
+      expo:
+        patterns:
+          - "expo"
+          - "expo-*"
+      react-native:
+        patterns:
+          - "react-native"
+          - "react-native-*"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/apps/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "docker"
+      - "automated"
+    commit-message:
+      prefix: "chore(docker)"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    commit-message:
+      prefix: "chore(ci)"

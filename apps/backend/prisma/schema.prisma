@@ -1,0 +1,205 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  // PostGIS geography type for storing location coordinates
+  // Format: POINT(longitude latitude)
+  coordinates Unsupported("geography(Point, 4326)")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("locations")
+}
+
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  name              String
+  password          String?             // For email/password auth (hashed)
+  avatar            String?
+  provider          String?             // 'google', 'facebook', 'email', or 'test'
+  providerId        String?             // OAuth provider's user ID
+  refreshToken      String?             @db.Text
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  catches           Catch[]
+  sentRequests      Friendship[]        @relation("FriendRequester")
+  receivedRequests  Friendship[]        @relation("FriendAccepter")
+  likes             Like[]
+  comments          Comment[]
+  ownedEvents       Event[]
+  eventParticipants EventParticipant[]
+  badges            UserBadge[]
+
+  @@unique([provider, providerId])
+  @@map("users")
+}
+
+model Catch {
+  id         String                              @id @default(cuid())
+  userId     String
+  user       User                                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  species    String
+  lengthCm   Float?
+  weightKg   Float?
+  bait       String?
+  lure       String?
+  rig        String?
+  technique  String?
+  notes      String?                             @db.Text
+  location   Unsupported("geography(Point, 4326)")?
+  photoUrl   String?
+  visibility String                              @default("private") // 'private', 'friends', 'public'
+  createdAt  DateTime                            @default(now())
+  updatedAt  DateTime                            @updatedAt
+  likes      Like[]
+  comments   Comment[]
+
+  @@index([userId])
+  @@map("catches")
+}
+
+model Fish {
+  id        String   @id @default(cuid())
+  species   String
+  weight    Float?
+  length    Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("fish")
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  accepterId  String
+  status      String   @default("pending") // 'pending', 'accepted', 'rejected'
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  requester   User     @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  accepter    User     @relation("FriendAccepter", fields: [accepterId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, accepterId])
+  @@index([requesterId])
+  @@index([accepterId])
+  @@map("friendships")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  catchId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catch     Catch    @relation(fields: [catchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, catchId])
+  @@index([catchId])
+  @@map("likes")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String
+  catchId   String
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catch     Catch    @relation(fields: [catchId], references: [id], onDelete: Cascade)
+
+  @@index([catchId])
+  @@map("comments")
+}
+
+model Event {
+  id            String              @id @default(cuid())
+  ownerId       String
+  title         String
+  description   String?             @db.Text
+  startAt       DateTime
+  endAt         DateTime
+  venue         String?
+  visibility    String              @default("public") // 'private', 'friends', 'public'
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  owner         User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contests      Contest[]
+  participants  EventParticipant[]
+
+  @@index([ownerId])
+  @@index([startAt])
+  @@map("events")
+}
+
+model Contest {
+  id            String   @id @default(cuid())
+  eventId       String
+  rule          String   // 'biggest_total', 'biggest_single', 'most_catches'
+  speciesFilter String?  // Filter by specific species, null = all species
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("contests")
+}
+
+model EventParticipant {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  joinedAt  DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_participants")
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String      @db.Text
+  icon        String      // Emoji or icon identifier
+  rule        String      // Rule type: 'first_catch', 'catch_count_10', 'biggest_fish_5kg', etc.
+  ruleData    String?     @db.Text // JSON data for rule parameters
+  tier        String      @default("bronze") // 'bronze', 'silver', 'gold', 'platinum'
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userBadges  UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+  progress  Int?     // For progressive badges (e.g., 7 out of 10 catches)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+  @@map("user_badges")
+}
