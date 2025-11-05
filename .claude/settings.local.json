@@ -36,7 +36,9 @@
       "Bash(set EXPO_ROUTER_APP_ROOT=./app:*)",
       "Bash(find:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(start https://dashboard.render.com/)"
     ],
     "deny": [],
     "ask": []
