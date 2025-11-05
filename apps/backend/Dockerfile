@@ -42,10 +42,17 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 fastify
 
 # Copy necessary files
-COPY --from=builder --chown=fastify:nodejs /app/apps/backend/dist ./dist
-COPY --from=builder --chown=fastify:nodejs /app/apps/backend/node_modules ./node_modules
-COPY --from=builder --chown=fastify:nodejs /app/apps/backend/prisma ./prisma
-COPY --from=builder --chown=fastify:nodejs /app/apps/backend/package.json ./
+COPY --from=builder /app/apps/backend/dist ./dist
+COPY --from=builder /app/apps/backend/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./root_node_modules
+COPY --from=builder /app/apps/backend/prisma ./prisma
+COPY --from=builder /app/apps/backend/package.json ./
+
+# Ensure npx can find prisma
+RUN ln -s /app/root_node_modules/.bin/prisma /usr/local/bin/prisma || true
+
+# Change ownership after all files are copied
+RUN chown -R fastify:nodejs /app
 
 # Set environment variables
 ENV NODE_ENV=production
