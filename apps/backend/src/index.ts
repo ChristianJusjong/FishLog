@@ -1,6 +1,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { authRoutes } from './routes/auth';
 import { userRoutes } from './routes/users';
@@ -33,6 +35,12 @@ fastify.register(multipart, {
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB max file size
   },
+});
+
+// Serve static files (privacy policy, etc.)
+fastify.register(fastifyStatic, {
+  root: path.join(__dirname, '../public'),
+  prefix: '/',
 });
 
 // Register routes
@@ -73,7 +81,7 @@ fastify.get('/health', async (request, reply) => {
 // Root endpoint
 fastify.get('/', async () => {
   return {
-    message: 'FishLog API',
+    message: 'Hook API',
     version: '1.0.0',
     endpoints: {
       health: '/health',
