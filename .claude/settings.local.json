@@ -39,7 +39,9 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(start https://dashboard.render.com/)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx expo:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

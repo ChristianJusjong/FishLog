@@ -1,10 +1,10 @@
-# FishLog 🐟
+# Hook 🎣
 
 [![CI Pipeline](https://github.com/USERNAME/fishlog/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/fishlog/actions/workflows/ci.yml)
 [![Security Scan](https://github.com/USERNAME/fishlog/actions/workflows/security-scan.yml/badge.svg)](https://github.com/USERNAME/fishlog/actions/workflows/security-scan.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-En React Native mobilapp til at logge fisketure, bygget med Node.js backend og PostgreSQL/PostGIS database i en Turborepo monorepo struktur.
+Hook - Din digitale fiskebog. En React Native mobilapp til at logge fisketure, bygget med Node.js backend og PostgreSQL/PostGIS database i en Turborepo monorepo struktur.
 
 ## 🎯 Features
 
@@ -23,7 +23,7 @@ En React Native mobilapp til at logge fisketure, bygget med Node.js backend og P
 ## Projekt Struktur
 
 ```
-FishLog/
+Hook/
 ├── apps/
 │   ├── mobile/          # React Native app (Expo)
 │   └── backend/         # Node.js API (Fastify)
