@@ -7,7 +7,11 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
 const config = getDefaultConfig(projectRoot);
 
 // Add workspace support for monorepo
-config.watchFolders = [workspaceRoot];
+// Include default watchFolders along with workspace root
+config.watchFolders = [
+  ...(config.watchFolders || []),
+  workspaceRoot
+];
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
