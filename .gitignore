@@ -34,6 +34,16 @@ yarn-error.log*
 # React Native
 .expo/
 .expo-shared/
+apps/mobile/android/
+apps/mobile/ios/
+*.apk
+*.aab
+*.ipa
+
+# Signing keys (NEVER commit these!)
+*.keystore
+*.jks
+apps/mobile/android/gradle.properties
 
 # Database
 *.db
