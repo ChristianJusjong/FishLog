@@ -5,6 +5,8 @@ export const startCatchSchema = z.object({
   photoUrl: z.string().min(1, 'Photo is required'),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
+  exifData: z.any().optional(),
+  photoHash: z.string().optional(),
 });
 
 export const updateCatchSchema = z.object({
