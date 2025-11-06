@@ -2,7 +2,7 @@
   "expo": {
     "name": "Hook",
     "slug": "hook",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -24,7 +24,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.cjusjong.hook",
-      "versionCode": 1,
+      "versionCode": 2,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
