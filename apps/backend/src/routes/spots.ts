@@ -21,7 +21,7 @@ export async function spotsRoutes(fastify: FastifyInstance) {
       };
 
       // Build WHERE clause for filters
-      const conditions: string[] = ['location IS NOT NULL'];
+      const conditions: string[] = ['latitude IS NOT NULL', 'longitude IS NOT NULL'];
       const params: any[] = [];
       let paramIndex = 1;
 
@@ -47,33 +47,35 @@ export async function spotsRoutes(fastify: FastifyInstance) {
       }
 
       const whereClause = conditions.join(' AND ');
+      const gridSizeNum = parseFloat(gridSize);
 
-      // Use PostGIS ST_SnapToGrid to aggregate catches into grid cells
+      // Snap coordinates to grid without PostGIS
       // This creates a heatmap by counting catches in each grid cell
       const heatmapQuery = `
         SELECT
-          ST_X(grid_point) as longitude,
-          ST_Y(grid_point) as latitude,
+          grid_lng as longitude,
+          grid_lat as latitude,
           COUNT(*) as intensity,
           ARRAY_AGG(DISTINCT species) as species_list,
           AVG(COALESCE("weightKg", 0)) as avg_weight,
           COUNT(DISTINCT "userId") as unique_anglers
         FROM (
           SELECT
-            ST_SnapToGrid(location::geometry, $${paramIndex}::float) as grid_point,
+            FLOOR(longitude / $${paramIndex}) * $${paramIndex} as grid_lng,
+            FLOOR(latitude / $${paramIndex}) * $${paramIndex} as grid_lat,
             species,
             "weightKg",
             "userId"
           FROM catches
           WHERE ${whereClause}
         ) as gridded
-        GROUP BY grid_point
+        GROUP BY grid_lng, grid_lat
         HAVING COUNT(*) > 0
         ORDER BY intensity DESC
         LIMIT 500
       `;
 
-      params.push(parseFloat(gridSize));
+      params.push(gridSizeNum);
 
       const heatmapData = await prisma.$queryRawUnsafe<Array<{
         longitude: number;
@@ -123,7 +125,7 @@ export async function spotsRoutes(fastify: FastifyInstance) {
         limit?: string;
       };
 
-      const conditions: string[] = ['location IS NOT NULL'];
+      const conditions: string[] = ['latitude IS NOT NULL', 'longitude IS NOT NULL'];
       const params: any[] = [];
       let paramIndex = 1;
 
@@ -135,26 +137,28 @@ export async function spotsRoutes(fastify: FastifyInstance) {
 
       const whereClause = conditions.join(' AND ');
 
-      // Find clusters of catches (hot spots)
+      // Find clusters of catches (hot spots) using simple grid-based clustering
+      // Group catches into 0.01 degree cells (~1km) and find areas with multiple catches
       const topSpotsQuery = `
         SELECT
-          ST_X(ST_Centroid(ST_Collect(location::geometry))) as longitude,
-          ST_Y(ST_Centroid(ST_Collect(location::geometry))) as latitude,
+          AVG(longitude) as longitude,
+          AVG(latitude) as latitude,
           COUNT(*) as catch_count,
           ARRAY_AGG(DISTINCT species) as species_list,
           AVG(COALESCE("weightKg", 0)) * 1000 as avg_weight_g,
           MAX(COALESCE("weightKg", 0)) * 1000 as max_weight_g
         FROM (
           SELECT
-            location,
+            FLOOR(longitude / 0.01) * 0.01 as grid_lng,
+            FLOOR(latitude / 0.01) * 0.01 as grid_lat,
+            longitude,
+            latitude,
             species,
-            "weightKg",
-            ST_ClusterDBSCAN(location::geometry, eps := 0.01, minpoints := 2) OVER() as cluster_id
+            "weightKg"
           FROM catches
           WHERE ${whereClause}
-        ) as clustered
-        WHERE cluster_id IS NOT NULL
-        GROUP BY cluster_id
+        ) as gridded
+        GROUP BY grid_lng, grid_lat
         HAVING COUNT(*) >= 2
         ORDER BY catch_count DESC
         LIMIT $${paramIndex}
@@ -216,6 +220,10 @@ export async function spotsRoutes(fastify: FastifyInstance) {
       const radiusKm = parseFloat(radius);
 
       // Get statistics for catches within radius
+      // Using Haversine formula approximation: 1 degree ≈ 111km at equator
+      // For simplicity, use bounding box filter
+      const degreeRadius = radiusKm / 111.0;
+
       const statsQuery = `
         SELECT
           COUNT(*) as total_catches,
@@ -225,12 +233,10 @@ export async function spotsRoutes(fastify: FastifyInstance) {
           MAX(COALESCE("weightKg", 0)) * 1000 as max_weight_g,
           ARRAY_AGG(DISTINCT species) as species_list
         FROM catches
-        WHERE location IS NOT NULL
-          AND ST_DWithin(
-            location::geography,
-            ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-            $3
-          )
+        WHERE latitude IS NOT NULL
+          AND longitude IS NOT NULL
+          AND latitude BETWEEN $1 - $3 AND $1 + $3
+          AND longitude BETWEEN $2 - $3 AND $2 + $3
       `;
 
       const stats = await prisma.$queryRawUnsafe<Array<{
@@ -240,7 +246,7 @@ export async function spotsRoutes(fastify: FastifyInstance) {
         avg_weight_g: number;
         max_weight_g: number;
         species_list: string[];
-      }>>(statsQuery, longitude, latitude, radiusKm * 1000);
+      }>>(statsQuery, latitude, longitude, degreeRadius);
 
       if (stats.length === 0 || Number(stats[0].total_catches) === 0) {
         return {
