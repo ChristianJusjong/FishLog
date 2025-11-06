@@ -114,6 +114,16 @@ export async function adminRoutes(fastify: FastifyInstance) {
 
           const latestValidation = catch_.validations[0] || null;
 
+          // Parse EXIF data
+          let exifData = null;
+          if (catch_.exifData) {
+            try {
+              exifData = JSON.parse(catch_.exifData);
+            } catch (e) {
+              console.error('Failed to parse EXIF data:', e);
+            }
+          }
+
           return {
             id: catch_.id,
             user: catch_.user,
@@ -134,11 +144,24 @@ export async function adminRoutes(fastify: FastifyInstance) {
             metadata: {
               likeCount: catch_.likes.length,
               commentCount: catch_.comments.length,
-              // EXIF data would be extracted from photoUrl if stored separately
-              // For now, we include the photo URL for manual inspection
               photoMetadata: {
                 url: catch_.photoUrl,
-                // TODO: Extract EXIF data from Cloudinary or store on upload
+                hash: catch_.photoHash,
+                exif: exifData,
+                gps: {
+                  claimed: {
+                    latitude: catch_.latitude,
+                    longitude: catch_.longitude
+                  },
+                  exif: exifData?.gps || null
+                },
+                timestamp: {
+                  claimed: catch_.createdAt,
+                  exif: exifData?.timestamp || null
+                },
+                device: exifData?.device || null,
+                camera: exifData?.camera || null,
+                dimensions: exifData?.dimensions || null
               }
             },
             // Validation status

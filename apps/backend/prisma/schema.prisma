@@ -61,14 +61,16 @@ model Catch {
   notes      String?   @db.Text
   latitude   Float?
   longitude  Float?
-  photoUrl   String?
-  isDraft    Boolean   @default(true) // true = incomplete, false = completed
-  visibility String    @default("private") // 'private', 'friends', 'public'
-  createdAt  DateTime  @default(now())
-  updatedAt   DateTime          @updatedAt
-  likes       Like[]
-  comments    Comment[]
-  validations CatchValidation[]
+  photoUrl      String?
+  photoHash     String?   // SHA-256 hash of image for verification
+  exifData      String?   @db.Text // JSON: timestamp, GPS, device model, etc.
+  isDraft       Boolean   @default(true) // true = incomplete, false = completed
+  visibility    String    @default("private") // 'private', 'friends', 'public'
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  likes         Like[]
+  comments      Comment[]
+  validations   CatchValidation[]
 
   @@index([userId])
   @@index([isDraft])

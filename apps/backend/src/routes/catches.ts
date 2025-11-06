@@ -18,7 +18,7 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'Validation failed', details: validation.errors });
       }
 
-      const { photoUrl, latitude, longitude } = validation.data;
+      const { photoUrl, latitude, longitude, exifData, photoHash } = validation.data;
 
       const catch_ = await prisma.catch.create({
         data: {
@@ -26,6 +26,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
           photoUrl,
           latitude,
           longitude,
+          exifData: exifData ? JSON.stringify(exifData) : null,
+          photoHash: photoHash || null,
           isDraft: true,
           visibility: 'private',
         },
@@ -581,6 +583,72 @@ export async function catchesRoutes(fastify: FastifyInstance) {
     } catch (error) {
       fastify.log.error(error);
       return reply.code(500).send({ error: 'Failed to delete comment' });
+    }
+  });
+
+  // Get catch metadata (EXIF, GPS, hash)
+  fastify.get('/catches/:id/metadata', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+
+      const catch_ = await prisma.catch.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          photoUrl: true,
+          photoHash: true,
+          exifData: true,
+          latitude: true,
+          longitude: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+            }
+          }
+        }
+      });
+
+      if (!catch_) {
+        return reply.code(404).send({ error: 'Catch not found' });
+      }
+
+      // Parse EXIF data from JSON string
+      let exifData = null;
+      if (catch_.exifData) {
+        try {
+          exifData = JSON.parse(catch_.exifData);
+        } catch (e) {
+          console.error('Failed to parse EXIF data:', e);
+        }
+      }
+
+      return {
+        catchId: catch_.id,
+        user: catch_.user,
+        metadata: {
+          photoUrl: catch_.photoUrl,
+          photoHash: catch_.photoHash,
+          exif: exifData,
+          gps: {
+            claimed: {
+              latitude: catch_.latitude,
+              longitude: catch_.longitude,
+            },
+            exif: exifData?.gps || null,
+          },
+          timestamp: {
+            claimed: catch_.createdAt,
+            exif: exifData?.timestamp || null,
+          },
+        }
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to fetch metadata' });
     }
   });
 }

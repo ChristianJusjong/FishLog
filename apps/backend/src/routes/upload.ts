@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { v2 as cloudinary } from 'cloudinary';
 import { authenticateToken } from '../middleware/auth';
+import { extractExifData, calculateImageHash } from '../utils/exif';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -46,6 +47,14 @@ export async function uploadRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'File size exceeds 5MB limit' });
       }
 
+      // Extract EXIF data
+      fastify.log.info('Extracting EXIF data...');
+      const exifData = await extractExifData(buffer);
+
+      // Calculate image hash
+      const imageHash = calculateImageHash(buffer);
+      fastify.log.info({ hash: imageHash.substring(0, 16) }, 'Image hash calculated');
+
       const base64Image = `data:${data.mimetype};base64,${buffer.toString('base64')}`;
 
       // Check Cloudinary configuration
@@ -67,6 +76,8 @@ export async function uploadRoutes(fastify: FastifyInstance) {
       return {
         url: result.secure_url,
         publicId: result.public_id,
+        exifData,
+        imageHash,
       };
     } catch (error) {
       fastify.log.error({ err: error }, 'Upload error');
