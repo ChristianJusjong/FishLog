@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Circle, PROVIDER_GOOGLE, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { Marker, Circle, PROVIDER_GOOGLE, PROVIDER_DEFAULT, UrlTile } from 'react-native-maps';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -68,6 +68,9 @@ export default function MapScreen() {
   const [selectedSeason, setSelectedSeason] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showTopSpots, setShowTopSpots] = useState(true);
+  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showDepth, setShowDepth] = useState(false);
+  const [mapType, setMapType] = useState<'standard' | 'satellite' | 'hybrid'>('satellite');
   const [selectedLocation, setSelectedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [aiAdvice, setAiAdvice] = useState<string>('');
   const [loadingAiAdvice, setLoadingAiAdvice] = useState(false);
@@ -293,14 +296,43 @@ export default function MapScreen() {
             </View>
           </ScrollView>
 
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => setShowTopSpots(!showTopSpots)}
-          >
-            <Text style={styles.toggleButtonText}>
-              {showTopSpots ? '🔵 Skjul Hot Spots' : '⚪ Vis Hot Spots'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.toggleButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.toggleButton, showHeatmap && styles.toggleButtonActive]}
+              onPress={() => setShowHeatmap(!showHeatmap)}
+            >
+              <Text style={[styles.toggleButtonText, showHeatmap && styles.toggleButtonTextActive]}>
+                🌡️ Heatmap
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.toggleButton, showTopSpots && styles.toggleButtonActive]}
+              onPress={() => setShowTopSpots(!showTopSpots)}
+            >
+              <Text style={[styles.toggleButtonText, showTopSpots && styles.toggleButtonTextActive]}>
+                🔥 Hot Spots
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.toggleButton, showDepth && styles.toggleButtonActive]}
+              onPress={() => setShowDepth(!showDepth)}
+            >
+              <Text style={[styles.toggleButtonText, showDepth && styles.toggleButtonTextActive]}>
+                🌊 Dybde
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.toggleButton, mapType === 'satellite' && styles.toggleButtonActive]}
+              onPress={() => setMapType(mapType === 'satellite' ? 'standard' : 'satellite')}
+            >
+              <Text style={[styles.toggleButtonText, mapType === 'satellite' && styles.toggleButtonTextActive]}>
+                🛰️ {mapType === 'satellite' ? 'Satellit' : 'Kort'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -317,9 +349,20 @@ export default function MapScreen() {
             initialRegion={region}
             onRegionChangeComplete={setRegion}
             onPress={handleMapPress}
+            mapType={mapType}
           >
+            {/* Depth contours overlay from OpenSeaMap */}
+            {showDepth && (
+              <UrlTile
+                urlTemplate="https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"
+                maximumZ={19}
+                zIndex={1}
+                opacity={0.7}
+              />
+            )}
+
             {/* Heatmap circles */}
-            {heatmapData.map((point, index) => (
+            {showHeatmap && heatmapData.map((point, index) => (
               <Circle
                 key={`heat-${index}`}
                 center={{
@@ -482,18 +525,31 @@ const styles = StyleSheet.create({
   filterChipTextActive: {
     color: 'white',
   },
+  toggleButtonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
   toggleButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#28a745',
+    backgroundColor: '#f0f0f0',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginTop: 4,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
   },
   toggleButtonText: {
-    color: 'white',
+    color: '#666',
     fontSize: 12,
     fontWeight: '600',
+  },
+  toggleButtonTextActive: {
+    color: 'white',
   },
   mapContainer: {
     flex: 1,
