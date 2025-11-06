@@ -50,7 +50,7 @@ model Catch {
   id         String    @id @default(cuid())
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  species    String
+  species    String?
   lengthCm   Float?
   weightKg   Float?
   bait       String?
@@ -61,6 +61,7 @@ model Catch {
   latitude   Float?
   longitude  Float?
   photoUrl   String?
+  isDraft    Boolean   @default(true) // true = incomplete, false = completed
   visibility String    @default("private") // 'private', 'friends', 'public'
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -68,6 +69,7 @@ model Catch {
   comments   Comment[]
 
   @@index([userId])
+  @@index([isDraft])
   @@map("catches")
 }
 

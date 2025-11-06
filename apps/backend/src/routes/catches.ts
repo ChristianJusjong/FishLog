@@ -6,7 +6,53 @@ import { badgeService } from '../services/badgeService.js';
 const prisma = new PrismaClient();
 
 export async function catchesRoutes(fastify: FastifyInstance) {
-  // Create a new catch
+  // Start a new catch with photo and GPS only (camera-first flow)
+  fastify.post('/catches/start', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const { photoUrl, latitude, longitude } = request.body as {
+        photoUrl: string;
+        latitude: number;
+        longitude: number;
+      };
+
+      if (!photoUrl) {
+        return reply.code(400).send({ error: 'Photo is required' });
+      }
+
+      if (latitude === undefined || longitude === undefined) {
+        return reply.code(400).send({ error: 'GPS coordinates are required' });
+      }
+
+      const catch_ = await prisma.catch.create({
+        data: {
+          userId: request.user!.userId,
+          photoUrl,
+          latitude,
+          longitude,
+          isDraft: true,
+          visibility: 'private',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true
+            }
+          }
+        }
+      });
+
+      return reply.code(201).send(catch_);
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to start catch' });
+    }
+  });
+
+  // Create a new catch (legacy endpoint - kept for compatibility)
   fastify.post('/catches', {
     preHandler: authenticateToken
   }, async (request, reply) => {
@@ -22,9 +68,10 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         latitude,
         longitude,
         photoUrl,
-        visibility
+        visibility,
+        isDraft
       } = request.body as {
-        species: string;
+        species?: string;
         lengthCm?: number;
         weightKg?: number;
         bait?: string;
@@ -35,10 +82,13 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         longitude?: number;
         photoUrl?: string;
         visibility?: string;
+        isDraft?: boolean;
       };
 
-      if (!species) {
-        return reply.code(400).send({ error: 'Species is required' });
+      // For draft catches, species is optional
+      // For completed catches, species is required
+      if (!isDraft && !species) {
+        return reply.code(400).send({ error: 'Species is required for completed catches' });
       }
 
       const catchData: any = {
@@ -95,13 +145,15 @@ export async function catchesRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const { userId } = request.query as { userId?: string };
+      const { userId, includeDrafts } = request.query as { userId?: string; includeDrafts?: string };
 
       const targetUserId = userId === 'me' || !userId ? request.user!.userId : userId;
 
       const catches = await prisma.catch.findMany({
         where: {
-          userId: targetUserId
+          userId: targetUserId,
+          // Exclude drafts by default unless specifically requested
+          ...(includeDrafts !== 'true' && { isDraft: false }),
         },
         include: {
           user: {
@@ -183,7 +235,7 @@ export async function catchesRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Update catch
+  // Update catch (excluding locked fields: photo, GPS)
   fastify.put('/catches/:id', {
     preHandler: authenticateToken
   }, async (request, reply) => {
@@ -194,24 +246,20 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         lengthCm,
         weightKg,
         bait,
+        lure,
         rig,
         technique,
         notes,
-        latitude,
-        longitude,
-        photoUrl,
         visibility
       } = request.body as {
         species?: string;
         lengthCm?: number;
         weightKg?: number;
         bait?: string;
+        lure?: string;
         rig?: string;
         technique?: string;
         notes?: string;
-        latitude?: number;
-        longitude?: number;
-        photoUrl?: string;
         visibility?: string;
       };
 
@@ -227,17 +275,25 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         return reply.code(403).send({ error: 'Not authorized to update this catch' });
       }
 
+      // Only allow updating these fields - photoUrl, latitude, longitude are LOCKED
       const updateData: any = {
         species,
         lengthCm,
         weightKg,
         bait,
+        lure,
         rig,
         technique,
         notes,
-        photoUrl,
         visibility,
       };
+
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
 
       // Update catch
       const updatedCatch = await prisma.catch.update({
@@ -254,26 +310,93 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Update location if coordinates provided
-      if (latitude !== undefined && longitude !== undefined) {
-        await prisma.$executeRaw`
-          UPDATE catches
-          SET location = ST_GeogFromText(${`POINT(${longitude} ${latitude})`})
-          WHERE id = ${id}
-        `;
-      } else if (latitude === null || longitude === null) {
-        // Clear location if explicitly set to null
-        await prisma.$executeRaw`
-          UPDATE catches
-          SET location = NULL
-          WHERE id = ${id}
-        `;
-      }
-
       return updatedCatch;
     } catch (error) {
       fastify.log.error(error);
       return reply.code(500).send({ error: 'Failed to update catch' });
+    }
+  });
+
+  // Complete a draft catch (mark as finished)
+  fastify.patch('/catches/:id/complete', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+
+      const catch_ = await prisma.catch.findUnique({
+        where: { id }
+      });
+
+      if (!catch_) {
+        return reply.code(404).send({ error: 'Catch not found' });
+      }
+
+      if (catch_.userId !== request.user!.userId) {
+        return reply.code(403).send({ error: 'Not authorized to update this catch' });
+      }
+
+      // Validate species is filled before completing
+      if (!catch_.species) {
+        return reply.code(400).send({ error: 'Species is required to complete catch' });
+      }
+
+      // Mark as complete
+      const completedCatch = await prisma.catch.update({
+        where: { id },
+        data: { isDraft: false },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true
+            }
+          }
+        }
+      });
+
+      // Check and award badges for completed catch
+      const newBadges = await badgeService.checkAndAwardBadges(request.user!.userId, completedCatch);
+
+      return reply.send({
+        catch: completedCatch,
+        badges: newBadges.length > 0 ? newBadges : undefined
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to complete catch' });
+    }
+  });
+
+  // Get draft catches for current user
+  fastify.get('/catches/drafts', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const drafts = await prisma.catch.findMany({
+        where: {
+          userId: request.user!.userId,
+          isDraft: true
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      return drafts;
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to fetch drafts' });
     }
   });
 
