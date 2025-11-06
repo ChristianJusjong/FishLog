@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "FishLog",
-    "slug": "fishlog",
+    "name": "Hook",
+    "slug": "hook",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,18 +16,32 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fishlog.app"
+      "bundleIdentifier": "com.cjusjong.hook"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.fishlog.app"
+      "package": "com.cjusjong.hook",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "fishlog"
+    "scheme": "hook",
+    "extra": {
+      "eas": {
+        "projectId": "8ce0ad2d-4480-47d3-a79c-01c04a080c42"
+      }
+    },
+    "owner": "cjusjong"
   }
 }
