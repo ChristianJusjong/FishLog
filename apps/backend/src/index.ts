@@ -17,6 +17,7 @@ import { spotsRoutes } from './routes/spots';
 import { aiRoutes } from './routes/ai';
 import { badgeRoutes } from './routes/badges';
 import { adminRoutes } from './routes/admin';
+import { clubsRoutes } from './routes/clubs';
 import { initializeDatabase } from './utils/init-db';
 import 'dotenv/config';
 
@@ -79,6 +80,7 @@ fastify.register(spotsRoutes);
 fastify.register(aiRoutes);
 fastify.register(badgeRoutes);
 fastify.register(adminRoutes);
+fastify.register(clubsRoutes);
 
 // Health check endpoint
 fastify.get('/health', async (request, reply) => {

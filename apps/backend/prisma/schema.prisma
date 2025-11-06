@@ -42,6 +42,9 @@ model User {
   eventParticipants EventParticipant[]
   badges            UserBadge[]
   validatedCatches  CatchValidation[]
+  ownedClubs        Club[]
+  clubMemberships   ClubMember[]
+  clubMessages      ClubMessage[]
 
   @@unique([provider, providerId])
   @@map("users")
@@ -67,10 +70,11 @@ model Catch {
   isDraft       Boolean   @default(true) // true = incomplete, false = completed
   visibility    String    @default("private") // 'private', 'friends', 'public'
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  updatedAt     DateTime        @updatedAt
   likes         Like[]
   comments      Comment[]
   validations   CatchValidation[]
+  clubMessages  ClubMessage[]
 
   @@index([userId])
   @@index([isDraft])
@@ -223,4 +227,53 @@ model CatchValidation {
   @@index([catchId])
   @@index([validatorId])
   @@map("catch_validation")
+}
+
+model Club {
+  id          String        @id @default(cuid())
+  name        String
+  description String?       @db.Text
+  ownerId     String        @map("owner_id")
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  avatar      String?
+  visibility  String        @default("private") // 'private', 'public'
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  members     ClubMember[]
+  messages    ClubMessage[]
+
+  @@index([ownerId])
+  @@map("clubs")
+}
+
+model ClubMember {
+  id       String   @id @default(cuid())
+  clubId   String   @map("club_id")
+  club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId   String   @map("user_id")
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     String   @default("member") // 'owner', 'admin', 'member'
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  @@unique([clubId, userId])
+  @@index([clubId])
+  @@index([userId])
+  @@map("club_members")
+}
+
+model ClubMessage {
+  id        String   @id @default(cuid())
+  clubId    String   @map("club_id")
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  senderId  String   @map("sender_id")
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  message   String?  @db.Text
+  imageUrl  String?  @map("image_url")
+  catchId   String?  @map("catch_id")
+  catch     Catch?   @relation(fields: [catchId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([clubId, createdAt])
+  @@index([senderId])
+  @@map("club_messages")
 }
