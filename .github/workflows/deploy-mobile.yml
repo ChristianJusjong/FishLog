@@ -1,0 +1,82 @@
+name: Deploy Mobile App to Google Play
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Google Play
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Create Google Play Service Account Key
+        run: |
+          echo '${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}' > apps/mobile/google-play-service-account.json
+
+      - name: Build Android App Bundle
+        working-directory: apps/mobile
+        run: eas build --platform android --profile production --non-interactive --no-wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Wait for build to complete
+        working-directory: apps/mobile
+        run: |
+          BUILD_ID=$(eas build:list --platform android --status in-progress --limit 1 --json | jq -r '.[0].id')
+          echo "Waiting for build $BUILD_ID to complete..."
+          while true; do
+            STATUS=$(eas build:view $BUILD_ID --json | jq -r '.status')
+            echo "Build status: $STATUS"
+            if [ "$STATUS" = "finished" ]; then
+              echo "Build completed successfully!"
+              break
+            elif [ "$STATUS" = "errored" ] || [ "$STATUS" = "canceled" ]; then
+              echo "Build failed with status: $STATUS"
+              exit 1
+            fi
+            sleep 30
+          done
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Submit to Google Play Internal Testing
+        working-directory: apps/mobile
+        run: eas submit --platform android --latest --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Clean up service account key
+        if: always()
+        run: rm -f apps/mobile/google-play-service-account.json
+
+      - name: Notify success
+        if: success()
+        run: echo "✅ App successfully deployed to Google Play Internal Testing track!"
+
+      - name: Notify failure
+        if: failure()
+        run: echo "❌ Deployment failed. Check the logs above for details."
