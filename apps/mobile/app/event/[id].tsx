@@ -11,7 +11,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.86.236:3000';
+const API_URL = 'https://fishlog-production.up.railway.app';
 
 type Contest = {
   id: string;

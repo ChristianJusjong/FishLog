@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_URL = 'http://192.168.86.236:3000';
+const API_URL = 'https://fishlog-production.up.railway.app';
 
 export default function SignupScreen() {
   const [name, setName] = useState('');

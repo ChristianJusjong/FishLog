@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import MapPicker from '../components/MapPicker';
 
-const API_URL = 'http://192.168.86.236:3000';
+const API_URL = 'https://fishlog-production.up.railway.app';
 
 // Liste over danske fisk
 const DANISH_FISH_SPECIES = [

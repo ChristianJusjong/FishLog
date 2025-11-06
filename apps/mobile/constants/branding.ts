@@ -1,12 +1,12 @@
 /**
- * FishLog Branding & Theme Constants
+ * Hook Branding & Theme Constants
  *
- * App Name: FishLog
- * Primary Logo: Stylized fish hook (modern, line-based design)
+ * App Name: Hook
+ * Primary Logo: Stylized fish hook (modern, clean design)
  */
 
 export const BRANDING = {
-  appName: 'FishLog',
+  appName: 'Hook',
   tagline: 'Din digitale fiskebog',
   description: 'Log dine fangster, del oplevelser, og bliv en bedre fisker',
 } as const;

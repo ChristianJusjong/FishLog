@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomNavigation from '../components/BottomNavigation';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 
-const API_URL = 'http://192.168.86.236:3000';
+const API_URL = 'https://fishlog-production.up.railway.app';
 
 // Danish fish species for filter
 const FISH_SPECIES = [

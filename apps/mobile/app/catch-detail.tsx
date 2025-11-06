@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MapPicker from '../components/MapPicker';
 
-const API_URL = 'http://192.168.86.236:3000';
+const API_URL = 'https://fishlog-production.up.railway.app';
 
 interface User {
   id: string;

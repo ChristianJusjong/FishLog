@@ -7,7 +7,7 @@ import WeatherLocationCard from '../components/WeatherLocationCard';
 import BottomNavigation from '../components/BottomNavigation';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 
-const API_URL = 'http://192.168.86.236:3000';
+const API_URL = 'https://fishlog-production.up.railway.app';
 
 interface User {
   id: string;

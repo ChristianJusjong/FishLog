@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomNavigation from '../components/BottomNavigation';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 
-const API_URL = 'http://192.168.86.236:3000';
+const API_URL = 'https://fishlog-production.up.railway.app';
 
 interface User {
   id: string;

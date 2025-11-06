@@ -18,7 +18,7 @@ import { authService } from '../lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 
-const API_URL = 'http://192.168.86.236:3000';
+const API_URL = 'https://fishlog-production.up.railway.app';
 
 export default function EditProfileScreen() {
   const { user, refreshUser } = useAuth();
