@@ -41,6 +41,7 @@ model User {
   ownedEvents       Event[]
   eventParticipants EventParticipant[]
   badges            UserBadge[]
+  validatedCatches  CatchValidation[]
 
   @@unique([provider, providerId])
   @@map("users")
@@ -64,9 +65,10 @@ model Catch {
   isDraft    Boolean   @default(true) // true = incomplete, false = completed
   visibility String    @default("private") // 'private', 'friends', 'public'
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  likes      Like[]
-  comments   Comment[]
+  updatedAt   DateTime          @updatedAt
+  likes       Like[]
+  comments    Comment[]
+  validations CatchValidation[]
 
   @@index([userId])
   @@index([isDraft])
@@ -202,4 +204,21 @@ model UserBadge {
   @@index([userId])
   @@index([badgeId])
   @@map("user_badges")
+}
+
+model CatchValidation {
+  id          String   @id @default(cuid())
+  catchId     String   @map("catch_id")
+  catch       Catch    @relation(fields: [catchId], references: [id], onDelete: Cascade)
+  validatorId String   @map("validator_id")
+  validator   User     @relation(fields: [validatorId], references: [id])
+  status      String   // 'approved' or 'rejected'
+  reason      String?  @db.Text
+  validatedAt DateTime @default(now()) @map("validated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([catchId])
+  @@index([validatorId])
+  @@map("catch_validation")
 }
