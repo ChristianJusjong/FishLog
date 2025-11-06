@@ -45,6 +45,7 @@ interface FeedCatch {
 
 export default function FeedScreen() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'catches' | 'events'>('catches');
   const [catches, setCatches] = useState<FeedCatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
@@ -268,15 +269,36 @@ export default function FeedScreen() {
       {/* Weather & Location Card */}
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'catches' && styles.activeTab]}
+          onPress={() => setActiveTab('catches')}
+        >
+          <Text style={[styles.tabText, activeTab === 'catches' && styles.activeTabText]}>
+            🐟 Fangster
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+          onPress={() => setActiveTab('events')}
+        >
+          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
+            🏆 Events
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={styles.container}>
-      {catches.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emoji}>👥</Text>
-          <Text style={styles.emptyText}>Ingen fangster i feed</Text>
-          <Text style={styles.emptySubtext}>Tilføj venner for at se deres fangster</Text>
-        </View>
-      ) : (
-        <View style={styles.feedList}>
+      {activeTab === 'catches' ? (
+        catches.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emoji}>👥</Text>
+            <Text style={styles.emptyText}>Ingen fangster i feed</Text>
+            <Text style={styles.emptySubtext}>Tilføj venner for at se deres fangster</Text>
+          </View>
+        ) : (
+          <View style={styles.feedList}>
           {catches.map((catch_) => (
             <TouchableOpacity
               key={catch_.id}
@@ -387,6 +409,19 @@ export default function FeedScreen() {
               )}
             </TouchableOpacity>
           ))}
+          </View>
+        )
+      ) : (
+        // Events tab content
+        <View style={styles.eventsContainer}>
+          <TouchableOpacity
+            style={styles.eventsNavigateButton}
+            onPress={() => router.push('/events')}
+          >
+            <Text style={styles.eventsNavigateIcon}>🏆</Text>
+            <Text style={styles.eventsNavigateText}>Se alle events</Text>
+            <Text style={styles.eventsNavigateArrow}>→</Text>
+          </TouchableOpacity>
         </View>
       )}
       </ScrollView>
@@ -602,5 +637,57 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.secondaryDark,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    ...SHADOWS.sm,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: COLORS.primary,
+  },
+  tabText: {
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  activeTabText: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  eventsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  eventsNavigateButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl * 2,
+    borderRadius: RADIUS.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...SHADOWS.lg,
+  },
+  eventsNavigateIcon: {
+    fontSize: 32,
+    marginRight: SPACING.md,
+  },
+  eventsNavigateText: {
+    ...TYPOGRAPHY.styles.h2,
+    color: COLORS.white,
+    marginRight: SPACING.md,
+  },
+  eventsNavigateArrow: {
+    ...TYPOGRAPHY.styles.h1,
+    color: COLORS.white,
   },
 });

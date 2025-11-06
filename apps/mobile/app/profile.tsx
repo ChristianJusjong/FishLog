@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import BottomNavigation from '../components/BottomNavigation';
-import { COLORS } from '@/constants/branding';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 
 export default function ProfileScreen() {
   const { user, loading, logout } = useAuth();
@@ -19,8 +19,8 @@ export default function ProfileScreen() {
 
   if (loading || !user) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -31,93 +31,102 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.backgroundLight }}>
       {/* Weather & Location Card */}
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
       <ScrollView contentContainerStyle={styles.container}>
-      {user.avatar && (
-        <Image source={{ uri: user.avatar }} style={styles.avatar} />
-      )}
-
-      <View style={styles.card}>
-        <View style={styles.infoContainer}>
-          <Text style={styles.label}>Name</Text>
-          <Text style={styles.value}>{user.name}</Text>
+        {/* Profile Header */}
+        <View style={styles.profileHeader}>
+          {user.avatar ? (
+            <Image source={{ uri: user.avatar }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Text style={styles.avatarPlaceholderText}>
+                {user.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.userName}>{user.name}</Text>
+          <Text style={styles.userEmail}>{user.email}</Text>
         </View>
 
-        <View style={[styles.infoContainer, styles.borderTop]}>
-          <Text style={styles.label}>Email</Text>
-          <Text style={styles.value}>{user.email}</Text>
+        {/* Profile Stats Card */}
+        <View style={styles.statsCard}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statLabel}>Fangster</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statLabel}>Venner</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statLabel}>Events</Text>
+          </View>
         </View>
 
-        <View style={[styles.infoContainer, styles.borderTop]}>
-          <Text style={styles.label}>Provider</Text>
-          <Text style={styles.value}>{user.provider}</Text>
+        {/* Action Buttons */}
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => router.push('/edit-profile')}
+          >
+            <Text style={styles.primaryButtonIcon}>✏️</Text>
+            <Text style={styles.primaryButtonText}>Rediger Profil</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => router.push('/friends')}
+          >
+            <Text style={styles.secondaryButtonIcon}>👥</Text>
+            <Text style={styles.secondaryButtonText}>Venner</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={[styles.infoContainer, styles.borderTop]}>
-          <Text style={styles.label}>User ID</Text>
-          <Text style={styles.valueSmall}>{user.id}</Text>
+        {/* Settings Section */}
+        <View style={styles.settingsSection}>
+          <Text style={styles.sectionTitle}>Indstillinger</Text>
+
+          <TouchableOpacity style={styles.settingItem}>
+            <Text style={styles.settingIcon}>🔔</Text>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Notifikationer</Text>
+              <Text style={styles.settingValue}>Aktiveret</Text>
+            </View>
+            <Text style={styles.settingArrow}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem}>
+            <Text style={styles.settingIcon}>🌍</Text>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Synlighed</Text>
+              <Text style={styles.settingValue}>Privat</Text>
+            </View>
+            <Text style={styles.settingArrow}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem}>
+            <Text style={styles.settingIcon}>🔐</Text>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Login metode</Text>
+              <Text style={styles.settingValue}>{user.provider}</Text>
+            </View>
+            <Text style={styles.settingArrow}>›</Text>
+          </TouchableOpacity>
         </View>
-      </View>
 
-      <TouchableOpacity
-        style={styles.feedButton}
-        onPress={() => router.push('/feed')}
-      >
-        <Text style={styles.buttonText}>📰 Feed</Text>
-      </TouchableOpacity>
+        {/* Logout Button */}
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Log Ud</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.friendsButton}
-        onPress={() => router.push('/friends')}
-      >
-        <Text style={styles.buttonText}>👥 Venner</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.catchesButton}
-        onPress={() => router.push('/catches')}
-      >
-        <Text style={styles.buttonText}>🐟 Mine Fangster</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.addCatchButton}
-        onPress={() => router.push('/add-catch')}
-      >
-        <Text style={styles.buttonText}>+ Tilføj Fangst</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.eventsButton}
-        onPress={() => router.push('/events')}
-      >
-        <Text style={styles.buttonText}>🏆 Events</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.mapButton}
-        onPress={() => router.push('/map')}
-      >
-        <Text style={styles.buttonText}>🗺️ Fiskekort</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() => router.push('/edit-profile')}
-      >
-        <Text style={styles.buttonText}>✏️ Rediger Profil</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Log Ud</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.footer}>
-        OAuth 2.0 Authentication with JWT Tokens
-      </Text>
+        {/* Version Info */}
+        <Text style={styles.versionText}>Version 1.0.0</Text>
       </ScrollView>
 
       {/* Bottom Navigation */}
@@ -127,178 +136,178 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundLight,
+  },
   container: {
     flexGrow: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-    alignItems: 'center',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.backgroundLight,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginTop: 40,
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
+  profileHeader: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 20,
-    borderWidth: 3,
-    borderColor: '#007AFF',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: SPACING.md,
+    borderWidth: 4,
+    borderColor: COLORS.primary,
+    ...SHADOWS.lg,
   },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    width: '100%',
-    maxWidth: 500,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    marginBottom: 20,
+  avatarPlaceholder: {
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  infoContainer: {
-    padding: 16,
+  avatarPlaceholderText: {
+    ...TYPOGRAPHY.styles.h1,
+    fontSize: 48,
+    color: COLORS.white,
   },
-  borderTop: {
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+  userName: {
+    ...TYPOGRAPHY.styles.h1,
+    marginBottom: SPACING.xs,
   },
-  label: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-    textTransform: 'uppercase',
+  userEmail: {
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.textSecondary,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.md,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    ...TYPOGRAPHY.styles.h1,
+    fontSize: 32,
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
+  },
+  statLabel: {
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textSecondary,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: SPACING.sm,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginBottom: SPACING.xl,
+  },
+  primaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.md,
+  },
+  primaryButtonIcon: {
+    fontSize: 20,
+    marginRight: SPACING.sm,
+  },
+  primaryButtonText: {
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.white,
     fontWeight: '600',
   },
-  value: {
-    fontSize: 16,
+  secondaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    ...SHADOWS.sm,
+  },
+  secondaryButtonIcon: {
+    fontSize: 20,
+    marginRight: SPACING.sm,
+  },
+  secondaryButtonText: {
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  settingsSection: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.md,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.styles.h3,
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: RADIUS.md,
+  },
+  settingIcon: {
+    fontSize: 24,
+    marginRight: SPACING.md,
+  },
+  settingContent: {
+    flex: 1,
+  },
+  settingLabel: {
+    ...TYPOGRAPHY.styles.body,
     fontWeight: '500',
-    color: '#333',
+    marginBottom: 2,
   },
-  valueSmall: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#666',
+  settingValue: {
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textSecondary,
   },
-  feedButton: {
-    backgroundColor: '#FF9500',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-    maxWidth: 500,
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  friendsButton: {
-    backgroundColor: '#5856D6',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-    maxWidth: 500,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  catchesButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-    maxWidth: 500,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  addCatchButton: {
-    backgroundColor: '#28a745',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-    maxWidth: 500,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  eventsButton: {
-    backgroundColor: '#FFD700',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-    maxWidth: 500,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  mapButton: {
-    backgroundColor: '#34C759',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-    maxWidth: 500,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  editButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-    maxWidth: 500,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  settingArrow: {
+    ...TYPOGRAPHY.styles.h2,
+    color: COLORS.textTertiary,
   },
   logoutButton: {
-    backgroundColor: '#FF3B30',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-    maxWidth: 500,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.error,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+    ...SHADOWS.sm,
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
+  logoutButtonText: {
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.white,
     fontWeight: '600',
-    textAlign: 'center',
   },
-  footer: {
-    marginTop: 20,
-    fontSize: 12,
-    color: '#999',
+  versionText: {
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textTertiary,
     textAlign: 'center',
+    marginTop: SPACING.sm,
   },
 });
