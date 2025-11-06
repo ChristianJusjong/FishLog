@@ -290,7 +290,7 @@ export async function eventsRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Get event leaderboard
+  // Get event leaderboard (only approved catches)
   fastify.get('/events/:id/leaderboard', {
     preHandler: [authenticateToken],
   }, async (request, reply) => {
@@ -328,6 +328,7 @@ export async function eventsRoutes(fastify: FastifyInstance) {
       const catches = await prisma.catch.findMany({
         where: {
           userId: { in: participantIds },
+          isDraft: false,
           createdAt: {
             gte: event.startAt,
             lte: event.endAt,
@@ -341,16 +342,28 @@ export async function eventsRoutes(fastify: FastifyInstance) {
               avatar: true,
             },
           },
+          validations: {
+            where: {
+              status: 'approved'
+            },
+            orderBy: {
+              validatedAt: 'desc'
+            },
+            take: 1
+          }
         },
       });
 
+      // Filter to only approved catches
+      const approvedCatches = catches.filter(c => c.validations.length > 0);
+
       // Calculate leaderboards for each contest
       const leaderboards = event.contests.map(contest => {
-        let filteredCatches = catches;
+        let filteredCatches = approvedCatches;
 
         // Filter by species if specified
         if (contest.speciesFilter) {
-          filteredCatches = catches.filter(c => c.species === contest.speciesFilter);
+          filteredCatches = approvedCatches.filter(c => c.species === contest.speciesFilter);
         }
 
         // Group catches by user
@@ -402,7 +415,7 @@ export async function eventsRoutes(fastify: FastifyInstance) {
 
         return {
           contest,
-          leaderboard: rankedScores,
+          leaderboard: rankedScores.slice(0, 10), // Top 10 only
         };
       });
 
@@ -418,6 +431,279 @@ export async function eventsRoutes(fastify: FastifyInstance) {
     } catch (error) {
       fastify.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch leaderboard' });
+    }
+  });
+
+  // Get contest-specific leaderboard
+  fastify.get('/contests/:id/leaderboard', {
+    preHandler: [authenticateToken],
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { id } = request.params as { id: string };
+
+      const contest = await prisma.contest.findUnique({
+        where: { id },
+        include: {
+          event: {
+            include: {
+              participants: {
+                select: {
+                  userId: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!contest) {
+        return reply.code(404).send({ error: 'Contest not found' });
+      }
+
+      const event = contest.event;
+
+      // Check if user has access
+      if (event.visibility === 'private' && event.ownerId !== request.user.userId) {
+        return reply.code(403).send({ error: 'Access denied' });
+      }
+
+      // Get participant IDs
+      const participantIds = event.participants.map(p => p.userId);
+
+      // Get approved catches from participants during the event period
+      const catches = await prisma.catch.findMany({
+        where: {
+          userId: { in: participantIds },
+          isDraft: false,
+          createdAt: {
+            gte: event.startAt,
+            lte: event.endAt,
+          },
+          ...(contest.speciesFilter && { species: contest.speciesFilter })
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          },
+          validations: {
+            where: {
+              status: 'approved'
+            },
+            orderBy: {
+              validatedAt: 'desc'
+            },
+            take: 1,
+            include: {
+              validator: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          }
+        },
+      });
+
+      // Filter to only approved catches
+      const approvedCatches = catches.filter(c => c.validations.length > 0);
+
+      // Group catches by user
+      const userCatches = approvedCatches.reduce((acc, catch_) => {
+        if (!acc[catch_.userId]) {
+          acc[catch_.userId] = {
+            user: catch_.user,
+            catches: [],
+          };
+        }
+        acc[catch_.userId].catches.push(catch_);
+        return acc;
+      }, {} as Record<string, { user: any; catches: any[] }>);
+
+      // Calculate scores based on contest rule
+      const scores = Object.entries(userCatches).map(([_userId, data]) => {
+        let score = 0;
+        let details = '';
+        let bestCatch = null;
+
+        if (contest.rule === 'biggest_single') {
+          bestCatch = data.catches.reduce((max, c) =>
+            (c.weightKg || 0) > (max.weightKg || 0) ? c : max
+          , data.catches[0]);
+          score = bestCatch.weightKg || 0;
+          details = `${(score * 1000).toFixed(0)}g`;
+        } else if (contest.rule === 'biggest_total') {
+          const total = data.catches.reduce((sum, c) => sum + (c.weightKg || 0), 0);
+          score = total;
+          details = `${(total * 1000).toFixed(0)}g total`;
+          bestCatch = data.catches[0]; // Most recent
+        } else if (contest.rule === 'most_catches') {
+          score = data.catches.length;
+          details = `${score} fangster`;
+          bestCatch = data.catches[0]; // Most recent
+        }
+
+        return {
+          user: data.user,
+          score,
+          details,
+          catchCount: data.catches.length,
+          bestCatch: bestCatch ? {
+            id: bestCatch.id,
+            species: bestCatch.species,
+            weightKg: bestCatch.weightKg,
+            lengthCm: bestCatch.lengthCm,
+            photoUrl: bestCatch.photoUrl,
+            createdAt: bestCatch.createdAt,
+            validatedAt: bestCatch.validations[0]?.validatedAt
+          } : null
+        };
+      });
+
+      // Sort by score descending
+      scores.sort((a, b) => b.score - a.score);
+
+      // Add rank
+      const leaderboard = scores.map((entry, index) => ({
+        ...entry,
+        rank: index + 1,
+      }));
+
+      return {
+        contest: {
+          id: contest.id,
+          rule: contest.rule,
+          speciesFilter: contest.speciesFilter
+        },
+        event: {
+          id: event.id,
+          title: event.title,
+          startAt: event.startAt,
+          endAt: event.endAt,
+        },
+        leaderboard: leaderboard.slice(0, 10), // Top 10
+        totalParticipants: participantIds.length,
+        totalApprovedCatches: approvedCatches.length
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to fetch contest leaderboard' });
+    }
+  });
+
+  // Get live updates for contest (recent approved catches)
+  fastify.get('/contests/:id/live-updates', {
+    preHandler: [authenticateToken],
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { id } = request.params as { id: string };
+      const { since } = request.query as { since?: string };
+
+      const contest = await prisma.contest.findUnique({
+        where: { id },
+        include: {
+          event: {
+            include: {
+              participants: {
+                select: {
+                  userId: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!contest) {
+        return reply.code(404).send({ error: 'Contest not found' });
+      }
+
+      const event = contest.event;
+
+      // Check if user has access
+      if (event.visibility === 'private' && event.ownerId !== request.user.userId) {
+        return reply.code(403).send({ error: 'Access denied' });
+      }
+
+      const participantIds = event.participants.map(p => p.userId);
+
+      // Get recently approved catches
+      const sinceDate = since ? new Date(since) : new Date(Date.now() - 5 * 60 * 1000); // Last 5 minutes
+
+      const recentValidations = await prisma.catchValidation.findMany({
+        where: {
+          status: 'approved',
+          validatedAt: {
+            gte: sinceDate
+          },
+          catch: {
+            userId: { in: participantIds },
+            createdAt: {
+              gte: event.startAt,
+              lte: event.endAt,
+            },
+            isDraft: false,
+            ...(contest.speciesFilter && { species: contest.speciesFilter })
+          }
+        },
+        include: {
+          catch: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  avatar: true
+                }
+              }
+            }
+          },
+          validator: {
+            select: {
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          validatedAt: 'desc'
+        },
+        take: 20
+      });
+
+      const updates = recentValidations.map(validation => ({
+        type: 'catch_approved',
+        timestamp: validation.validatedAt,
+        catch: {
+          id: validation.catch.id,
+          user: validation.catch.user,
+          species: validation.catch.species,
+          weightKg: validation.catch.weightKg,
+          lengthCm: validation.catch.lengthCm,
+          photoUrl: validation.catch.photoUrl,
+          createdAt: validation.catch.createdAt
+        },
+        validatedBy: validation.validator.name
+      }));
+
+      return {
+        contestId: contest.id,
+        updates,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to fetch live updates' });
     }
   });
 }
