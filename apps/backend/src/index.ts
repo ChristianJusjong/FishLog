@@ -14,6 +14,7 @@ import { eventsRoutes } from './routes/events';
 import { spotsRoutes } from './routes/spots';
 import { aiRoutes } from './routes/ai';
 import { badgeRoutes } from './routes/badges';
+import { initializeDatabase } from './utils/init-db';
 import 'dotenv/config';
 
 const prisma = new PrismaClient();
@@ -101,6 +102,9 @@ fastify.get('/', async () => {
 // Start server
 const start = async () => {
   try {
+    // Initialize database (enable PostGIS)
+    await initializeDatabase();
+
     const port = parseInt(process.env.PORT || '3000', 10);
     const host = process.env.HOST || '0.0.0.0';
 
