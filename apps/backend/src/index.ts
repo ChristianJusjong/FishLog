@@ -2,6 +2,8 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import rateLimit from '@fastify/rate-limit';
+import helmet from '@fastify/helmet';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { authRoutes } from './routes/auth';
@@ -23,9 +25,29 @@ const fastify = Fastify({
   bodyLimit: 10 * 1024 * 1024, // 10MB limit for JSON bodies (to support base64 images)
 });
 
-// CORS configuration
+// Security: Helmet - adds security headers
+fastify.register(helmet, {
+  contentSecurityPolicy: false, // Disabled for API
+  crossOriginEmbedderPolicy: false,
+});
+
+// Security: Rate limiting - prevent DDoS and brute force attacks
+fastify.register(rateLimit, {
+  max: 100, // Max 100 requests
+  timeWindow: '15 minutes', // per 15 minutes
+  cache: 10000, // Cache 10k users
+  allowList: [], // No whitelist
+  redis: undefined, // Use in-memory for now, switch to Redis in production for multi-server
+  skipOnError: true, // Don't block on rate limiter errors
+});
+
+// CORS configuration - restrict origins in production
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? ['https://fishlog-production.up.railway.app', 'https://hook.app'] // Add your production domains
+  : true; // Allow all in development
+
 fastify.register(cors, {
-  origin: true, // Allow all origins in development
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

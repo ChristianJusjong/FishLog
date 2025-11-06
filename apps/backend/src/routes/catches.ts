@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 import { badgeService } from '../services/badgeService.js';
+import { startCatchSchema, updateCatchSchema, safeValidate } from '../utils/validation';
 
 const prisma = new PrismaClient();
 
@@ -11,19 +12,13 @@ export async function catchesRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const { photoUrl, latitude, longitude } = request.body as {
-        photoUrl: string;
-        latitude: number;
-        longitude: number;
-      };
-
-      if (!photoUrl) {
-        return reply.code(400).send({ error: 'Photo is required' });
+      // Validate input
+      const validation = safeValidate(startCatchSchema, request.body);
+      if (!validation.success) {
+        return reply.code(400).send({ error: 'Validation failed', details: validation.errors });
       }
 
-      if (latitude === undefined || longitude === undefined) {
-        return reply.code(400).send({ error: 'GPS coordinates are required' });
-      }
+      const { photoUrl, latitude, longitude } = validation.data;
 
       const catch_ = await prisma.catch.create({
         data: {
@@ -241,6 +236,13 @@ export async function catchesRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     try {
       const { id } = request.params as { id: string };
+
+      // Validate input
+      const validation = safeValidate(updateCatchSchema, request.body);
+      if (!validation.success) {
+        return reply.code(400).send({ error: 'Validation failed', details: validation.errors });
+      }
+
       const {
         species,
         lengthCm,
@@ -251,17 +253,7 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         technique,
         notes,
         visibility
-      } = request.body as {
-        species?: string;
-        lengthCm?: number;
-        weightKg?: number;
-        bait?: string;
-        lure?: string;
-        rig?: string;
-        technique?: string;
-        notes?: string;
-        visibility?: string;
-      };
+      } = validation.data;
 
       const catch_ = await prisma.catch.findUnique({
         where: { id }
