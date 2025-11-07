@@ -5,6 +5,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomNavigation from '../components/BottomNavigation';
 import WeatherLocationCard from '../components/WeatherLocationCard';
+import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/branding';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
 
@@ -46,7 +47,7 @@ export default function CatchesScreen() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/catches?userId=me`, {
+      const response = await fetch(`${API_URL}/catches?userId=me&includeDrafts=false`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
@@ -131,14 +132,14 @@ export default function CatchesScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.backgroundLight }} edges={['top']}>
         <Text style={styles.loadingText}>Indlæser fangster...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.backgroundLight }}>
       {/* Weather & Location Card */}
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
@@ -214,37 +215,38 @@ export default function CatchesScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.backgroundLight,
   },
   scrollContainer: {
     flexGrow: 1,
-    padding: 20,
+    padding: SPACING.lg,
+    paddingBottom: 100,
   },
   backButton: {
     alignSelf: 'flex-start',
-    marginBottom: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    marginBottom: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
   },
   backButtonText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: COLORS.accent,
     fontWeight: '600',
   },
   title: {
+    ...TYPOGRAPHY.styles.h1,
     fontSize: 32,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.lg,
     textAlign: 'center',
-    color: '#333',
   },
   loadingText: {
     fontSize: 18,
-    color: '#666',
+    fontWeight: '400',
+    color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 50,
   },
@@ -252,20 +254,16 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 600,
     alignSelf: 'center',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: SPACING.md,
+    borderRadius: RADIUS.full,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.md,
   },
   addButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: COLORS.primary,
   },
   buttonText: {
-    color: 'white',
+    color: COLORS.textInverse,
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
@@ -276,17 +274,18 @@ const styles = StyleSheet.create({
   },
   emoji: {
     fontSize: 64,
-    marginBottom: 20,
+    marginBottom: SPACING.lg,
   },
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
   },
   emptySubtext: {
     fontSize: 16,
-    color: '#666',
+    fontWeight: '400',
+    color: COLORS.textSecondary,
   },
   catchesList: {
     width: '100%',
@@ -294,67 +293,69 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   catchCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    ...SHADOWS.md,
   },
   catchImage: {
     width: '100%',
     height: 200,
-    borderRadius: 8,
-    marginBottom: 12,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.backgroundLight,
   },
   catchHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   catchSpecies: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: COLORS.text,
   },
   catchDate: {
     fontSize: 14,
-    color: '#666',
+    fontWeight: '400',
+    color: COLORS.textSecondary,
   },
   catchDetails: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   catchDetail: {
     fontSize: 16,
-    color: '#333',
-    marginRight: 16,
+    fontWeight: '400',
+    color: COLORS.text,
+    marginRight: SPACING.md,
   },
   catchInfo: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 6,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
   },
   catchNotes: {
     fontSize: 14,
-    color: '#333',
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
+    fontWeight: '400',
+    color: COLORS.text,
+    marginTop: SPACING.sm,
+    padding: SPACING.md,
+    backgroundColor: COLORS.backgroundLight,
+    borderRadius: RADIUS.lg,
   },
   deleteButton: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#dc3545',
-    borderRadius: 8,
+    marginTop: SPACING.md,
+    padding: SPACING.md,
+    backgroundColor: COLORS.error,
+    borderRadius: RADIUS.full,
+    ...SHADOWS.sm,
   },
   deleteButtonText: {
-    color: 'white',
+    color: COLORS.textInverse,
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
