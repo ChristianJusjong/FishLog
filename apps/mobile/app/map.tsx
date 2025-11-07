@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,15 @@ import {
   Platform,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle, PROVIDER_GOOGLE, PROVIDER_DEFAULT, UrlTile } from 'react-native-maps';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import BottomNavigation from '../components/BottomNavigation';
 import WeatherLocationCard from '../components/WeatherLocationCard';
+import { SPACING, COLORS } from '@/constants/branding';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
 
@@ -61,6 +63,8 @@ type TopSpot = {
 
 export default function MapScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const mapRef = useRef<MapView>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapPoint[]>([]);
   const [topSpots, setTopSpots] = useState<TopSpot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,17 +73,51 @@ export default function MapScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [showTopSpots, setShowTopSpots] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(true);
-  const [showDepth, setShowDepth] = useState(false);
   const [mapType, setMapType] = useState<'standard' | 'satellite' | 'hybrid'>('satellite');
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [aiAdvice, setAiAdvice] = useState<string>('');
   const [loadingAiAdvice, setLoadingAiAdvice] = useState(false);
   const [region, setRegion] = useState({
     latitude: 56.26, // Denmark center
     longitude: 9.5,
-    latitudeDelta: 4,
-    longitudeDelta: 4,
+    latitudeDelta: 0.4, // ~20km radius (0.4 degrees ≈ 44km height)
+    longitudeDelta: 0.4,
   });
+
+  const getUserLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Location permission not granted');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+
+      setUserLocation({ latitude, longitude });
+      setRegion({
+        latitude,
+        longitude,
+        latitudeDelta: 0.4, // ~20km radius
+        longitudeDelta: 0.4,
+      });
+    } catch (error) {
+      console.error('Failed to get user location:', error);
+    }
+  };
+
+  const centerOnUserLocation = () => {
+    if (userLocation && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        latitudeDelta: 0.4,
+        longitudeDelta: 0.4,
+      }, 1000); // 1 second animation
+    }
+  };
 
   const fetchHeatmapData = async () => {
     try {
@@ -135,6 +173,10 @@ export default function MapScreen() {
       console.error('Top spots fetch error:', error);
     }
   };
+
+  useEffect(() => {
+    getUserLocation();
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -199,7 +241,7 @@ export default function MapScreen() {
                 new Date().getMonth() < 9 ? 'sommer' : 'efterår'
       };
 
-      // Call AI service
+      // Call AI service through backend
       const aiResponse = await fetch(`${API_URL}/ai/fishing-advice`, {
         method: 'POST',
         headers: {
@@ -211,13 +253,17 @@ export default function MapScreen() {
 
       if (aiResponse.ok) {
         const data = await aiResponse.json();
+        console.log('AI advice response:', data);
         setAiAdvice(data.advice);
       } else {
-        setAiAdvice('AI-rådgivning ikke tilgængelig i øjeblikket.');
+        const errorData = await aiResponse.json().catch(() => ({}));
+        console.error('AI advice error:', aiResponse.status, errorData);
+        setAiAdvice(`AI-rådgivning ikke tilgængelig. Status: ${aiResponse.status}`);
       }
     } catch (error) {
       console.error('Failed to get AI advice:', error);
-      setAiAdvice('Kunne ikke hente fiskerådgivning.');
+      const errorMessage = error instanceof Error ? error.message : 'Ukendt fejl';
+      setAiAdvice(`Kunne ikke hente fiskerådgivning: ${errorMessage}`);
     } finally {
       setLoadingAiAdvice(false);
     }
@@ -232,7 +278,10 @@ export default function MapScreen() {
 
       {/* Floating Filter Button */}
       <TouchableOpacity
-        style={styles.floatingFilterButton}
+        style={[
+          styles.floatingFilterButton,
+          { bottom: 80 + Math.max(insets.bottom, 8) } // Above bottom navigation with safe area
+        ]}
         onPress={() => setShowFilters(!showFilters)}
       >
         <Ionicons
@@ -241,6 +290,23 @@ export default function MapScreen() {
           color="white"
         />
       </TouchableOpacity>
+
+      {/* Center on User Location Button */}
+      {userLocation && (
+        <TouchableOpacity
+          style={[
+            styles.locationButton,
+            { bottom: 80 + Math.max(insets.bottom, 8) + 70 } // Above filter button
+          ]}
+          onPress={centerOnUserLocation}
+        >
+          <Ionicons
+            name="navigate"
+            size={24}
+            color="white"
+          />
+        </TouchableOpacity>
+      )}
 
       {showFilters && (
         <View style={styles.filtersContainer}>
@@ -316,15 +382,6 @@ export default function MapScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.toggleButton, showDepth && styles.toggleButtonActive]}
-              onPress={() => setShowDepth(!showDepth)}
-            >
-              <Text style={[styles.toggleButtonText, showDepth && styles.toggleButtonTextActive]}>
-                🌊 Dybde
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
               style={[styles.toggleButton, mapType === 'satellite' && styles.toggleButtonActive]}
               onPress={() => setMapType(mapType === 'satellite' ? 'standard' : 'satellite')}
             >
@@ -344,6 +401,7 @@ export default function MapScreen() {
           </View>
         ) : (
           <MapView
+            ref={mapRef}
             provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
             style={styles.map}
             initialRegion={region}
@@ -351,13 +409,13 @@ export default function MapScreen() {
             onPress={handleMapPress}
             mapType={mapType}
           >
-            {/* Depth contours overlay from OpenSeaMap */}
-            {showDepth && (
+            {/* Labels overlay for satellite view - modern dark labels */}
+            {mapType === 'satellite' && (
               <UrlTile
-                urlTemplate="https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"
-                maximumZ={19}
-                zIndex={1}
-                opacity={0.7}
+                urlTemplate="https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png"
+                maximumZ={18}
+                zIndex={200}
+                opacity={0.9}
               />
             )}
 
@@ -390,6 +448,17 @@ export default function MapScreen() {
                 />
               ))}
 
+            {/* User's current location */}
+            {userLocation && (
+              <Marker
+                coordinate={userLocation}
+                title="Din placering"
+                description="Du er her"
+              >
+                <Ionicons name="location" size={32} color={COLORS.accent} />
+              </Marker>
+            )}
+
             {/* Selected location marker */}
             {selectedLocation && (
               <Marker
@@ -401,23 +470,6 @@ export default function MapScreen() {
             )}
           </MapView>
         )}
-      </View>
-
-      <View style={styles.statsBar}>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{heatmapData.length}</Text>
-          <Text style={styles.statLabel}>Fiskesteder</Text>
-        </View>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{topSpots.length}</Text>
-          <Text style={styles.statLabel}>Hot Spots</Text>
-        </View>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>
-            {heatmapData.reduce((sum, p) => sum + p.intensity, 0)}
-          </Text>
-          <Text style={styles.statLabel}>Total fangster</Text>
-        </View>
       </View>
 
       {/* AI Advice Modal */}
@@ -472,12 +524,27 @@ const styles = StyleSheet.create({
   },
   floatingFilterButton: {
     position: 'absolute',
-    top: 80,
     right: 16,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  locationButton: {
+    position: 'absolute',
+    right: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.accent,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -603,45 +670,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
-  },
-  statsBar: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    padding: 40,
-    lineHeight: 24,
-  },
-  backButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    marginHorizontal: 20,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
   },
 });
