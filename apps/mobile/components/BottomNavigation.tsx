@@ -4,7 +4,6 @@ import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
 import { COLORS, SPACING, SHADOWS } from '@/constants/branding';
 
 export default function BottomNavigation() {
@@ -49,7 +48,7 @@ export default function BottomNavigation() {
   );
 
   return (
-    <BlurView intensity={95} tint="light" style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       {/* Feed */}
       <TouchableOpacity
         style={[styles.navButton, isActive('/feed') && styles.activeNavButton]}
@@ -114,7 +113,7 @@ export default function BottomNavigation() {
           />
         </View>
       </TouchableOpacity>
-    </BlurView>
+    </View>
   );
 }
 
