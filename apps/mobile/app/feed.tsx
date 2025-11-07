@@ -265,31 +265,48 @@ export default function FeedScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.backgroundLight }}>
+    <View style={styles.safeArea}>
       {/* Weather & Location Card */}
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'catches' && styles.activeTab]}
-          onPress={() => setActiveTab('catches')}
-        >
-          <Text style={[styles.tabText, activeTab === 'catches' && styles.activeTabText]}>
-            🐟 Fangster
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
-          onPress={() => setActiveTab('events')}
-        >
-          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
-            🏆 Events
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'catches' && styles.activeTab]}
+            onPress={() => setActiveTab('catches')}
+            accessible={true}
+            accessibilityLabel="Vis fangster feed"
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeTab === 'catches' }}
+          >
+            <View style={styles.tabContent}>
+              <Text style={styles.tabEmoji}>🐟</Text>
+              <Text style={[styles.tabText, activeTab === 'catches' && styles.activeTabText]}>
+                Fangster
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+            onPress={() => setActiveTab('events')}
+            accessible={true}
+            accessibilityLabel="Vis events feed"
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeTab === 'events' }}
+          >
+            <View style={styles.tabContent}>
+              <Text style={styles.tabEmoji}>🏆</Text>
+              <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
+                Events
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={true}
+        >
       {activeTab === 'catches' ? (
         catches.length === 0 ? (
           <View style={styles.emptyState}>
@@ -362,6 +379,10 @@ export default function FeedScreen() {
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => toggleLike(catch_.id)}
+                  accessible={true}
+                  accessibilityLabel={catch_.isLikedByMe ? `Fjern like. ${catch_.likesCount} likes` : `Like fangst. ${catch_.likesCount} likes`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: catch_.isLikedByMe }}
                 >
                   <Text style={styles.actionIcon}>{catch_.isLikedByMe ? '❤️' : '🤍'}</Text>
                   <Text style={styles.actionText}>{catch_.likesCount}</Text>
@@ -370,6 +391,10 @@ export default function FeedScreen() {
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => toggleShowComments(catch_.id)}
+                  accessible={true}
+                  accessibilityLabel={`Vis kommentarer. ${catch_.commentsCount} kommentarer`}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showComments[catch_.id] }}
                 >
                   <Text style={styles.actionIcon}>💬</Text>
                   <Text style={styles.actionText}>{catch_.commentsCount}</Text>
@@ -394,13 +419,20 @@ export default function FeedScreen() {
                     <TextInput
                       style={styles.commentInput}
                       placeholder="Skriv en kommentar..."
+                      placeholderTextColor={COLORS.textTertiary}
                       value={commentText[catch_.id] || ''}
                       onChangeText={(text) => setCommentText(prev => ({ ...prev, [catch_.id]: text }))}
                       multiline
+                      accessible={true}
+                      accessibilityLabel="Kommentar felt"
+                      accessibilityHint="Skriv din kommentar her"
                     />
                     <TouchableOpacity
                       style={styles.sendButton}
                       onPress={() => addComment(catch_.id)}
+                      accessible={true}
+                      accessibilityLabel="Send kommentar"
+                      accessibilityRole="button"
                     >
                       <Text style={styles.sendButtonText}>Send</Text>
                     </TouchableOpacity>
@@ -433,9 +465,14 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundLight,
+  },
   container: {
     flexGrow: 1,
     padding: SPACING.md,
+    paddingBottom: 80, // Extra padding for bottom navigation
     backgroundColor: COLORS.backgroundLight, // Light Grey (#F0F2F5)
   },
   title: {
@@ -445,8 +482,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   loadingText: {
-    ...TYPOGRAPHY.styles.body,
-    lineHeight: 24, // 16 * 1.5 (explicit pixel value)
+    fontSize: 16,
+    fontWeight: '400',
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: SPACING.xl,
@@ -460,13 +497,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   emptyText: {
-    ...TYPOGRAPHY.styles.h2,
-    lineHeight: 24, // 18 * 1.25 (explicit pixel value)
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   emptySubtext: {
-    ...TYPOGRAPHY.styles.body,
-    lineHeight: 24, // 16 * 1.5 (explicit pixel value)
+    fontSize: 16,
+    fontWeight: '400',
     color: COLORS.textSecondary,
   },
   feedList: {
@@ -500,13 +538,14 @@ const styles = StyleSheet.create({
     marginRight: SPACING.sm,
   },
   userName: {
-    ...TYPOGRAPHY.styles.body,
-    lineHeight: 24, // 16 * 1.5 (explicit pixel value)
+    fontSize: 16,
     fontWeight: '600',
+    color: COLORS.text,
   },
   catchDate: {
-    ...TYPOGRAPHY.styles.small,
-    lineHeight: 21, // 14 * 1.5 (explicit pixel value)
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
   },
   catchImage: {
     width: '100%',
@@ -517,8 +556,9 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
   },
   catchSpecies: {
-    ...TYPOGRAPHY.styles.h2,
-    lineHeight: 24, // 18 * 1.25 (explicit pixel value)
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   catchDetails: {
@@ -526,18 +566,20 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   catchDetail: {
-    ...TYPOGRAPHY.styles.body,
-    lineHeight: 24, // 16 * 1.5 (explicit pixel value)
+    fontSize: 16,
+    fontWeight: '400',
+    color: COLORS.text,
     marginRight: SPACING.md,
   },
   catchInfo: {
-    ...TYPOGRAPHY.styles.small,
-    lineHeight: 21, // 14 * 1.5 (explicit pixel value)
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
   },
   catchNotes: {
-    ...TYPOGRAPHY.styles.small,
-    lineHeight: 21, // 14 * 1.5 (explicit pixel value)
+    fontSize: 14,
+    fontWeight: '400',
     color: COLORS.text,
     marginTop: SPACING.sm,
     padding: SPACING.sm,
@@ -554,14 +596,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: SPACING.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    minHeight: 44, // Accessibility: Minimum touch target
+    minWidth: 60,
   },
   actionIcon: {
     fontSize: 20,
     marginRight: SPACING.xs,
   },
   actionText: {
-    ...TYPOGRAPHY.styles.body,
-    lineHeight: 24, // 16 * 1.5 (explicit pixel value)
+    fontSize: 16,
+    fontWeight: '400',
     color: COLORS.textSecondary,
   },
   commentsSection: {
@@ -577,20 +623,20 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   commentUser: {
-    ...TYPOGRAPHY.styles.small,
-    lineHeight: 21, // 14 * 1.5 (explicit pixel value)
+    fontSize: 14,
     fontWeight: '600',
+    color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   commentText: {
-    ...TYPOGRAPHY.styles.small,
-    lineHeight: 21, // 14 * 1.5 (explicit pixel value)
+    fontSize: 14,
+    fontWeight: '400',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   commentDate: {
     fontSize: 12,
-    lineHeight: 18, // 12 * 1.5 (explicit pixel value)
+    fontWeight: '400',
     color: COLORS.textTertiary,
   },
   addCommentContainer: {
@@ -604,20 +650,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     marginRight: SPACING.sm,
-    ...TYPOGRAPHY.styles.small,
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.text,
     maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: COLORS.accent, // Vivid Orange
+    backgroundColor: COLORS.accent,
     borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: 44,
   },
   sendButtonText: {
-    ...TYPOGRAPHY.styles.small,
-    color: COLORS.white,
+    fontSize: 14,
     fontWeight: '600',
+    color: COLORS.textInverse,
   },
   locationContainer: {
     marginTop: SPACING.sm,
@@ -645,22 +695,35 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: SPACING.md,
+    paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',
+    minHeight: 48,
+    backgroundColor: COLORS.surface,
   },
   activeTab: {
     borderBottomColor: COLORS.primary,
   },
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabEmoji: {
+    fontSize: 20,
+    marginRight: 6,
+  },
   tabText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
+    fontSize: 16,
     fontWeight: '500',
+    color: COLORS.textSecondary,
   },
   activeTabText: {
-    color: COLORS.primary,
+    fontSize: 16,
     fontWeight: '700',
+    color: COLORS.primary,
   },
   eventsContainer: {
     flex: 1,
@@ -682,12 +745,14 @@ const styles = StyleSheet.create({
     marginRight: SPACING.md,
   },
   eventsNavigateText: {
-    ...TYPOGRAPHY.styles.h2,
-    color: COLORS.white,
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textInverse,
     marginRight: SPACING.md,
   },
   eventsNavigateArrow: {
-    ...TYPOGRAPHY.styles.h1,
-    color: COLORS.white,
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.textInverse,
   },
 });
