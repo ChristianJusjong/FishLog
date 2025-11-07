@@ -41,7 +41,10 @@
       "Bash(start https://dashboard.render.com/)",
       "Bash(curl:*)",
       "Bash(npx expo:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(/c/Users/christian.jusjong/AppData/Local/Android/Sdk/platform-tools/adb.exe devices)",
+      "Bash(/c/Users/christian.jusjong/AppData/Local/Android/Sdk/platform-tools/adb.exe kill-server)",
+      "Bash(/c/Users/christian.jusjong/AppData/Local/Android/Sdk/platform-tools/adb.exe start-server)"
     ],
     "deny": [],
     "ask": []

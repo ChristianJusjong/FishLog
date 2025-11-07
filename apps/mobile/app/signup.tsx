@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
-
-const API_URL = 'https://fishlog-production.up.railway.app';
+import { api } from '../lib/api';
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
@@ -17,121 +16,110 @@ export default function SignupScreen() {
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Fejl', 'Udfyld alle felter');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert('Fejl', 'Adgangskoderne matcher ikke');
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+      Alert.alert('Fejl', 'Adgangskoden skal være mindst 8 tegn');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-        }),
-      });
+      const response = await api.post('/auth/signup', { email, password, name });
+      const { accessToken, refreshToken, user } = response.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
-        await login(data.accessToken, data.refreshToken);
-        router.replace('/profile');
-      } else {
-        Alert.alert('Signup Failed', data.error || 'An error occurred');
-      }
-    } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Unknown error');
+      await login(accessToken, refreshToken, user);
+      router.replace('/feed');
+    } catch (error: any) {
+      Alert.alert('Oprettelse fejlede', error.response?.data?.error || 'Kunne ikke oprette konto');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <Text style={styles.emoji}>🐟</Text>
-      <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Sign up to get started</Text>
+        <View style={styles.content}>
+          <Text style={styles.title}>Opret konto</Text>
+          <Text style={styles.subtitle}>Kom i gang med Hook 🎣</Text>
 
-      <View style={styles.form}>
-        <Text style={styles.label}>Name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your name"
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
-          editable={!loading}
-        />
+          <View style={styles.formContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Navn"
+              placeholderTextColor="#999"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              editable={!loading}
+            />
 
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          editable={!loading}
-        />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!loading}
+            />
 
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your password (min 8 characters)"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          editable={!loading}
-        />
+            <TextInput
+              style={styles.input}
+              placeholder="Adgangskode (min. 8 tegn)"
+              placeholderTextColor="#999"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              editable={!loading}
+            />
 
-        <Text style={styles.label}>Confirm Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Confirm your password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          editable={!loading}
-        />
+            <TextInput
+              style={styles.input}
+              placeholder="Bekræft adgangskode"
+              placeholderTextColor="#999"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              editable={!loading}
+            />
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSignup}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Creating Account...' : 'Sign Up'}
+            <TouchableOpacity
+              style={[styles.button, styles.primaryButton]}
+              onPress={handleSignup}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Opret konto</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.secondaryButton]}
+              onPress={() => router.back()}
+              disabled={loading}
+            >
+              <Text style={styles.secondaryButtonText}>Tilbage til login</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.info}>
+            Ved at oprette en konto accepterer du vores vilkår og betingelser
           </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => router.back()}
-          disabled={loading}
-        >
-          <Text style={styles.linkText}>
-            Already have an account? Log in
-          </Text>
-        </TouchableOpacity>
-      </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -139,83 +127,75 @@ export default function SignupScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   scrollContainer: {
     flexGrow: 1,
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-  },
-  emoji: {
-    fontSize: 64,
-    marginBottom: 20,
+    padding: 24,
   },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
+    color: '#000000',
     marginBottom: 8,
     textAlign: 'center',
-    color: '#333',
   },
   subtitle: {
     fontSize: 18,
-    color: '#666',
-    marginBottom: 40,
+    color: '#666666',
+    marginBottom: 32,
     textAlign: 'center',
   },
-  form: {
+  formContainer: {
     width: '100%',
-    maxWidth: 400,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-    marginTop: 16,
+    maxWidth: 340,
   },
   input: {
-    width: '100%',
+    backgroundColor: '#F5F5F5',
     padding: 16,
-    borderRadius: 8,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
+    borderRadius: 12,
+    marginBottom: 12,
     fontSize: 16,
+    color: '#000000',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   button: {
-    width: '100%',
     padding: 16,
-    borderRadius: 8,
-    marginTop: 24,
-    backgroundColor: '#007AFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
+  primaryButton: {
+    backgroundColor: '#000000',
+    marginTop: 16,
+  },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   buttonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    textAlign: 'center',
   },
-  linkButton: {
-    marginTop: 20,
-    padding: 10,
+  secondaryButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '600',
   },
-  linkText: {
-    color: '#007AFF',
-    fontSize: 14,
+  info: {
+    marginTop: 24,
+    fontSize: 12,
+    color: '#999999',
     textAlign: 'center',
+    paddingHorizontal: 24,
   },
 });

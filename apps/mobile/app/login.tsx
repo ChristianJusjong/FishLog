@@ -1,55 +1,36 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Linking, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../lib/api';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
 
 export default function LoginScreen() {
+  console.log('===== LOGIN SCREEN RENDERED =====');
+  const router = useRouter();
+  const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
-  const router = useRouter();
-
-  const handleGoogleLogin = () => {
-    Linking.openURL(`${API_URL}/auth/google`);
-  };
-
-  const handleFacebookLogin = () => {
-    Linking.openURL(`${API_URL}/auth/facebook`);
-  };
 
   const handleEmailLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter email and password');
+      Alert.alert('Fejl', 'Indtast email og adgangskode');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+      const response = await api.post('/auth/login', { email, password });
+      const { accessToken, refreshToken, user } = response.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
-        await login(data.accessToken, data.refreshToken);
-        router.replace('/profile');
-      } else {
-        Alert.alert('Login Failed', data.error || 'Invalid email or password');
-      }
-    } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Unknown error');
+      await login(accessToken, refreshToken, user);
+      router.replace('/feed');
+    } catch (error: any) {
+      Alert.alert('Login fejlede', error.response?.data?.error || 'Ugyldigt email eller adgangskode');
     } finally {
       setLoading(false);
     }
@@ -58,234 +39,230 @@ export default function LoginScreen() {
   const handleTestLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/test-login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: 'test@fishlog.com',
-          name: 'Test User',
-        }),
+      const response = await api.post('/auth/test-login', {
+        email: 'test@fishlog.app',
+        name: 'Test Bruger'
       });
+      const { accessToken, refreshToken, user } = response.data;
 
-      if (response.ok) {
-        const data = await response.json();
-        await login(data.accessToken, data.refreshToken);
-        router.replace('/profile');
-      } else {
-        Alert.alert('Test login failed');
-      }
-    } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Unknown error');
+      await login(accessToken, refreshToken, user);
+      router.replace('/feed');
+    } catch (error: any) {
+      Alert.alert('Login fejlede', error.response?.data?.error || 'Kunne ikke logge ind');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogleLogin = () => {
+    console.log('Opening Google OAuth');
+    Linking.openURL(`${API_URL}/auth/google`);
+  };
+
+  const handleFacebookLogin = () => {
+    console.log('Opening Facebook OAuth');
+    Linking.openURL(`${API_URL}/auth/facebook`);
+  };
+
+  const handleSignup = () => {
+    router.push('/signup');
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <Text style={styles.emoji}>🐟</Text>
-      <Text style={styles.title}>Welcome to FishLog</Text>
-      <Text style={styles.subtitle}>Sign in to continue</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>Hook 🎣</Text>
+        <Text style={styles.subtitle}>Din digitale fiskebog</Text>
 
-      <View style={styles.form}>
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          editable={!loading}
-        />
+        {/* Email/Password Login */}
+        <View style={styles.formContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#999"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!loading}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Adgangskode"
+            placeholderTextColor="#999"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            editable={!loading}
+          />
 
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          editable={!loading}
-        />
+          <TouchableOpacity
+            style={[styles.button, styles.primaryButton]}
+            onPress={handleEmailLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.buttonText}>Log ind</Text>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.loginButton, loading && styles.buttonDisabled]}
-          onPress={handleEmailLogin}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Logging in...' : 'Log In'}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.secondaryButton]}
+            onPress={handleSignup}
+            disabled={loading}
+          >
+            <Text style={styles.secondaryButtonText}>Opret konto</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => router.push('/signup')}
-          disabled={loading}
-        >
-          <Text style={styles.linkText}>
-            Don't have an account? Sign up
-          </Text>
-        </TouchableOpacity>
+          {/* Test Login Button */}
+          <TouchableOpacity
+            style={[styles.button, styles.testButton]}
+            onPress={handleTestLogin}
+            disabled={loading}
+          >
+            <Text style={styles.testButtonText}>Test Login (Udvikler)</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* OAuth Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>eller</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* OAuth Buttons */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, styles.googleButton]}
+            onPress={handleGoogleLogin}
+            disabled={loading}
+          >
+            <Text style={styles.oauthButtonText}>Log ind med Google</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.facebookButton]}
+            onPress={handleFacebookLogin}
+            disabled={loading}
+          >
+            <Text style={styles.oauthButtonText}>Log ind med Facebook</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>OR</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.button, styles.googleButton]}
-        onPress={handleGoogleLogin}
-      >
-        <Text style={styles.buttonText}>Continue with Google</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.button, styles.facebookButton]}
-        onPress={handleFacebookLogin}
-      >
-        <Text style={styles.buttonText}>Continue with Facebook</Text>
-      </TouchableOpacity>
-
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>DEV</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.button, styles.testButton]}
-        onPress={handleTestLogin}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          Test Login (Development)
-        </Text>
-      </TouchableOpacity>
-      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emoji: {
-    fontSize: 64,
-    marginBottom: 20,
+    padding: 24,
   },
   title: {
-    fontSize: 32,
+    fontSize: 48,
     fontWeight: 'bold',
+    color: '#000000',
     marginBottom: 8,
-    textAlign: 'center',
-    color: '#333',
   },
   subtitle: {
     fontSize: 18,
-    color: '#666',
-    marginBottom: 40,
-    textAlign: 'center',
+    color: '#666666',
+    marginBottom: 48,
   },
-  form: {
+  formContainer: {
     width: '100%',
-    maxWidth: 400,
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-    marginTop: 12,
+    maxWidth: 340,
+    marginBottom: 24,
   },
   input: {
-    width: '100%',
+    backgroundColor: '#F5F5F5',
     padding: 16,
-    borderRadius: 8,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
+    borderRadius: 12,
+    marginBottom: 12,
     fontSize: 16,
+    color: '#000000',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  buttonContainer: {
+    width: '100%',
+    maxWidth: 340,
+    gap: 12,
   },
   button: {
-    width: '100%',
-    maxWidth: 400,
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 12,
+    alignItems: 'center',
   },
-  loginButton: {
-    backgroundColor: '#007AFF',
-    marginTop: 16,
+  primaryButton: {
+    backgroundColor: '#000000',
+    marginTop: 4,
+  },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  testButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    marginTop: 8,
   },
   googleButton: {
-    backgroundColor: '#4285F4',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   facebookButton: {
-    backgroundColor: '#1877F2',
-  },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   buttonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    textAlign: 'center',
   },
-  linkButton: {
-    marginTop: 12,
-    padding: 10,
+  secondaryButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '600',
   },
-  linkText: {
-    color: '#007AFF',
+  oauthButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  testButtonText: {
+    color: '#666666',
     fontSize: 14,
-    textAlign: 'center',
+    fontWeight: '500',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    maxWidth: 400,
-    marginVertical: 20,
+    maxWidth: 340,
+    marginVertical: 32,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
+    backgroundColor: '#E0E0E0',
   },
   dividerText: {
-    marginHorizontal: 12,
+    color: '#999999',
+    paddingHorizontal: 16,
     fontSize: 14,
-    color: '#999',
-    fontWeight: '600',
-  },
-  testButton: {
-    backgroundColor: '#6c757d',
   },
 });
