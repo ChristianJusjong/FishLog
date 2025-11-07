@@ -513,19 +513,22 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   catchCard: {
-    backgroundColor: COLORS.surface, // White
-    borderRadius: RADIUS.lg,
-    marginBottom: SPACING.md,
-    ...SHADOWS.md,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    marginBottom: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
     overflow: 'hidden',
   },
   userHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    padding: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
   userInfo: {
     flexDirection: 'row',
@@ -588,18 +591,19 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    padding: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    padding: SPACING.md,
+    paddingTop: SPACING.sm,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: SPACING.md,
+    marginRight: SPACING.lg,
     paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.sm,
-    minHeight: 44, // Accessibility: Minimum touch target
-    minWidth: 60,
+    paddingHorizontal: SPACING.md,
+    minHeight: 44,
+    minWidth: 64,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.backgroundLight,
   },
   actionIcon: {
     fontSize: 20,
@@ -611,10 +615,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   commentsSection: {
-    padding: SPACING.sm,
+    padding: SPACING.md,
+    paddingTop: SPACING.sm,
     backgroundColor: COLORS.backgroundLight,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
   },
   comment: {
     marginBottom: SPACING.sm,
@@ -691,7 +694,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: COLORS.surface,
-    ...SHADOWS.sm,
+    paddingHorizontal: SPACING.md,
   },
   tab: {
     flex: 1,

@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { COLORS, SPACING, SHADOWS } from '@/constants/branding';
 
 export default function BottomNavigation() {
@@ -48,93 +49,125 @@ export default function BottomNavigation() {
   );
 
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+    <BlurView intensity={95} tint="light" style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       {/* Feed */}
       <TouchableOpacity
-        style={styles.navButton}
+        style={[styles.navButton, isActive('/feed') && styles.activeNavButton]}
         onPress={() => router.push('/feed')}
       >
-        <Ionicons
-          name={isActive('/feed') ? 'home' : 'home-outline'}
-          size={24}
-          color={isActive('/feed') ? COLORS.accent : COLORS.iconDefault}
-        />
+        <View style={isActive('/feed') ? styles.activeIconContainer : styles.iconContainer}>
+          <Ionicons
+            name={isActive('/feed') ? 'home' : 'home-outline'}
+            size={26}
+            color={isActive('/feed') ? COLORS.accent : COLORS.iconDefault}
+          />
+        </View>
       </TouchableOpacity>
 
       {/* Map */}
       <TouchableOpacity
-        style={styles.navButton}
+        style={[styles.navButton, isActive('/map') && styles.activeNavButton]}
         onPress={() => router.push('/map')}
       >
-        <Ionicons
-          name={isActive('/map') ? 'map' : 'map-outline'}
-          size={24}
-          color={isActive('/map') ? COLORS.accent : COLORS.iconDefault}
-        />
+        <View style={isActive('/map') ? styles.activeIconContainer : styles.iconContainer}>
+          <Ionicons
+            name={isActive('/map') ? 'map' : 'map-outline'}
+            size={26}
+            color={isActive('/map') ? COLORS.accent : COLORS.iconDefault}
+          />
+        </View>
       </TouchableOpacity>
 
-      {/* Add Catch - Orange Circle with Hook */}
+      {/* Add Catch - Modern Floating Button */}
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => router.push('/add-catch')}
+        activeOpacity={0.8}
       >
         <HookIcon color={COLORS.white} />
       </TouchableOpacity>
 
       {/* Catches */}
       <TouchableOpacity
-        style={styles.navButton}
+        style={[styles.navButton, isActive('/catches') && styles.activeNavButton]}
         onPress={() => router.push('/catches')}
       >
-        <Ionicons
-          name={isActive('/catches') ? 'fish' : 'fish-outline'}
-          size={24}
-          color={isActive('/catches') ? COLORS.accent : COLORS.iconDefault}
-        />
+        <View style={isActive('/catches') ? styles.activeIconContainer : styles.iconContainer}>
+          <Ionicons
+            name={isActive('/catches') ? 'fish' : 'fish-outline'}
+            size={26}
+            color={isActive('/catches') ? COLORS.accent : COLORS.iconDefault}
+          />
+        </View>
       </TouchableOpacity>
 
       {/* Profile */}
       <TouchableOpacity
-        style={styles.navButton}
+        style={[styles.navButton, isActive('/profile') && styles.activeNavButton]}
         onPress={() => router.push('/profile')}
       >
-        <Ionicons
-          name={isActive('/profile') ? 'person' : 'person-outline'}
-          size={24}
-          color={isActive('/profile') ? COLORS.accent : COLORS.iconDefault}
-        />
+        <View style={isActive('/profile') ? styles.activeIconContainer : styles.iconContainer}>
+          <Ionicons
+            name={isActive('/profile') ? 'person' : 'person-outline'}
+            size={26}
+            color={isActive('/profile') ? COLORS.accent : COLORS.iconDefault}
+          />
+        </View>
       </TouchableOpacity>
-    </View>
+    </BlurView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    // paddingBottom is set dynamically using insets
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingTop: SPACING.md,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     alignItems: 'center',
     justifyContent: 'space-around',
-    ...SHADOWS.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    overflow: 'hidden',
   },
   navButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.sm,
+    padding: SPACING.sm,
+    minWidth: 60,
+    minHeight: 50,
   },
-  addButton: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: COLORS.accent, // Vivid Orange
+  activeNavButton: {
+    transform: [{ scale: 1.05 }],
+  },
+  iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -36, // Lift the button up
-    ...SHADOWS.xl,
+    width: 48,
+    height: 48,
+  },
+  activeIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 48,
+    height: 48,
+    backgroundColor: COLORS.accent + '15',
+    borderRadius: 24,
+  },
+  addButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -32,
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });
