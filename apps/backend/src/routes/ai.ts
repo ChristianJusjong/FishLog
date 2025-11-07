@@ -84,6 +84,109 @@ export async function aiRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // Get AI fishing advice for a specific location
+  fastify.post(
+    '/ai/fishing-advice',
+    {
+      preHandler: authenticate,
+      schema: {
+        body: {
+          type: 'object',
+          required: ['location', 'weather'],
+          properties: {
+            location: {
+              type: 'object',
+              properties: {
+                latitude: { type: 'number' },
+                longitude: { type: 'number' },
+              },
+            },
+            weather: {
+              type: 'object',
+              properties: {
+                temperature: { type: 'number' },
+                windSpeed: { type: 'number' },
+                weatherCode: { type: 'number' },
+              },
+            },
+            nearbyCatchStats: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                totalCatches: { type: 'number' },
+                commonSpecies: { type: 'array', items: { type: 'string' } },
+                avgWeight: { type: 'number' },
+              },
+            },
+            season: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { location, weather, nearbyCatchStats, season } = request.body as {
+          location: { latitude: number; longitude: number };
+          weather: { temperature: number; windSpeed: number; weatherCode: number };
+          nearbyCatchStats?: { totalCatches: number; commonSpecies: string[]; avgWeight: number } | null;
+          season: string;
+        };
+
+        // Build advice based on data
+        let advice = `🎣 Fiskerådgivning for denne placering:\n\n`;
+
+        // Weather analysis
+        advice += `🌡️ Vejr: ${weather.temperature}°C, vind ${weather.windSpeed} m/s\n`;
+        if (weather.windSpeed < 3) {
+          advice += `Lav vind - godt for lystfiskeri. Prøv overfladenær fiskeri.\n`;
+        } else if (weather.windSpeed < 8) {
+          advice += `Moderat vind - fisken kan være aktiv. Brug tungere udstyr.\n`;
+        } else {
+          advice += `Kraftig vind - søg læ og fisk dybere vand.\n`;
+        }
+
+        advice += `\n`;
+
+        // Seasonal advice
+        advice += `📅 Sæson: ${season}\n`;
+        const seasonalTips: Record<string, string> = {
+          'forår': 'Gode gyde-perioder. Fisk ved mudder og vegetation.',
+          'sommer': 'Fisk tidligt om morgenen eller sent om aftenen. Prøv skygge.',
+          'efterår': 'Aktiv fiskeri periode. God tid til store fangster.',
+          'vinter': 'Langsommere aktivitet. Fisk dybt og langsomt.',
+        };
+        advice += `${seasonalTips[season] || 'God fiskeri!'}\\n\n`;
+
+        // Nearby catch statistics
+        if (nearbyCatchStats && nearbyCatchStats.totalCatches > 0) {
+          advice += `🐟 Lokale fangster:\n`;
+          advice += `Tidligere fangster i området: ${nearbyCatchStats.totalCatches}\n`;
+          if (nearbyCatchStats.commonSpecies.length > 0) {
+            advice += `Almindelige arter: ${nearbyCatchStats.commonSpecies.join(', ')}\n`;
+          }
+          advice += `Gennemsnitlig vægt: ${Math.round(nearbyCatchStats.avgWeight)}g\n\n`;
+        } else {
+          advice += `ℹ️ Ingen tidligere fangster registreret i dette område. Prøv forskellige teknikker!\n\n`;
+        }
+
+        // General recommendations
+        advice += `💡 Anbefalinger:\n`;
+        advice += `• Prøv forskellige dybder\n`;
+        advice += `• Brug lokal agn og madding\n`;
+        advice += `• Vær tålmodig og skift spot hvis ingen bid\n`;
+
+        return { advice };
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return {
+          error: 'Failed to generate fishing advice',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    }
+  );
+
   // Health check for AI service
   fastify.get(
     '/ai/health',
