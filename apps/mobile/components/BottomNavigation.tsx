@@ -13,15 +13,17 @@ export default function BottomNavigation() {
 
   const isActive = (route: string) => pathname === route;
 
-  // Fish Hook Icon Component
+  // Minimalist design - focus on usability
+
+  // Fish Hook Icon Component - Simple and clean
   const HookIcon = ({ color }: { color: string }) => (
-    <Svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+    <Svg width="32" height="32" viewBox="0 0 48 48" fill="none">
       <G>
         {/* Hook curve (J-shape) */}
         <Path
           d="M 24 8 L 24 24 Q 24 32, 18 32 Q 14 32, 14 28 Q 14 24, 18 24"
           stroke={color}
-          strokeWidth="3"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
@@ -30,7 +32,7 @@ export default function BottomNavigation() {
         <Path
           d="M 18 24 L 16 22"
           stroke={color}
-          strokeWidth="3"
+          strokeWidth="2.5"
           strokeLinecap="round"
           fill="none"
         />
@@ -38,7 +40,7 @@ export default function BottomNavigation() {
         <Circle
           cx="24"
           cy="8"
-          r="3"
+          r="2.5"
           stroke={color}
           strokeWidth="2"
           fill="none"
@@ -77,10 +79,10 @@ export default function BottomNavigation() {
         </View>
       </TouchableOpacity>
 
-      {/* Add Catch - Modern Floating Button */}
+      {/* Add Catch - Simple Floating Button - Goes directly to camera */}
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push('/add-catch')}
+        onPress={() => router.push('/camera-capture')}
         activeOpacity={0.8}
       >
         <HookIcon color={COLORS.white} />
@@ -128,8 +130,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    overflow: 'hidden',
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    ...SHADOWS.sm,
   },
   navButton: {
     alignItems: 'center',
@@ -139,7 +143,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   activeNavButton: {
-    transform: [{ scale: 1.05 }],
+    // Minimal scale for subtle feedback
   },
   iconContainer: {
     alignItems: 'center',
@@ -152,21 +156,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 48,
     height: 48,
-    backgroundColor: COLORS.accent + '15',
+    backgroundColor: COLORS.accent + '10',
     borderRadius: 24,
   },
   addButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -32,
-    shadowColor: COLORS.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    marginTop: -30,
+    ...SHADOWS.md,
   },
 });

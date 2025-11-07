@@ -25,7 +25,8 @@ export default function CameraCaptureScreen() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
   useEffect(() => {
-    requestPermissions();
+    // Automatically open camera when screen loads
+    openCamera();
   }, []);
 
   const requestPermissions = async () => {
@@ -232,8 +233,10 @@ const styles = StyleSheet.create({
     minWidth: 200,
   },
   cameraButtonText: {
-    ...TYPOGRAPHY.styles.h2,
-    color: COLORS.white,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    includeFontPadding: false,
     textAlign: 'center',
   },
   cancelButton: {
@@ -241,8 +244,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
   },
   cancelButtonText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#666666',
+    includeFontPadding: false,
   },
   infoBox: {
     marginTop: SPACING.xl * 2,
