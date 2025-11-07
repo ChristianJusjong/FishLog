@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/branding';
@@ -97,10 +98,25 @@ export default function CameraCaptureScreen() {
       });
 
       const { latitude, longitude } = location.coords;
+      setStatus('Komprimerer billede...');
+
+      // Compress image to reduce file size (max 1024px width, 0.6 quality)
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [{ resize: { width: 1024 } }], // Resize to max 1024px width, maintains aspect ratio
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG } // 60% quality JPEG
+      );
+
+      console.log('Compressed image:', {
+        width: manipulatedImage.width,
+        height: manipulatedImage.height,
+        uri: manipulatedImage.uri.substring(0, 50) + '...'
+      });
+
       setStatus('Uploader billede...');
 
-      // Convert image to base64
-      const response = await fetch(imageUri);
+      // Convert compressed image to base64
+      const response = await fetch(manipulatedImage.uri);
       const blob = await response.blob();
       const reader = new FileReader();
 
@@ -112,6 +128,9 @@ export default function CameraCaptureScreen() {
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
+
+      const sizeInKB = Math.round(base64.length / 1024);
+      console.log(`Base64 image size: ${sizeInKB} KB`);
 
       setStatus('Opretter fangst...');
 
@@ -131,7 +150,9 @@ export default function CameraCaptureScreen() {
       });
 
       if (!catchResponse.ok) {
-        throw new Error('Failed to create catch');
+        const errorBody = await catchResponse.text();
+        console.error('Backend error response:', errorBody);
+        throw new Error(`Failed to create catch: ${catchResponse.status} - ${errorBody}`);
       }
 
       const catch_ = await catchResponse.json();
