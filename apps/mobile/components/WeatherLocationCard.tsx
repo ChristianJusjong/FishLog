@@ -157,14 +157,14 @@ export default function WeatherLocationCard({
 
   if (loading) {
     return (
-      <View style={[styles.container, { paddingTop: Math.max(insets.top, SPACING.sm) }]}>
+      <View style={[styles.container, { paddingTop: insets.top + SPACING.md }]}>
         <ActivityIndicator size="small" color="#FFFFFF" />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, SPACING.sm) }]}>
+    <View style={[styles.container, { paddingTop: insets.top + SPACING.md }]}>
       {/* Weather Section (Left) */}
       {showWeather && weather && (
         <View style={styles.weatherSection}>
@@ -174,8 +174,12 @@ export default function WeatherLocationCard({
               size={24}
               color="#FFFFFF"
               style={styles.weatherIcon}
+              accessible={true}
+              accessibilityLabel={`Vejr: ${weather.description}`}
             />
-            <Text style={styles.temperature}>{weather.temperature}°C</Text>
+            <Text style={styles.temperature} accessibilityLabel={`Temperatur: ${weather.temperature} grader celsius`}>
+              {weather.temperature}°C
+            </Text>
           </View>
           <View style={styles.windRow}>
             <Ionicons
@@ -184,7 +188,9 @@ export default function WeatherLocationCard({
               color="#FFFFFF"
               style={styles.smallIcon}
             />
-            <Text style={styles.windText}>Vind: {weather.windSpeed} m/s</Text>
+            <Text style={styles.windText} accessibilityLabel={`Vindhastighed: ${weather.windSpeed} meter per sekund`}>
+              Vind: {weather.windSpeed} m/s
+            </Text>
           </View>
         </View>
       )}
@@ -201,7 +207,9 @@ export default function WeatherLocationCard({
             />
             <Text style={styles.locationText}>Aktuel placering:</Text>
           </View>
-          <Text style={styles.locationName}>{location}</Text>
+          <Text style={styles.locationName} accessibilityLabel={`Placering: ${location}`}>
+            {location}
+          </Text>
         </View>
       )}
     </View>
@@ -210,13 +218,12 @@ export default function WeatherLocationCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(30, 63, 64, 0.9)', // Dark Petrol with opacity
+    backgroundColor: COLORS.primary, // Deep Forest Green
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md, // 16px
-    paddingVertical: SPACING.sm,   // 8px
-    minHeight: 60,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
   },
   weatherSection: {
     flex: 1,

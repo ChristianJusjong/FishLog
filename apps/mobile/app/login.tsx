@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
+import { COLORS, SPACING, RADIUS } from '@/constants/branding';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
 
@@ -79,7 +80,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#999"
+            placeholderTextColor={COLORS.textTertiary}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -89,7 +90,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="Adgangskode"
-            placeholderTextColor="#999"
+            placeholderTextColor={COLORS.textTertiary}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -159,92 +160,92 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.background,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: SPACING.lg,
   },
   title: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#000000',
-    marginBottom: 8,
+    color: COLORS.primary,
+    marginBottom: SPACING.sm,
   },
   subtitle: {
     fontSize: 18,
-    color: '#666666',
-    marginBottom: 48,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING['2xl'],
   },
   formContainer: {
     width: '100%',
     maxWidth: 340,
-    marginBottom: 24,
+    marginBottom: SPACING.lg,
   },
   input: {
-    backgroundColor: '#F5F5F5',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: COLORS.surfaceVariant,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.md,
     fontSize: 16,
-    color: '#000000',
+    color: COLORS.text,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
   },
   buttonContainer: {
     width: '100%',
     maxWidth: 340,
-    gap: 12,
+    gap: SPACING.md,
   },
   button: {
-    padding: 16,
-    borderRadius: 12,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
     alignItems: 'center',
   },
   primaryButton: {
-    backgroundColor: '#000000',
+    backgroundColor: COLORS.primary,
     marginTop: 4,
   },
   secondaryButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    backgroundColor: COLORS.surface,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
   testButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    marginTop: 8,
+    borderColor: COLORS.border,
+    marginTop: SPACING.sm,
   },
   googleButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
   },
   facebookButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: COLORS.textInverse,
     fontSize: 16,
     fontWeight: '600',
   },
   secondaryButtonText: {
-    color: '#000000',
+    color: COLORS.primary,
     fontSize: 16,
     fontWeight: '600',
   },
   oauthButtonText: {
-    color: '#000000',
+    color: COLORS.text,
     fontSize: 16,
     fontWeight: '500',
   },
   testButtonText: {
-    color: '#666666',
+    color: COLORS.textSecondary,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -253,16 +254,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     maxWidth: 340,
-    marginVertical: 32,
+    marginVertical: SPACING.xl,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: COLORS.border,
   },
   dividerText: {
-    color: '#999999',
-    paddingHorizontal: 16,
+    color: COLORS.textTertiary,
+    paddingHorizontal: SPACING.md,
     fontSize: 14,
   },
 });

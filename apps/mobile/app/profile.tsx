@@ -17,6 +17,16 @@ export default function ProfileScreen() {
     }
   }, [user, loading]);
 
+  // Debug: Log user data
+  useEffect(() => {
+    if (user) {
+      console.log('===== PROFILE USER DATA =====');
+      console.log('user.name:', user.name);
+      console.log('user.email:', user.email);
+      console.log('user object:', JSON.stringify(user, null, 2));
+    }
+  }, [user]);
+
   if (loading || !user) {
     return (
       <View style={styles.loadingContainer}>
@@ -47,8 +57,12 @@ export default function ProfileScreen() {
               </Text>
             </View>
           )}
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
+          <View style={{ minHeight: 36 }}>
+            <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>
+          </View>
+          <View style={{ minHeight: 24 }}>
+            <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text>
+          </View>
         </View>
 
         {/* Profile Stats Card */}
@@ -166,16 +180,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarPlaceholderText: {
-    ...TYPOGRAPHY.styles.h1,
     fontSize: 48,
-    color: COLORS.white,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   userName: {
-    ...TYPOGRAPHY.styles.h1,
+    fontSize: 28,
+    fontWeight: '700',
+    color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   userEmail: {
-    ...TYPOGRAPHY.styles.body,
+    fontSize: 16,
+    fontWeight: '400',
     color: COLORS.textSecondary,
   },
   statsCard: {
@@ -191,13 +210,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    ...TYPOGRAPHY.styles.h1,
     fontSize: 32,
+    fontWeight: '700',
     color: COLORS.primary,
     marginBottom: SPACING.xs,
   },
   statLabel: {
-    ...TYPOGRAPHY.styles.small,
+    fontSize: 14,
+    fontWeight: '500',
     color: COLORS.textSecondary,
   },
   statDivider: {
@@ -226,9 +246,9 @@ const styles = StyleSheet.create({
     marginRight: SPACING.sm,
   },
   primaryButtonText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.white,
+    fontSize: 16,
     fontWeight: '600',
+    color: COLORS.textInverse,
   },
   secondaryButton: {
     flex: 1,
@@ -248,9 +268,9 @@ const styles = StyleSheet.create({
     marginRight: SPACING.sm,
   },
   secondaryButtonText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.primary,
+    fontSize: 16,
     fontWeight: '600',
+    color: COLORS.primary,
   },
   settingsSection: {
     backgroundColor: COLORS.surface,
@@ -260,7 +280,9 @@ const styles = StyleSheet.create({
     ...SHADOWS.md,
   },
   sectionTitle: {
-    ...TYPOGRAPHY.styles.h3,
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.sm,
   },
@@ -279,16 +301,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingLabel: {
-    ...TYPOGRAPHY.styles.body,
+    fontSize: 16,
     fontWeight: '500',
+    color: COLORS.text,
     marginBottom: 2,
   },
   settingValue: {
-    ...TYPOGRAPHY.styles.small,
+    fontSize: 14,
+    fontWeight: '400',
     color: COLORS.textSecondary,
   },
   settingArrow: {
-    ...TYPOGRAPHY.styles.h2,
+    fontSize: 24,
+    fontWeight: '400',
     color: COLORS.textTertiary,
   },
   logoutButton: {
@@ -300,12 +325,13 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
   },
   logoutButtonText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.white,
+    fontSize: 16,
     fontWeight: '600',
+    color: COLORS.textInverse,
   },
   versionText: {
-    ...TYPOGRAPHY.styles.small,
+    fontSize: 14,
+    fontWeight: '400',
     color: COLORS.textTertiary,
     textAlign: 'center',
     marginTop: SPACING.sm,

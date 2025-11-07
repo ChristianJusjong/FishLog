@@ -12,70 +12,74 @@ export const BRANDING = {
 } as const;
 
 /**
- * Color Palette
+ * Color Palette - Nature Inspired Modern Design
+ * Featuring earthy, natural tones with excellent readability
  */
 export const COLORS = {
-  // Primary Colors
-  primary: '#1E3F40',        // Dark Petrol - Baggrund, store elementer (dybt vand/skov)
-  primaryLight: '#2D5555',   // Lighter variant of primary
-  primaryDark: '#0F2525',    // Darker variant of primary
+  // Primary Colors - Deep Forest Green
+  primary: '#2C5F4F',        // Deep Forest Green - Main brand color
+  primaryLight: '#3D7A66',   // Lighter forest green
+  primaryDark: '#1B4438',    // Darker forest green
 
-  // Accent Colors
-  accent: '#FF7F3F',         // Vivid Orange - CTA, vigtige ikoner (solnedgang/liv)
-  accentLight: '#FF9966',    // Lighter orange
-  accentDark: '#E66A2C',     // Darker orange
+  // Accent Colors - Warm Sunset Orange
+  accent: '#E8773D',         // Warm Sunset Orange - CTA, important actions
+  accentLight: '#F49563',    // Lighter warm orange
+  accentDark: '#D15E28',     // Darker warm orange
 
-  // Background Colors
-  background: '#FFFFFF',     // Main white background
-  backgroundLight: '#F0F2F5', // Light Grey - Kort baggrunde, sektioner
-  backgroundDark: '#1E3F40', // Dark petrol for dark sections
+  // Background Colors - Natural Light Tones
+  background: '#FDFDFB',     // Warm white background
+  backgroundLight: '#F5F7F4', // Soft sage background
+  backgroundDark: '#2C5F4F', // Deep forest for dark sections
 
-  // Surface Colors
-  surface: '#FFFFFF',        // Card surfaces
-  surfaceVariant: '#F0F2F5', // Light grey variant for sections
+  // Surface Colors - Clean and Fresh
+  surface: '#FFFFFF',        // Pure white card surfaces
+  surfaceVariant: '#F5F7F4', // Soft sage variant
 
-  // Text Colors
-  text: '#333333',           // Primary Text - Overskrifter, hovedtekst (mørkegrå)
-  textSecondary: '#666666',  // Secondary Text - Undertekster, datoer, metadata
-  textTertiary: '#999999',   // Tertiary Text - Ikke-interaktive ikoner
-  textInverse: '#FFFFFF',    // White Text - På mørke baggrunde
+  // Text Colors - High Contrast for Readability
+  text: '#1A1A1A',           // Near-black primary text
+  textSecondary: '#4A5568',  // Slate gray secondary text
+  textTertiary: '#718096',   // Light slate tertiary text
+  textInverse: '#FFFFFF',    // White text on dark backgrounds
 
   // Icon Colors
-  iconDefault: '#999999',    // Ikke-interaktive ikoner (mellemgrå)
-  iconActive: '#FF7F3F',     // Interaktive ikoner (valgt/aktiv) - accent color
+  iconDefault: '#718096',    // Light slate for inactive icons
+  iconActive: '#E8773D',     // Warm orange for active icons
 
-  // Neutral Colors (for compatibility)
+  // Neutral Colors - Enhanced Contrast
   white: '#FFFFFF',
   black: '#000000',
-  gray100: '#F0F2F5',        // Light grey (matching backgroundLight)
-  gray200: '#E5E5E5',
-  gray300: '#D4D4D4',
-  gray400: '#999999',        // Icon default
-  gray500: '#666666',        // Text secondary
-  gray600: '#333333',        // Text primary
-  gray700: '#404040',
-  gray800: '#262626',
-  gray900: '#171717',
+  gray100: '#F7FAFC',        // Lightest gray
+  gray200: '#EDF2F7',
+  gray300: '#E2E8F0',
+  gray400: '#CBD5E0',
+  gray500: '#A0AEC0',
+  gray600: '#718096',
+  gray700: '#4A5568',
+  gray800: '#2D3748',
+  gray900: '#1A202C',
 
-  // Secondary Colors (for water/nature elements)
-  secondary: '#4A90A4',      // Lyseblå/Turkis - Vand elementer
-  secondaryLight: '#6BACC0',
-  secondaryDark: '#347A8D',
+  // Secondary Colors - Natural Water Blue
+  secondary: '#5B9AAA',      // Natural water blue
+  secondaryLight: '#7DB4C2',
+  secondaryDark: '#427785',
 
   // Nature Colors
-  forest: '#2F5233',         // Skov Grøn
-  sand: '#D4C5A9',           // Sand/Beige
-  water: '#4A90A4',          // Water blue
+  forest: '#2C5F4F',         // Deep forest green (matches primary)
+  sand: '#E8DCC8',           // Warm sand/beige
+  water: '#5B9AAA',          // Water blue (matches secondary)
+  moss: '#7D9B76',           // Soft moss green
+  sky: '#A8D5E2',            // Light sky blue
+  earth: '#8B7355',          // Earthy brown
 
-  // Semantic Colors
-  success: '#22C55E',        // Green for success states
-  warning: '#F59E0B',        // Amber for warnings
-  error: '#EF4444',          // Red for errors
-  info: '#3B82F6',           // Blue for info
+  // Semantic Colors - Nature Inspired
+  success: '#4CAF50',        // Natural green for success
+  warning: '#FFA726',        // Warm amber for warnings
+  error: '#EF5350',          // Coral red for errors
+  info: '#5B9AAA',           // Water blue for info
 
-  // Border Colors
-  border: '#E5E5E5',
-  borderDark: '#D4D4D4',
+  // Border Colors - Subtle but Visible
+  border: '#E2E8F0',
+  borderDark: '#CBD5E0',
 } as const;
 
 /**
@@ -121,21 +125,21 @@ export const TYPOGRAPHY = {
     relaxed: 1.75,   // Spacious text
   },
 
-  // Pre-defined Text Styles (baseret på design system)
+  // Pre-defined Text Styles (with improved readability)
   styles: {
     // H1 - Titel/Sidehoved
     h1: {
       fontFamily: 'System',
       fontSize: 24,
-      fontWeight: '600' as const,
-      lineHeight: 1.25,
-      color: '#333333',  // Or #FFFFFF on dark backgrounds
+      fontWeight: '700' as const,
+      lineHeight: 1.3,
+      color: '#1A1A1A',  // High contrast near-black
     },
     h1Dark: {
       fontFamily: 'System',
       fontSize: 24,
-      fontWeight: '600' as const,
-      lineHeight: 1.25,
+      fontWeight: '700' as const,
+      lineHeight: 1.3,
       color: '#FFFFFF',
     },
 
@@ -144,14 +148,14 @@ export const TYPOGRAPHY = {
       fontFamily: 'System',
       fontSize: 18,
       fontWeight: '600' as const,
-      lineHeight: 1.25,
-      color: '#333333',
+      lineHeight: 1.3,
+      color: '#1A1A1A',  // High contrast near-black
     },
     h2Dark: {
       fontFamily: 'System',
       fontSize: 18,
       fontWeight: '600' as const,
-      lineHeight: 1.25,
+      lineHeight: 1.3,
       color: '#FFFFFF',
     },
 
@@ -161,7 +165,7 @@ export const TYPOGRAPHY = {
       fontSize: 16,
       fontWeight: '400' as const,
       lineHeight: 1.5,
-      color: '#333333',
+      color: '#1A1A1A',  // High contrast near-black
     },
 
     // Small Text - Metadata, datoer
@@ -170,15 +174,15 @@ export const TYPOGRAPHY = {
       fontSize: 14,
       fontWeight: '400' as const,
       lineHeight: 1.5,
-      color: '#666666',
+      color: '#4A5568',  // Slate gray with good contrast
     },
 
     // Button Text - CTA
     button: {
       fontFamily: 'System',
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '600' as const,
-      lineHeight: 1.25,
+      lineHeight: 1.3,
       color: '#FFFFFF',
     },
 
@@ -186,16 +190,16 @@ export const TYPOGRAPHY = {
     tabLabel: {
       fontFamily: 'System',
       fontSize: 12,
-      fontWeight: '400' as const,
-      lineHeight: 1.25,
-      color: '#999999',  // Inactive
+      fontWeight: '500' as const,
+      lineHeight: 1.3,
+      color: '#718096',  // Inactive with better contrast
     },
     tabLabelActive: {
       fontFamily: 'System',
       fontSize: 12,
-      fontWeight: '400' as const,
-      lineHeight: 1.25,
-      color: '#FF7F3F',  // Active (Vivid Orange)
+      fontWeight: '600' as const,
+      lineHeight: 1.3,
+      color: '#E8773D',  // Active warm orange
     },
   },
 } as const;
