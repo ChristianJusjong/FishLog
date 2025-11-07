@@ -98,6 +98,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         technique,
         notes,
         photoUrl,
+        latitude,
+        longitude,
         visibility: visibility || 'private',
       };
 
@@ -114,15 +116,6 @@ export async function catchesRoutes(fastify: FastifyInstance) {
           }
         }
       });
-
-      // Update location with raw SQL if coordinates provided
-      if (latitude !== undefined && longitude !== undefined) {
-        await prisma.$executeRaw`
-          UPDATE catches
-          SET location = ST_GeogFromText(${`POINT(${longitude} ${latitude})`})
-          WHERE id = ${catch_.id}
-        `;
-      }
 
       // Check and award badges
       const newBadges = await badgeService.checkAndAwardBadges(request.user!.userId, catch_);
@@ -166,24 +159,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Fetch location data for each catch with raw SQL
-      const catchesWithLocation = await Promise.all(
-        catches.map(async (catch_) => {
-          const locationResult = await prisma.$queryRaw<Array<{latitude: number, longitude: number}>>`
-            SELECT ST_Y(location::geometry) as latitude, ST_X(location::geometry) as longitude
-            FROM catches
-            WHERE id = ${catch_.id} AND location IS NOT NULL
-          `;
-
-          return {
-            ...catch_,
-            latitude: locationResult[0]?.latitude,
-            longitude: locationResult[0]?.longitude
-          };
-        })
-      );
-
-      return catchesWithLocation;
+      // Return catches with latitude/longitude from the regular columns
+      return catches;
     } catch (error) {
       fastify.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch catches' });
@@ -214,18 +191,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Catch not found' });
       }
 
-      // Fetch location data with raw SQL
-      const locationResult = await prisma.$queryRaw<Array<{latitude: number, longitude: number}>>`
-        SELECT ST_Y(location::geometry) as latitude, ST_X(location::geometry) as longitude
-        FROM catches
-        WHERE id = ${id} AND location IS NOT NULL
-      `;
-
-      return {
-        ...catch_,
-        latitude: locationResult[0]?.latitude,
-        longitude: locationResult[0]?.longitude
-      };
+      // Return catch with latitude/longitude from the regular columns
+      return catch_;
     } catch (error) {
       fastify.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch catch' });

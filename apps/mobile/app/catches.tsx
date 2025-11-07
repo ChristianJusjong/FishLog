@@ -11,7 +11,7 @@ const API_URL = 'https://fishlog-production.up.railway.app';
 
 interface Catch {
   id: string;
-  species: string;
+  species?: string;
   lengthCm?: number;
   weightKg?: number;
   bait?: string;
@@ -22,6 +22,7 @@ interface Catch {
   latitude?: number;
   longitude?: number;
   createdAt: string;
+  isDraft?: boolean;
 }
 
 export default function CatchesScreen() {
@@ -47,14 +48,18 @@ export default function CatchesScreen() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/catches?userId=me&includeDrafts=false`, {
+      const response = await fetch(`${API_URL}/catches?userId=me&includeDrafts=true`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
       });
 
+      console.log('Fetch catches response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched catches:', data.length, 'catches');
+        console.log('Catches data:', JSON.stringify(data, null, 2));
         setCatches(data);
       } else if (response.status === 401) {
         Alert.alert('Session udløbet', 'Log venligst ind igen', [
@@ -163,7 +168,16 @@ export default function CatchesScreen() {
             <TouchableOpacity
               key={catch_.id}
               style={styles.catchCard}
-              onPress={() => router.push(`/catch-detail?id=${catch_.id}`)}
+              onPress={() => {
+                if (catch_.isDraft) {
+                  router.push({
+                    pathname: '/catch-form',
+                    params: { catchId: catch_.id, isNew: 'false' }
+                  });
+                } else {
+                  router.push(`/catch-detail?id=${catch_.id}`);
+                }
+              }}
               activeOpacity={0.9}
             >
               {catch_.photoUrl && (
@@ -171,7 +185,16 @@ export default function CatchesScreen() {
               )}
 
               <View style={styles.catchHeader}>
-                <Text style={styles.catchSpecies}>{catch_.species}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.catchSpecies}>
+                    {catch_.species || 'Ukompletteret fangst'}
+                  </Text>
+                  {catch_.isDraft && (
+                    <View style={styles.draftBadge}>
+                      <Text style={styles.draftBadgeText}>Kladde</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.catchDate}>
                   {new Date(catch_.createdAt).toLocaleDateString('da-DK')}
                 </Text>
@@ -359,5 +382,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  draftBadge: {
+    backgroundColor: COLORS.warning || '#FFA500',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: RADIUS.md,
+  },
+  draftBadgeText: {
+    color: COLORS.textInverse,
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
