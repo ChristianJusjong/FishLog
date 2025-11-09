@@ -3,12 +3,14 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Scr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import BottomNavigation from '../components/BottomNavigation';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 
 export default function ProfileScreen() {
   const { user, loading, logout } = useAuth();
+  const { theme } = useTheme();
   const router = useRouter();
 
   useEffect(() => {
@@ -29,8 +31,8 @@ export default function ProfileScreen() {
 
   if (loading || !user) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.backgroundLight }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -41,106 +43,128 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.backgroundLight }}>
+    <View style={{ flex: 1, backgroundColor: theme.backgroundLight }}>
       {/* Weather & Location Card */}
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.backgroundLight }]}>
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           {user.avatar ? (
-            <Image source={{ uri: user.avatar }} style={styles.avatar} />
+            <Image source={{ uri: user.avatar }} style={[styles.avatar, { borderColor: theme.accent }]} />
           ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: theme.primary }]}>
               <Text style={styles.avatarPlaceholderText}>
                 {user.name.charAt(0).toUpperCase()}
               </Text>
             </View>
           )}
           <View style={{ minHeight: 36 }}>
-            <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>
+            <Text style={[styles.userName, { color: theme.text }]} numberOfLines={1}>{user.name}</Text>
           </View>
           <View style={{ minHeight: 24 }}>
-            <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text>
+            <Text style={[styles.userEmail, { color: theme.textSecondary }]} numberOfLines={1}>{user.email}</Text>
           </View>
         </View>
 
         {/* Profile Stats Card */}
-        <View style={styles.statsCard}>
+        <View style={[styles.statsCard, { backgroundColor: theme.surface }]}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Fangster</Text>
+            <Text style={[styles.statNumber, { color: theme.primary }]}>0</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Fangster</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Venner</Text>
+            <Text style={[styles.statNumber, { color: theme.primary }]}>0</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Venner</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Events</Text>
+            <Text style={[styles.statNumber, { color: theme.primary }]}>0</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Events</Text>
           </View>
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
           <TouchableOpacity
-            style={styles.primaryButton}
+            style={[styles.primaryButton, { backgroundColor: theme.primary, shadowColor: theme.primary }]}
             onPress={() => router.push('/edit-profile')}
           >
             <Text style={styles.primaryButtonIcon}>✏️</Text>
-            <Text style={styles.primaryButtonText}>Rediger Profil</Text>
+            <Text style={[styles.primaryButtonText, { color: theme.textInverse }]}>Rediger Profil</Text>
           </TouchableOpacity>
+        </View>
 
+        <View style={styles.actionsContainer}>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { backgroundColor: theme.surface, borderColor: theme.primary }]}
             onPress={() => router.push('/friends')}
           >
             <Text style={styles.secondaryButtonIcon}>👥</Text>
-            <Text style={styles.secondaryButtonText}>Venner</Text>
+            <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>Venner</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: theme.surface, borderColor: theme.primary }]}
+            onPress={() => router.push('/groups')}
+          >
+            <Text style={styles.secondaryButtonIcon}>🎣</Text>
+            <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>Grupper</Text>
           </TouchableOpacity>
         </View>
 
         {/* Settings Section */}
-        <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>Indstillinger</Text>
+        <View style={[styles.settingsSection, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Indstillinger</Text>
+
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => router.push('/settings')}
+          >
+            <Text style={styles.settingIcon}>⚙️</Text>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>App Indstillinger</Text>
+              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>Tema, sprog m.m.</Text>
+            </View>
+            <Text style={[styles.settingArrow, { color: theme.textTertiary }]}>›</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingItem}>
             <Text style={styles.settingIcon}>🔔</Text>
             <View style={styles.settingContent}>
-              <Text style={styles.settingLabel}>Notifikationer</Text>
-              <Text style={styles.settingValue}>Aktiveret</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>Notifikationer</Text>
+              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>Aktiveret</Text>
             </View>
-            <Text style={styles.settingArrow}>›</Text>
+            <Text style={[styles.settingArrow, { color: theme.textTertiary }]}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingItem}>
             <Text style={styles.settingIcon}>🌍</Text>
             <View style={styles.settingContent}>
-              <Text style={styles.settingLabel}>Synlighed</Text>
-              <Text style={styles.settingValue}>Privat</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>Synlighed</Text>
+              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>Privat</Text>
             </View>
-            <Text style={styles.settingArrow}>›</Text>
+            <Text style={[styles.settingArrow, { color: theme.textTertiary }]}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingItem}>
             <Text style={styles.settingIcon}>🔐</Text>
             <View style={styles.settingContent}>
-              <Text style={styles.settingLabel}>Login metode</Text>
-              <Text style={styles.settingValue}>{user.provider}</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>Login metode</Text>
+              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{user.provider}</Text>
             </View>
-            <Text style={styles.settingArrow}>›</Text>
+            <Text style={[styles.settingArrow, { color: theme.textTertiary }]}>›</Text>
           </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: theme.error }]} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Log Ud</Text>
         </TouchableOpacity>
 
         {/* Version Info */}
-        <Text style={styles.versionText}>Version 1.0.0</Text>
+        <Text style={[styles.versionText, { color: theme.textTertiary }]}>Version 1.0.0</Text>
       </ScrollView>
 
       {/* Bottom Navigation */}
@@ -154,12 +178,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.backgroundLight,
   },
   container: {
     flexGrow: 1,
     padding: SPACING.lg,
-    backgroundColor: COLORS.backgroundLight,
+    paddingBottom: 100,
   },
   profileHeader: {
     alignItems: 'center',
@@ -171,15 +194,12 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     marginBottom: SPACING.md,
     borderWidth: 3,
-    borderColor: COLORS.accent,
-    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 5,
   },
   avatarPlaceholder: {
-    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -193,17 +213,14 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 28,
     fontWeight: '700',
-    color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   userEmail: {
     fontSize: 16,
     fontWeight: '400',
-    color: COLORS.textSecondary,
   },
   statsCard: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surface,
     borderRadius: RADIUS.xl,
     padding: SPACING.lg,
     marginBottom: SPACING.lg,
@@ -220,17 +237,14 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 32,
     fontWeight: '700',
-    color: COLORS.primary,
     marginBottom: SPACING.xs,
   },
   statLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: COLORS.textSecondary,
   },
   statDivider: {
     width: 1,
-    backgroundColor: COLORS.border,
     marginHorizontal: SPACING.sm,
   },
   actionsContainer: {
@@ -241,13 +255,11 @@ const styles = StyleSheet.create({
   primaryButton: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -260,19 +272,16 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textInverse,
   },
   secondaryButton: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: COLORS.surface,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -286,10 +295,8 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.primary,
   },
   settingsSection: {
-    backgroundColor: COLORS.surface,
     borderRadius: RADIUS.xl,
     padding: SPACING.md,
     marginBottom: SPACING.lg,
@@ -302,7 +309,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: COLORS.text,
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.sm,
   },
@@ -323,21 +329,17 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: COLORS.text,
     marginBottom: 2,
   },
   settingValue: {
     fontSize: 14,
     fontWeight: '400',
-    color: COLORS.textSecondary,
   },
   settingArrow: {
     fontSize: 24,
     fontWeight: '400',
-    color: COLORS.textTertiary,
   },
   logoutButton: {
-    backgroundColor: COLORS.error,
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.full,
     alignItems: 'center',
@@ -347,12 +349,11 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textInverse,
+    color: '#FFFFFF',
   },
   versionText: {
     fontSize: 14,
     fontWeight: '400',
-    color: COLORS.textTertiary,
     textAlign: 'center',
     marginTop: SPACING.sm,
   },

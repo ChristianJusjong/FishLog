@@ -45,6 +45,10 @@ model User {
   ownedClubs        Club[]
   clubMemberships   ClubMember[]
   clubMessages      ClubMessage[]
+  groupMemberships  GroupMembership[]
+  groupPosts        GroupPost[]
+  groupPostLikes    GroupPostLike[]
+  groupPostComments GroupPostComment[]
 
   @@unique([provider, providerId])
   @@map("users")
@@ -75,6 +79,7 @@ model Catch {
   comments      Comment[]
   validations   CatchValidation[]
   clubMessages  ClubMessage[]
+  groupPosts    GroupPost[]
 
   @@index([userId])
   @@index([isDraft])
@@ -276,4 +281,85 @@ model ClubMessage {
   @@index([clubId, createdAt])
   @@index([senderId])
   @@map("club_messages")
+}
+
+model Group {
+  id          String            @id @default(cuid())
+  name        String
+  description String?           @db.Text
+  logoUrl     String?           @map("logo_url")
+  isPrivate   Boolean           @default(false) @map("is_private")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  members     GroupMembership[]
+  posts       GroupPost[]
+
+  @@index([isPrivate])
+  @@map("groups")
+}
+
+model GroupMembership {
+  id        String   @id @default(cuid())
+  groupId   String   @map("group_id")
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("MEMBER") // 'ADMIN', 'MEMBER'
+  status    String   @default("PENDING") // 'PENDING', 'APPROVED'
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@index([status])
+  @@map("group_memberships")
+}
+
+model GroupPost {
+  id        String             @id @default(cuid())
+  groupId   String             @map("group_id")
+  group     Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String             @map("user_id")
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String?            @db.Text
+  catchId   String?            @map("catch_id")
+  catch     Catch?             @relation(fields: [catchId], references: [id], onDelete: SetNull)
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+  likes     GroupPostLike[]
+  comments  GroupPostComment[]
+
+  @@index([groupId, createdAt])
+  @@index([userId])
+  @@map("group_posts")
+}
+
+model GroupPostLike {
+  id        String    @id @default(cuid())
+  postId    String    @map("post_id")
+  post      GroupPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("group_post_likes")
+}
+
+model GroupPostComment {
+  id        String    @id @default(cuid())
+  postId    String    @map("post_id")
+  post      GroupPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String    @db.Text
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([postId])
+  @@index([userId])
+  @@map("group_post_comments")
 }
