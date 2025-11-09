@@ -46,7 +46,7 @@ export async function groupsRoutes(fastify: FastifyInstance) {
 
       return groups;
     } catch (error) {
-      fastify.log.error('Error fetching my groups:', error);
+      fastify.log.error(error, 'Error fetching my groups');
       return reply.code(500).send({ error: 'Failed to fetch groups' });
     }
   });
@@ -89,7 +89,7 @@ export async function groupsRoutes(fastify: FastifyInstance) {
 
       return availableGroups;
     } catch (error) {
-      fastify.log.error('Error fetching available groups:', error);
+      fastify.log.error(error, 'Error fetching available groups');
       return reply.code(500).send({ error: 'Failed to fetch available groups' });
     }
   });
@@ -161,7 +161,7 @@ export async function groupsRoutes(fastify: FastifyInstance) {
           }))
       };
     } catch (error) {
-      fastify.log.error('Error fetching group:', error);
+      fastify.log.error(error, 'Error fetching group');
       return reply.code(500).send({ error: 'Failed to fetch group' });
     }
   });
@@ -217,7 +217,7 @@ export async function groupsRoutes(fastify: FastifyInstance) {
         memberCount: group._count.members
       });
     } catch (error) {
-      fastify.log.error('Error creating group:', error);
+      fastify.log.error(error, 'Error creating group');
       return reply.code(500).send({ error: 'Failed to create group' });
     }
   });
@@ -271,7 +271,7 @@ export async function groupsRoutes(fastify: FastifyInstance) {
 
       return { message: 'Successfully joined group' };
     } catch (error) {
-      fastify.log.error('Error joining group:', error);
+      fastify.log.error(error, 'Error joining group');
       return reply.code(500).send({ error: 'Failed to join group' });
     }
   });
@@ -325,7 +325,7 @@ export async function groupsRoutes(fastify: FastifyInstance) {
 
       return { message: 'Membership request sent' };
     } catch (error) {
-      fastify.log.error('Error requesting membership:', error);
+      fastify.log.error(error, 'Error requesting membership');
       return reply.code(500).send({ error: 'Failed to request membership' });
     }
   });
@@ -403,7 +403,7 @@ export async function groupsRoutes(fastify: FastifyInstance) {
 
       return formattedPosts;
     } catch (error) {
-      fastify.log.error('Error fetching group posts:', error);
+      fastify.log.error(error, 'Error fetching group posts');
       return reply.code(500).send({ error: 'Failed to fetch group posts' });
     }
   });
@@ -455,7 +455,7 @@ export async function groupsRoutes(fastify: FastifyInstance) {
 
       return reply.code(201).send(post);
     } catch (error) {
-      fastify.log.error('Error creating group post:', error);
+      fastify.log.error(error, 'Error creating group post');
       return reply.code(500).send({ error: 'Failed to create post' });
     }
   });
@@ -501,7 +501,7 @@ export async function groupsRoutes(fastify: FastifyInstance) {
 
       return { message: 'Member approved' };
     } catch (error) {
-      fastify.log.error('Error approving member:', error);
+      fastify.log.error(error, 'Error approving member');
       return reply.code(500).send({ error: 'Failed to approve member' });
     }
   });
