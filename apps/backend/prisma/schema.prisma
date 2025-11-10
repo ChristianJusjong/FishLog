@@ -49,6 +49,7 @@ model User {
   groupPosts        GroupPost[]
   groupPostLikes    GroupPostLike[]
   groupPostComments GroupPostComment[]
+  groupMessages     GroupMessage[]
 
   @@unique([provider, providerId])
   @@map("users")
@@ -80,6 +81,7 @@ model Catch {
   validations   CatchValidation[]
   clubMessages  ClubMessage[]
   groupPosts    GroupPost[]
+  groupMessages GroupMessage[]
 
   @@index([userId])
   @@index([isDraft])
@@ -293,6 +295,7 @@ model Group {
   updatedAt   DateTime          @updatedAt @map("updated_at")
   members     GroupMembership[]
   posts       GroupPost[]
+  messages    GroupMessage[]
 
   @@index([isPrivate])
   @@map("groups")
@@ -362,4 +365,21 @@ model GroupPostComment {
   @@index([postId])
   @@index([userId])
   @@map("group_post_comments")
+}
+
+model GroupMessage {
+  id        String   @id @default(cuid())
+  groupId   String   @map("group_id")
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  senderId  String   @map("sender_id")
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  message   String?  @db.Text
+  imageUrl  String?  @map("image_url")
+  catchId   String?  @map("catch_id")
+  catch     Catch?   @relation(fields: [catchId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([groupId, createdAt])
+  @@index([senderId])
+  @@map("group_messages")
 }

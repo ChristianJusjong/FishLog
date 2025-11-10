@@ -10,9 +10,9 @@
       "typedRoutes": true
     },
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/logo-white.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F97316"
     },
     "ios": {
       "supportsTablet": true,
@@ -21,17 +21,21 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#F97316"
       },
       "package": "com.cjusjong.hook",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
-      ]
+      ],
+      "statusBar": {
+        "translucent": true,
+        "backgroundColor": "#00000000"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

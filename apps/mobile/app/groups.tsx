@@ -13,12 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, FAB } from '@/constants/branding';
 import BottomNavigation from '../components/BottomNavigation';
-
-const API_URL = 'https://fishlog-production.up.railway.app';
+import { API_URL } from '../config/api';
+import { logger } from '../utils/logger';
+import { authStorage } from '../utils/secureStorage';
 
 type Group = {
   id: string;
@@ -28,6 +28,7 @@ type Group = {
   isPrivate: boolean;
   isMember: boolean;
   isPending: boolean;
+  role?: 'ADMIN' | 'MEMBER';
 };
 
 export default function GroupsScreen() {
@@ -48,7 +49,7 @@ export default function GroupsScreen() {
 
   const fetchGroups = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await authStorage.getToken();
 
       // Fetch my groups
       const myGroupsResponse = await fetch(`${API_URL}/groups/my-groups`, {
@@ -73,7 +74,7 @@ export default function GroupsScreen() {
         Alert.alert('Fejl', 'Kunne ikke hente grupper');
       }
     } catch (error) {
-      console.error('Failed to fetch groups:', error);
+      logger.error('Failed to fetch groups:', error);
       Alert.alert('Fejl', 'Kunne ikke hente grupper');
     } finally {
       setLoading(false);
@@ -88,7 +89,7 @@ export default function GroupsScreen() {
 
     setCreating(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await authStorage.getToken();
 
       const response = await fetch(`${API_URL}/groups`, {
         method: 'POST',
@@ -112,11 +113,12 @@ export default function GroupsScreen() {
         fetchGroups();
       } else {
         const errorData = await response.json();
-        Alert.alert('Fejl', errorData.error || 'Kunne ikke oprette gruppe');
+        logger.error('Failed to create group - response:', errorData);
+        Alert.alert('Fejl', errorData.error || errorData.message || 'Kunne ikke oprette gruppe');
       }
     } catch (error) {
-      console.error('Failed to create group:', error);
-      Alert.alert('Fejl', 'Kunne ikke oprette gruppe');
+      logger.error('Failed to create group - exception:', error);
+      Alert.alert('Fejl', 'Kunne ikke oprette gruppe: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setCreating(false);
     }
@@ -124,7 +126,7 @@ export default function GroupsScreen() {
 
   const requestMembership = async (groupId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await authStorage.getToken();
 
       const response = await fetch(`${API_URL}/groups/${groupId}/request`, {
         method: 'POST',
@@ -141,14 +143,14 @@ export default function GroupsScreen() {
         Alert.alert('Fejl', errorData.error || 'Kunne ikke sende anmodning');
       }
     } catch (error) {
-      console.error('Failed to request membership:', error);
+      logger.error('Failed to request membership:', error);
       Alert.alert('Fejl', 'Kunne ikke sende anmodning');
     }
   };
 
   const joinGroup = async (groupId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await authStorage.getToken();
 
       const response = await fetch(`${API_URL}/groups/${groupId}/join`, {
         method: 'POST',
@@ -165,7 +167,7 @@ export default function GroupsScreen() {
         Alert.alert('Fejl', errorData.error || 'Kunne ikke deltage i gruppe');
       }
     } catch (error) {
-      console.error('Failed to join group:', error);
+      logger.error('Failed to join group:', error);
       Alert.alert('Fejl', 'Kunne ikke deltage i gruppe');
     }
   };
@@ -207,7 +209,14 @@ export default function GroupsScreen() {
               <View key={group.id} style={[styles.groupCard, { backgroundColor: theme.surface }]}>
                 <View style={styles.groupHeader}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.groupName, { color: theme.text }]}>{group.name}</Text>
+                    <View style={styles.groupTitleRow}>
+                      <Text style={[styles.groupName, { color: theme.text }]}>{group.name}</Text>
+                      {group.role === 'ADMIN' && (
+                        <View style={[styles.adminBadge, { backgroundColor: theme.accent + '20' }]}>
+                          <Text style={[styles.adminBadgeText, { color: theme.accent }]}>⭐ Admin</Text>
+                        </View>
+                      )}
+                    </View>
                     {group.description && (
                       <Text style={[styles.groupDescription, { color: theme.textSecondary }]} numberOfLines={2}>
                         {group.description}
@@ -432,13 +441,27 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: SPACING.sm,
   },
+  groupTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
   groupName: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: SPACING.xs,
   },
   groupDescription: {
     fontSize: 14,
+  },
+  adminBadge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+  },
+  adminBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   privateBadge: {
     paddingHorizontal: SPACING.sm,

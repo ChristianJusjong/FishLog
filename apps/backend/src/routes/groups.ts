@@ -505,4 +505,420 @@ export async function groupsRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ error: 'Failed to approve member' });
     }
   });
+
+  // Get group messages
+  fastify.get('/groups/:groupId/messages', {
+    preHandler: [authenticateToken]
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { groupId } = request.params as { groupId: string };
+      const { limit = '50', before } = request.query as { limit?: string; before?: string };
+      const userId = request.user.userId;
+
+      // Check if user is an approved member
+      const member = await prisma.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId
+          }
+        }
+      });
+
+      if (!member || member.status !== 'APPROVED') {
+        return reply.code(403).send({ error: 'Must be an approved group member to view messages' });
+      }
+
+      const messages = await prisma.groupMessage.findMany({
+        where: {
+          groupId,
+          ...(before && { createdAt: { lt: new Date(before) } })
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            }
+          },
+          catch: {
+            select: {
+              id: true,
+              species: true,
+              weightKg: true,
+              lengthCm: true,
+              photoUrl: true,
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: parseInt(limit)
+      });
+
+      return messages.reverse(); // Return in chronological order
+    } catch (error) {
+      fastify.log.error(error, 'Error fetching group messages');
+      return reply.code(500).send({ error: 'Failed to fetch messages' });
+    }
+  });
+
+  // Send a message to group
+  fastify.post('/groups/:groupId/messages', {
+    preHandler: [authenticateToken]
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { groupId } = request.params as { groupId: string };
+      const userId = request.user.userId;
+      const { message, imageUrl, catchId } = request.body as {
+        message?: string;
+        imageUrl?: string;
+        catchId?: string;
+      };
+
+      // Check if user is an approved member
+      const member = await prisma.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId
+          }
+        }
+      });
+
+      if (!member || member.status !== 'APPROVED') {
+        return reply.code(403).send({ error: 'Must be an approved group member to send messages' });
+      }
+
+      // Validate that at least one content type is provided
+      if (!message && !imageUrl && !catchId) {
+        return reply.code(400).send({ error: 'Message must contain text, image, or catch' });
+      }
+
+      // Validate catchId if provided
+      if (catchId) {
+        const catch_ = await prisma.catch.findUnique({
+          where: { id: catchId }
+        });
+
+        if (!catch_) {
+          return reply.code(404).send({ error: 'Catch not found' });
+        }
+
+        if (catch_.userId !== userId) {
+          return reply.code(403).send({ error: 'Can only share your own catches' });
+        }
+      }
+
+      const groupMessage = await prisma.groupMessage.create({
+        data: {
+          groupId,
+          senderId: userId,
+          message,
+          imageUrl,
+          catchId,
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            }
+          },
+          catch: {
+            select: {
+              id: true,
+              species: true,
+              weightKg: true,
+              lengthCm: true,
+              photoUrl: true,
+            }
+          }
+        }
+      });
+
+      return reply.code(201).send(groupMessage);
+    } catch (error) {
+      fastify.log.error(error, 'Error sending group message');
+      return reply.code(500).send({ error: 'Failed to send message' });
+    }
+  });
+
+  // Get new messages since timestamp (for polling)
+  fastify.get('/groups/:groupId/messages/poll', {
+    preHandler: [authenticateToken]
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { groupId } = request.params as { groupId: string };
+      const { since } = request.query as { since: string };
+      const userId = request.user.userId;
+
+      if (!since) {
+        return reply.code(400).send({ error: 'since timestamp is required' });
+      }
+
+      // Check if user is an approved member
+      const member = await prisma.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId
+          }
+        }
+      });
+
+      if (!member || member.status !== 'APPROVED') {
+        return reply.code(403).send({ error: 'Must be an approved group member' });
+      }
+
+      const messages = await prisma.groupMessage.findMany({
+        where: {
+          groupId,
+          createdAt: {
+            gt: new Date(since)
+          }
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            }
+          },
+          catch: {
+            select: {
+              id: true,
+              species: true,
+              weightKg: true,
+              lengthCm: true,
+              photoUrl: true,
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'asc'
+        }
+      });
+
+      return messages;
+    } catch (error) {
+      fastify.log.error(error, 'Error polling group messages');
+      return reply.code(500).send({ error: 'Failed to poll messages' });
+    }
+  });
+
+  // Delete a message (only sender or group admin)
+  fastify.delete('/groups/:groupId/messages/:messageId', {
+    preHandler: [authenticateToken]
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { groupId, messageId } = request.params as { groupId: string; messageId: string };
+      const userId = request.user.userId;
+
+      const message = await prisma.groupMessage.findUnique({
+        where: { id: messageId }
+      });
+
+      if (!message) {
+        return reply.code(404).send({ error: 'Message not found' });
+      }
+
+      // Check if user is sender or group admin
+      const member = await prisma.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId
+          }
+        }
+      });
+
+      if (!member) {
+        return reply.code(403).send({ error: 'Not a group member' });
+      }
+
+      const canDelete = message.senderId === userId || member.role === 'ADMIN';
+
+      if (!canDelete) {
+        return reply.code(403).send({ error: 'Not authorized to delete this message' });
+      }
+
+      await prisma.groupMessage.delete({
+        where: { id: messageId }
+      });
+
+      return { message: 'Message deleted successfully' };
+    } catch (error) {
+      fastify.log.error(error, 'Error deleting group message');
+      return reply.code(500).send({ error: 'Failed to delete message' });
+    }
+  });
+
+  // Remove a member from group (admin only)
+  fastify.delete('/groups/:groupId/members/:targetUserId', {
+    preHandler: [authenticateToken],
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { groupId, targetUserId } = request.params as { groupId: string; targetUserId: string };
+      const adminUserId = request.user.userId;
+
+      // Check if requester is admin
+      const adminMembership = await prisma.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId: adminUserId
+          }
+        }
+      });
+
+      if (!adminMembership || adminMembership.role !== 'ADMIN') {
+        return reply.code(403).send({ error: 'Only admins can remove members' });
+      }
+
+      // Cannot remove yourself
+      if (targetUserId === adminUserId) {
+        return reply.code(400).send({ error: 'Cannot remove yourself. Use leave endpoint instead.' });
+      }
+
+      // Remove the member
+      await prisma.groupMembership.delete({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId: targetUserId
+          }
+        }
+      });
+
+      return { message: 'Member removed successfully' };
+    } catch (error) {
+      fastify.log.error(error, 'Error removing member');
+      return reply.code(500).send({ error: 'Failed to remove member' });
+    }
+  });
+
+  // Update group settings (admin only)
+  fastify.patch('/groups/:groupId', {
+    preHandler: [authenticateToken],
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { groupId } = request.params as { groupId: string };
+      const userId = request.user.userId;
+      const { name, description, isPrivate, logoUrl } = request.body as {
+        name?: string;
+        description?: string;
+        isPrivate?: boolean;
+        logoUrl?: string;
+      };
+
+      // Check if requester is admin
+      const membership = await prisma.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId
+          }
+        }
+      });
+
+      if (!membership || membership.role !== 'ADMIN') {
+        return reply.code(403).send({ error: 'Only admins can update group settings' });
+      }
+
+      // Update the group
+      const updatedGroup = await prisma.group.update({
+        where: { id: groupId },
+        data: {
+          ...(name && { name }),
+          ...(description !== undefined && { description }),
+          ...(isPrivate !== undefined && { isPrivate }),
+          ...(logoUrl !== undefined && { logoUrl }),
+        },
+        include: {
+          _count: {
+            select: { members: true }
+          }
+        }
+      });
+
+      return {
+        id: updatedGroup.id,
+        name: updatedGroup.name,
+        description: updatedGroup.description,
+        logoUrl: updatedGroup.logoUrl,
+        isPrivate: updatedGroup.isPrivate,
+        memberCount: updatedGroup._count.members
+      };
+    } catch (error) {
+      fastify.log.error(error, 'Error updating group');
+      return reply.code(500).send({ error: 'Failed to update group' });
+    }
+  });
+
+  // Delete group (admin only)
+  fastify.delete('/groups/:groupId', {
+    preHandler: [authenticateToken],
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { groupId } = request.params as { groupId: string };
+      const userId = request.user.userId;
+
+      // Check if requester is admin
+      const membership = await prisma.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId
+          }
+        }
+      });
+
+      if (!membership || membership.role !== 'ADMIN') {
+        return reply.code(403).send({ error: 'Only admins can delete the group' });
+      }
+
+      // Delete the group (cascade will remove all members, posts, messages, etc.)
+      await prisma.group.delete({
+        where: { id: groupId }
+      });
+
+      return { message: 'Group deleted successfully' };
+    } catch (error) {
+      fastify.log.error(error, 'Error deleting group');
+      return reply.code(500).send({ error: 'Failed to delete group' });
+    }
+  });
 }
