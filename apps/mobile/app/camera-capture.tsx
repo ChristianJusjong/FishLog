@@ -16,11 +16,13 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/branding';
-
-const API_URL = 'https://fishlog-production.up.railway.app';
+import { useTheme } from '../contexts/ThemeContext';
+import { API_URL } from '../config/api';
+import { logger } from '../utils/logger';
 
 export default function CameraCaptureScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('Klar til at tage billede');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export default function CameraCaptureScreen() {
         router.back();
       }
     } catch (error) {
-      console.error('Camera error:', error);
+      logger.error('Camera error:', error);
       Alert.alert('Fejl', 'Kunne ikke åbne kamera');
       router.back();
     }
@@ -107,7 +109,7 @@ export default function CameraCaptureScreen() {
         { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG } // 60% quality JPEG
       );
 
-      console.log('Compressed image:', {
+      logger.debug('Compressed image:', {
         width: manipulatedImage.width,
         height: manipulatedImage.height,
         uri: manipulatedImage.uri.substring(0, 50) + '...'
@@ -130,7 +132,7 @@ export default function CameraCaptureScreen() {
       });
 
       const sizeInKB = Math.round(base64.length / 1024);
-      console.log(`Base64 image size: ${sizeInKB} KB`);
+      logger.debug(`Base64 image size: ${sizeInKB} KB`);
 
       setStatus('Opretter fangst...');
 
@@ -151,7 +153,7 @@ export default function CameraCaptureScreen() {
 
       if (!catchResponse.ok) {
         const errorBody = await catchResponse.text();
-        console.error('Backend error response:', errorBody);
+        logger.error('Backend error response:', errorBody);
         throw new Error(`Failed to create catch: ${catchResponse.status} - ${errorBody}`);
       }
 
@@ -164,7 +166,7 @@ export default function CameraCaptureScreen() {
       });
 
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       setLoading(false);
 
       Alert.alert(
@@ -180,38 +182,38 @@ export default function CameraCaptureScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
           {capturedImage && (
             <Image source={{ uri: capturedImage }} style={styles.previewImage} />
           )}
-          <ActivityIndicator size="large" color={COLORS.primary} style={styles.spinner} />
-          <Text style={styles.statusText}>{status}</Text>
-          <Text style={styles.subtext}>Vent venligst...</Text>
+          <ActivityIndicator size="large" color={theme.primary} style={styles.spinner} />
+          <Text style={[styles.statusText, { color: theme.text }]}>{status}</Text>
+          <Text style={[styles.subtext, { color: theme.textSecondary }]}>Vent venligst...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.backgroundLight }]}>
       <View style={styles.content}>
-        <Text style={styles.title}>📸 Tag billede af fangst</Text>
-        <Text style={styles.description}>
+        <Text style={[styles.title, { color: theme.text }]}>📸 Tag billede af fangst</Text>
+        <Text style={[styles.description, { color: theme.textSecondary }]}>
           For at logge en fangst skal du først tage et billede. Billedet og GPS-koordinater bliver låst efter upload.
         </Text>
 
-        <TouchableOpacity style={styles.cameraButton} onPress={openCamera}>
-          <Text style={styles.cameraButtonText}>🎣 Åbn kamera</Text>
+        <TouchableOpacity style={[styles.cameraButton, { backgroundColor: theme.primary }]} onPress={openCamera}>
+          <Text style={[styles.cameraButtonText, { color: theme.textInverse }]}>🎣 Åbn kamera</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
-          <Text style={styles.cancelButtonText}>Annuller</Text>
+          <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Annuller</Text>
         </TouchableOpacity>
 
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>📍 Vigtigt:</Text>
-          <Text style={styles.infoText}>
+        <View style={[styles.infoBox, { backgroundColor: theme.surface, borderLeftColor: theme.accent }]}>
+          <Text style={[styles.infoTitle, { color: theme.text }]}>📍 Vigtigt:</Text>
+          <Text style={[styles.infoText, { color: theme.textSecondary }]}>
             • Billede og GPS-koordinater kan ikke ændres efter upload{'\n'}
             • Du kan udfylde fangstdata bagefter{'\n'}
             • Gem som kladde hvis du ikke er færdig
@@ -225,7 +227,6 @@ export default function CameraCaptureScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.backgroundLight,
   },
   content: {
     flex: 1,
@@ -235,18 +236,18 @@ const styles = StyleSheet.create({
   },
   title: {
     ...TYPOGRAPHY.styles.h1,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
     textAlign: 'center',
+    lineHeight: 32,
   },
   description: {
     ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.xl,
     paddingHorizontal: SPACING.md,
+    lineHeight: 24,
   },
   cameraButton: {
-    backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xl * 2,
     borderRadius: RADIUS.full,
@@ -256,9 +257,8 @@ const styles = StyleSheet.create({
   cameraButtonText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
-    includeFontPadding: false,
     textAlign: 'center',
+    lineHeight: 28,
   },
   cancelButton: {
     paddingVertical: SPACING.sm,
@@ -267,25 +267,22 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#666666',
-    includeFontPadding: false,
+    lineHeight: 22,
   },
   infoBox: {
     marginTop: SPACING.xl * 2,
-    backgroundColor: COLORS.surface,
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
     borderLeftWidth: 4,
-    borderLeftColor: COLORS.accent,
   },
   infoTitle: {
     ...TYPOGRAPHY.styles.h3,
     marginBottom: SPACING.sm,
+    lineHeight: 24,
   },
   infoText: {
     ...TYPOGRAPHY.styles.small,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   loadingContainer: {
     flex: 1,
@@ -304,12 +301,13 @@ const styles = StyleSheet.create({
   },
   statusText: {
     ...TYPOGRAPHY.styles.h2,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
     textAlign: 'center',
+    lineHeight: 28,
   },
   subtext: {
     ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
     textAlign: 'center',
+    lineHeight: 22,
   },
 });

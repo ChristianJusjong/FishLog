@@ -2,11 +2,15 @@ import React, { useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import SwipeableScreen from '../components/SwipeableScreen';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import BottomNavigation from '../components/BottomNavigation';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import i18n from '../i18n';
+import { logger } from '../utils/logger';
 
 export default function ProfileScreen() {
   const { user, loading, logout } = useAuth();
@@ -22,10 +26,10 @@ export default function ProfileScreen() {
   // Debug: Log user data
   useEffect(() => {
     if (user) {
-      console.log('===== PROFILE USER DATA =====');
-      console.log('user.name:', user.name);
-      console.log('user.email:', user.email);
-      console.log('user object:', JSON.stringify(user, null, 2));
+      logger.debug('===== PROFILE USER DATA =====');
+      logger.debug('user.name:', user.name);
+      logger.debug('user.email:', user.email);
+      logger.debug('user object:', JSON.stringify(user, null, 2));
     }
   }, [user]);
 
@@ -43,11 +47,16 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.backgroundLight }}>
+    <SwipeableScreen currentScreen="/profile">
+      <View style={{ flex: 1, backgroundColor: theme.backgroundLight }}>
       {/* Weather & Location Card */}
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
-      <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.backgroundLight }]}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.container, { backgroundColor: theme.backgroundLight }]}
+        showsVerticalScrollIndicator={true}
+      >
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           {user.avatar ? (
@@ -71,17 +80,17 @@ export default function ProfileScreen() {
         <View style={[styles.statsCard, { backgroundColor: theme.surface }]}>
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: theme.primary }]}>0</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Fangster</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{i18n.t('profile.catches')}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: theme.primary }]}>0</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Venner</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{i18n.t('profile.friends')}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: theme.primary }]}>0</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Events</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{i18n.t('navigation.events')}</Text>
           </View>
         </View>
 
@@ -91,8 +100,8 @@ export default function ProfileScreen() {
             style={[styles.primaryButton, { backgroundColor: theme.primary, shadowColor: theme.primary }]}
             onPress={() => router.push('/edit-profile')}
           >
-            <Text style={styles.primaryButtonIcon}>✏️</Text>
-            <Text style={[styles.primaryButtonText, { color: theme.textInverse }]}>Rediger Profil</Text>
+            <MaterialCommunityIcons name="pencil" size={20} color={theme.textInverse} style={{ marginRight: SPACING.sm }} />
+            <Text style={[styles.primaryButtonText, { color: theme.textInverse }]}>{i18n.t('profile.editProfile')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -101,75 +110,76 @@ export default function ProfileScreen() {
             style={[styles.secondaryButton, { backgroundColor: theme.surface, borderColor: theme.primary }]}
             onPress={() => router.push('/friends')}
           >
-            <Text style={styles.secondaryButtonIcon}>👥</Text>
-            <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>Venner</Text>
+            <MaterialCommunityIcons name="account-group" size={20} color={theme.primary} style={{ marginRight: SPACING.sm }} />
+            <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>{i18n.t('profile.friends')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.secondaryButton, { backgroundColor: theme.surface, borderColor: theme.primary }]}
             onPress={() => router.push('/groups')}
           >
-            <Text style={styles.secondaryButtonIcon}>🎣</Text>
-            <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>Grupper</Text>
+            <MaterialCommunityIcons name="account-group" size={20} color={theme.primary} style={{ marginRight: SPACING.sm }} />
+            <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>{i18n.t('profile.groups')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Settings Section */}
         <View style={[styles.settingsSection, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Indstillinger</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('profile.settings')}</Text>
 
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => router.push('/settings')}
           >
-            <Text style={styles.settingIcon}>⚙️</Text>
+            <MaterialCommunityIcons name="cog-outline" size={24} color={theme.text} style={{ marginRight: SPACING.md }} />
             <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>App Indstillinger</Text>
-              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>Tema, sprog m.m.</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>{i18n.t('profile.appSettings')}</Text>
+              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{i18n.t('profile.themeLanguageEtc')}</Text>
             </View>
-            <Text style={[styles.settingArrow, { color: theme.textTertiary }]}>›</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textTertiary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingIcon}>🔔</Text>
+            <MaterialCommunityIcons name="bell-outline" size={24} color={theme.text} style={{ marginRight: SPACING.md }} />
             <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>Notifikationer</Text>
-              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>Aktiveret</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>{i18n.t('profile.notifications')}</Text>
+              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{i18n.t('profile.enabled')}</Text>
             </View>
-            <Text style={[styles.settingArrow, { color: theme.textTertiary }]}>›</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textTertiary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingIcon}>🌍</Text>
+            <MaterialCommunityIcons name="earth" size={24} color={theme.text} style={{ marginRight: SPACING.md }} />
             <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>Synlighed</Text>
-              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>Privat</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>{i18n.t('profile.visibility')}</Text>
+              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{i18n.t('profile.private')}</Text>
             </View>
-            <Text style={[styles.settingArrow, { color: theme.textTertiary }]}>›</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textTertiary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingIcon}>🔐</Text>
+            <MaterialCommunityIcons name="shield-check" size={24} color={theme.text} style={{ marginRight: SPACING.md }} />
             <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>Login metode</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>{i18n.t('profile.loginMethod')}</Text>
               <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{user.provider}</Text>
             </View>
-            <Text style={[styles.settingArrow, { color: theme.textTertiary }]}>›</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textTertiary} />
           </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
         <TouchableOpacity style={[styles.logoutButton, { backgroundColor: theme.error }]} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Log Ud</Text>
+          <Text style={styles.logoutButtonText}>{i18n.t('auth.logOut')}</Text>
         </TouchableOpacity>
 
         {/* Version Info */}
-        <Text style={[styles.versionText, { color: theme.textTertiary }]}>Version 1.0.0</Text>
+        <Text style={[styles.versionText, { color: theme.textTertiary }]}>{i18n.t('profile.version')} 1.0.0</Text>
       </ScrollView>
 
       {/* Bottom Navigation */}
       <BottomNavigation />
-    </View>
+      </View>
+    </SwipeableScreen>
   );
 }
 
@@ -180,9 +190,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   container: {
-    flexGrow: 1,
     padding: SPACING.lg,
-    paddingBottom: 100,
+    paddingBottom: 120, // Extra padding for bottom navigation
   },
   profileHeader: {
     alignItems: 'center',
@@ -265,10 +274,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  primaryButtonIcon: {
-    fontSize: 20,
-    marginRight: SPACING.sm,
-  },
   primaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
@@ -287,10 +292,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
-  },
-  secondaryButtonIcon: {
-    fontSize: 20,
-    marginRight: SPACING.sm,
   },
   secondaryButtonText: {
     fontSize: 16,
@@ -319,10 +320,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     borderRadius: RADIUS.md,
   },
-  settingIcon: {
-    fontSize: 24,
-    marginRight: SPACING.md,
-  },
   settingContent: {
     flex: 1,
   },
@@ -333,10 +330,6 @@ const styles = StyleSheet.create({
   },
   settingValue: {
     fontSize: 14,
-    fontWeight: '400',
-  },
-  settingArrow: {
-    fontSize: 24,
     fontWeight: '400',
   },
   logoutButton: {
