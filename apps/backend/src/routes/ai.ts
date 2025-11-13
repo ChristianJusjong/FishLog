@@ -81,7 +81,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
         // Get user's Groq API key from profile
         const user = await prisma.user.findUnique({
-          where: { id: request.user.userId },
+          where: { id: request.user?.userId || '' },
           select: { groqApiKey: true },
         });
 
@@ -223,7 +223,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
         // Get user's Groq API key from profile
         const user = await prisma.user.findUnique({
-          where: { id: request.user.userId },
+          where: { id: request.user?.userId || '' },
           select: { groqApiKey: true },
         });
 
