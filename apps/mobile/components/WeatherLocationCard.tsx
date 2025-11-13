@@ -98,7 +98,8 @@ export default function WeatherLocationCard({
 
           const weatherCode = weatherData.current.weather_code;
           const temp = Math.round(weatherData.current.temperature_2m);
-          const wind = Math.round(weatherData.current.wind_speed_10m);
+          // Convert wind speed from km/h to m/s (divide by 3.6)
+          const wind = Math.round(weatherData.current.wind_speed_10m / 3.6);
           const description = getWeatherDescription(weatherCode);
           const icon = getWeatherIcon(weatherCode);
 
