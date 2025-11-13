@@ -90,10 +90,26 @@ export default function SettingsScreen() {
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        if (Platform.OS === 'web') {
-          alert(errorData.error || i18n.t('settings.apiKeyError'));
+
+        // Check if it's an auth error
+        if (response.status === 401) {
+          if (Platform.OS === 'web') {
+            alert('Din session er udløbet. Log venligst ud og ind igen.');
+          } else {
+            Alert.alert(
+              'Session udløbet',
+              'Din session er udløbet. Log venligst ud og ind igen for at fortsætte.',
+              [
+                { text: 'OK', onPress: () => router.push('/profile') }
+              ]
+            );
+          }
         } else {
-          Alert.alert('Fejl', errorData.error || i18n.t('settings.apiKeyError'));
+          if (Platform.OS === 'web') {
+            alert(errorData.error || i18n.t('settings.apiKeyError'));
+          } else {
+            Alert.alert('Fejl', errorData.error || i18n.t('settings.apiKeyError'));
+          }
         }
       }
     } catch (error) {
