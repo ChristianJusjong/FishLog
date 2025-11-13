@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Platform, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +36,24 @@ export default function SettingsScreen() {
       }
     } catch (error) {
       console.error('Failed to load API key:', error);
+    }
+  };
+
+  const openGroqConsole = async () => {
+    const url = 'https://console.groq.com';
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        if (Platform.OS === 'web') {
+          alert(`Kunne ikke åbne URL: ${url}`);
+        } else {
+          Alert.alert('Fejl', `Kunne ikke åbne URL: ${url}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
     }
   };
 
@@ -147,9 +165,12 @@ export default function SettingsScreen() {
         </View>
 
         {/* Info Section */}
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={24} color={COLORS.accent} style={{ marginBottom: 8 }} />
-          <Text style={styles.infoTitle}>Sådan får du en Groq API key</Text>
+        <TouchableOpacity style={styles.infoCard} onPress={openGroqConsole} activeOpacity={0.7}>
+          <View style={styles.infoHeader}>
+            <Ionicons name="information-circle" size={24} color={COLORS.accent} style={{ marginRight: 8 }} />
+            <Text style={styles.infoTitle}>Sådan får du en Groq API key</Text>
+            <Ionicons name="open-outline" size={20} color={COLORS.accent} style={{ marginLeft: 'auto' }} />
+          </View>
           <Text style={styles.infoText}>
             1. Gå til https://console.groq.com{'\n'}
             2. Opret en gratis konto{'\n'}
@@ -157,7 +178,11 @@ export default function SettingsScreen() {
             4. Klik "Create API Key"{'\n'}
             5. Kopier nøglen og indsæt den her
           </Text>
-        </View>
+          <View style={styles.clickHintContainer}>
+            <Ionicons name="hand-left" size={16} color={COLORS.accent} style={{ marginRight: 6 }} />
+            <Text style={styles.clickHintText}>Tryk her for at åbne Groq Console</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Theme Section (placeholder for future) */}
         <View style={styles.section}>
@@ -286,15 +311,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: SPACING.lg,
   },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
   infoTitle: {
     ...TYPOGRAPHY.styles.h3,
     color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
+    flex: 1,
   },
   infoText: {
     ...TYPOGRAPHY.styles.body,
     color: COLORS.textSecondary,
     lineHeight: 22,
+    marginBottom: SPACING.sm,
+  },
+  clickHintContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.accent + '20',
+  },
+  clickHintText: {
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.accent,
+    fontWeight: TYPOGRAPHY.fontWeight.semibold,
   },
   comingSoonText: {
     ...TYPOGRAPHY.styles.body,
