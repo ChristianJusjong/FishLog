@@ -6,6 +6,25 @@ import Groq from 'groq-sdk';
 const prisma = new PrismaClient();
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 
+// Helper function to get season name in Danish
+function getSeason(date: Date): string {
+  const month = date.getMonth() + 1;
+  if (month >= 3 && month <= 5) return 'forår';
+  if (month >= 6 && month <= 8) return 'sommer';
+  if (month >= 9 && month <= 11) return 'efterår';
+  return 'vinter';
+}
+
+// Helper function to get time of day in Danish
+function getTimeOfDay(date: Date): string {
+  const hour = date.getHours();
+  if (hour >= 5 && hour < 10) return 'tidlig morgen';
+  if (hour >= 10 && hour < 12) return 'formiddag';
+  if (hour >= 12 && hour < 17) return 'eftermiddag';
+  if (hour >= 17 && hour < 21) return 'aften';
+  return 'nat';
+}
+
 function getGroqClient(userApiKey?: string): Groq {
   const apiKey = userApiKey || GROQ_API_KEY;
   if (!apiKey) {
@@ -58,37 +77,96 @@ export async function aiRoutes(fastify: FastifyInstance) {
           pressure?: number;
         };
 
-        fastify.log.info(`Fetching AI recommendations for ${payload.species}`);
+        fastify.log.info(`Generating AI recommendations for ${payload.species}`);
 
-        // Call AI service
-        const aiResponse = await fetch(`${AI_SERVICE_URL}/api/v1/predict`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...payload,
-            timestamp: payload.timestamp || new Date().toISOString(),
-          }),
+        // Get user's Groq API key from profile
+        const user = await prisma.user.findUnique({
+          where: { id: request.user.userId },
+          select: { groqApiKey: true },
         });
 
-        if (!aiResponse.ok) {
-          const errorText = await aiResponse.text();
-          fastify.log.error(`AI service error: ${errorText}`);
-          reply.code(503);
-          return {
-            error: 'AI service unavailable',
-            details: errorText,
-          };
-        }
+        const userApiKey = user?.groqApiKey || undefined;
 
-        const recommendations = await aiResponse.json();
-        return recommendations;
+        // Parse timestamp to get season and time of day
+        const timestamp = payload.timestamp ? new Date(payload.timestamp) : new Date();
+        const season = getSeason(timestamp);
+        const timeOfDay = getTimeOfDay(timestamp);
+
+        // Build comprehensive context for AI with all environmental data
+        let context = `Du er en dansk fiskeriekspert. Baseret på følgende information, giv detaljerede anbefalinger om fiskeri:\n\n`;
+
+        // Location and species
+        context += `Målart: ${payload.species}\n`;
+        context += `Placering: ${payload.latitude}, ${payload.longitude}\n`;
+        context += `Tidspunkt: ${timeOfDay}\n`;
+        context += `Sæson: ${season}\n\n`;
+
+        // Environmental conditions
+        context += `Vejrforhold:\n`;
+        if (payload.air_temp !== undefined) context += `- Lufttemperatur: ${payload.air_temp}°C\n`;
+        if (payload.wind_speed !== undefined) context += `- Vindhastighed: ${payload.wind_speed} m/s\n`;
+        if (payload.cloud_cover !== undefined) context += `- Skydække: ${payload.cloud_cover}%\n`;
+        if (payload.precipitation !== undefined) context += `- Nedbør: ${payload.precipitation}mm\n`;
+        if (payload.pressure !== undefined) context += `- Lufttryk: ${payload.pressure} hPa\n`;
+
+        context += `\nVandforhold:\n`;
+        if (payload.water_temp !== undefined) context += `- Vandtemperatur: ${payload.water_temp}°C\n`;
+        if (payload.depth !== undefined) context += `- Dybde: ${payload.depth}m\n`;
+        if (payload.bottom_type) context += `- Bundtype: ${payload.bottom_type}\n`;
+
+        context += `\nGiv detaljerede anbefalinger om:\n`;
+        context += `1. Bedste tidspunkt på dagen at fiske\n`;
+        context += `2. Agn (naturligt agn med type og årsag)\n`;
+        context += `3. Lokkemidler (kunstigt med type, farve, størrelse og årsag)\n`;
+        context += `4. Fiskeudstyr:\n`;
+        context += `   - Fiskestang (type, længde, handling)\n`;
+        context += `   - Hjul (type, størrelse)\n`;
+        context += `   - Line (type, diameter/styrke)\n`;
+        context += `5. Fisketeknik og indspilningsmetode\n`;
+        context += `6. Anbefalet dybde at fiske på\n`;
+        context += `7. Vejrets påvirkning på fiskeriet\n`;
+        context += `8. Sæsonmæssige noter\n\n`;
+        context += `Vær konkret og specifik i dine anbefalinger.`;
+
+        const groq = getGroqClient(userApiKey);
+        const completion = await groq.chat.completions.create({
+          messages: [
+            {
+              role: 'user',
+              content: context,
+            },
+          ],
+          model: 'llama-3.3-70b-versatile',
+          temperature: 0.7,
+          max_tokens: 1500,
+        });
+
+        const aiAdvice = completion.choices[0]?.message?.content || 'Ingen anbefalinger tilgængelige.';
+
+        // Return structured response
+        return {
+          species: payload.species,
+          location: {
+            latitude: payload.latitude,
+            longitude: payload.longitude,
+          },
+          conditions: {
+            season,
+            timeOfDay,
+            waterTemp: payload.water_temp,
+            airTemp: payload.air_temp,
+            windSpeed: payload.wind_speed,
+            depth: payload.depth,
+            bottomType: payload.bottom_type,
+          },
+          advice: aiAdvice,
+          timestamp: timestamp.toISOString(),
+        };
       } catch (error) {
         fastify.log.error(error);
         reply.code(500);
         return {
-          error: 'Failed to get AI recommendations',
+          error: 'Failed to generate AI recommendations',
           message: error instanceof Error ? error.message : 'Unknown error',
         };
       }
