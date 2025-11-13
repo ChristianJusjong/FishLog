@@ -31,6 +31,7 @@ model User {
   provider          String?             // 'google', 'facebook', 'email', or 'test'
   providerId        String?             // OAuth provider's user ID
   refreshToken      String?             @db.Text
+  groqApiKey        String?             // User's personal Groq API key
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   catches           Catch[]

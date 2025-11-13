@@ -1,7 +1,18 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../middleware/auth';
+import { PrismaClient } from '@prisma/client';
+import Groq from 'groq-sdk';
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+const prisma = new PrismaClient();
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+
+function getGroqClient(userApiKey?: string): Groq {
+  const apiKey = userApiKey || GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('Groq API key is required. Please add your Groq API key in your profile settings.');
+  }
+  return new Groq({ apiKey });
+}
 
 export async function aiRoutes(fastify: FastifyInstance) {
   // Get AI fishing recommendations
@@ -84,7 +95,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Get AI fishing advice for a specific location
+  // Get AI fishing advice for a specific location using Groq
   fastify.post(
     '/ai/fishing-advice',
     {
@@ -132,48 +143,45 @@ export async function aiRoutes(fastify: FastifyInstance) {
           season: string;
         };
 
-        // Build advice based on data
-        let advice = `🎣 Fiskerådgivning for denne placering:\n\n`;
+        // Get user's Groq API key from profile
+        const user = await prisma.user.findUnique({
+          where: { id: request.user.userId },
+          select: { groqApiKey: true },
+        });
 
-        // Weather analysis
-        advice += `🌡️ Vejr: ${weather.temperature}°C, vind ${weather.windSpeed} m/s\n`;
-        if (weather.windSpeed < 3) {
-          advice += `Lav vind - godt for lystfiskeri. Prøv overfladenær fiskeri.\n`;
-        } else if (weather.windSpeed < 8) {
-          advice += `Moderat vind - fisken kan være aktiv. Brug tungere udstyr.\n`;
-        } else {
-          advice += `Kraftig vind - søg læ og fisk dybere vand.\n`;
-        }
+        const userApiKey = user?.groqApiKey || undefined;
 
-        advice += `\n`;
+        // Build context for AI
+        let context = `Du er en dansk fiskeriekspert. Giv konkrete råd på dansk baseret på følgende information:\n\n`;
+        context += `Placering: ${location.latitude}, ${location.longitude}\n`;
+        context += `Vejr: ${weather.temperature}°C, vind ${weather.windSpeed} m/s\n`;
+        context += `Sæson: ${season}\n`;
 
-        // Seasonal advice
-        advice += `📅 Sæson: ${season}\n`;
-        const seasonalTips: Record<string, string> = {
-          'forår': 'Gode gyde-perioder. Fisk ved mudder og vegetation.',
-          'sommer': 'Fisk tidligt om morgenen eller sent om aftenen. Prøv skygge.',
-          'efterår': 'Aktiv fiskeri periode. God tid til store fangster.',
-          'vinter': 'Langsommere aktivitet. Fisk dybt og langsomt.',
-        };
-        advice += `${seasonalTips[season] || 'God fiskeri!'}\\n\n`;
-
-        // Nearby catch statistics
         if (nearbyCatchStats && nearbyCatchStats.totalCatches > 0) {
-          advice += `🐟 Lokale fangster:\n`;
-          advice += `Tidligere fangster i området: ${nearbyCatchStats.totalCatches}\n`;
+          context += `\nLokale fangstdata:\n`;
+          context += `- ${nearbyCatchStats.totalCatches} tidligere fangster i området\n`;
           if (nearbyCatchStats.commonSpecies.length > 0) {
-            advice += `Almindelige arter: ${nearbyCatchStats.commonSpecies.join(', ')}\n`;
+            context += `- Almindelige arter: ${nearbyCatchStats.commonSpecies.join(', ')}\n`;
           }
-          advice += `Gennemsnitlig vægt: ${Math.round(nearbyCatchStats.avgWeight)}g\n\n`;
-        } else {
-          advice += `ℹ️ Ingen tidligere fangster registreret i dette område. Prøv forskellige teknikker!\n\n`;
+          context += `- Gennemsnitlig vægt: ${Math.round(nearbyCatchStats.avgWeight)}g\n`;
         }
 
-        // General recommendations
-        advice += `💡 Anbefalinger:\n`;
-        advice += `• Prøv forskellige dybder\n`;
-        advice += `• Brug lokal agn og madding\n`;
-        advice += `• Vær tålmodig og skift spot hvis ingen bid\n`;
+        context += `\nGiv praktiske råd om:\n1. Bedste tid på dagen\n2. Valg af agn og teknik\n3. Hvor dybt at fiske\n4. Forventede fiskearter\n`;
+
+        const groq = getGroqClient(userApiKey);
+        const completion = await groq.chat.completions.create({
+          messages: [
+            {
+              role: 'user',
+              content: context,
+            },
+          ],
+          model: 'llama-3.3-70b-versatile',
+          temperature: 0.7,
+          max_tokens: 800,
+        });
+
+        const advice = completion.choices[0]?.message?.content || 'Ingen råd tilgængelige.';
 
         return { advice };
       } catch (error) {
@@ -187,7 +195,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Health check for AI service
+  // Health check for Groq service
   fastify.get(
     '/ai/health',
     {
@@ -195,26 +203,29 @@ export async function aiRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const healthResponse = await fetch(`${AI_SERVICE_URL}/api/v1/health`);
-
-        if (!healthResponse.ok) {
+        // Check if Groq API key is configured
+        if (!GROQ_API_KEY) {
           reply.code(503);
           return {
             status: 'unhealthy',
-            ai_service: 'unavailable',
+            ai_service: 'Groq API key not configured',
           };
         }
 
-        const healthData = await healthResponse.json();
+        // Try a simple API call to verify connectivity
+        const groq = getGroqClient();
+        await groq.models.list();
+
         return {
           status: 'healthy',
-          ai_service: healthData,
+          ai_service: 'Groq',
+          model: 'llama-3.3-70b-versatile',
         };
       } catch (error) {
         reply.code(503);
         return {
           status: 'unhealthy',
-          ai_service: 'unreachable',
+          ai_service: 'Groq unreachable',
           error: error instanceof Error ? error.message : 'Unknown error',
         };
       }

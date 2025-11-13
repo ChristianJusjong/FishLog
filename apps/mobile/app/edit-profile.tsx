@@ -26,11 +26,12 @@ export default function EditProfileScreen() {
 
   const [name, setName] = useState(user?.name || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
+  const [groqApiKey, setGroqApiKey] = useState(user?.groqApiKey || '');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Check if any changes have been made
-  const hasChanges = name !== (user?.name || '') || avatar !== (user?.avatar || '');
+  const hasChanges = name !== (user?.name || '') || avatar !== (user?.avatar || '') || groqApiKey !== (user?.groqApiKey || '');
 
   const handleImageUpload = async () => {
     if (Platform.OS === 'web') {
@@ -143,8 +144,8 @@ export default function EditProfileScreen() {
 
     setLoading(true);
     try {
-      console.log('Saving profile with:', { name, avatar: avatar || 'empty' });
-      await authService.updateProfile({ name, avatar: avatar || '' });
+      console.log('Saving profile with:', { name, avatar: avatar || 'empty', groqApiKey: groqApiKey ? 'present' : 'empty' });
+      await authService.updateProfile({ name, avatar: avatar || '', groqApiKey: groqApiKey || '' });
       console.log('Profile update successful, refreshing user...');
       await refreshUser();
       Alert.alert('Succes', 'Profil opdateret!', [
@@ -224,6 +225,22 @@ export default function EditProfileScreen() {
           <Text style={styles.label}>Email</Text>
           <Text style={styles.disabledText}>{user.email}</Text>
           <Text style={styles.hint}>Email kan ikke ændres</Text>
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Groq API Key</Text>
+          <TextInput
+            style={styles.input}
+            value={groqApiKey}
+            onChangeText={setGroqApiKey}
+            placeholder="gsk_..."
+            secureTextEntry
+            editable={!loading}
+          />
+          <Text style={styles.hint}>
+            Valgfri: Tilføj din egen Groq API key for AI-funktioner.{'\n'}
+            Få din gratis API key på: https://console.groq.com/keys
+          </Text>
         </View>
       </View>
 

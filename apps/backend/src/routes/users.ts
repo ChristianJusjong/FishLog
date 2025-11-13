@@ -22,6 +22,7 @@ export async function userRoutes(fastify: FastifyInstance) {
           name: true,
           avatar: true,
           provider: true,
+          groqApiKey: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -47,19 +48,21 @@ export async function userRoutes(fastify: FastifyInstance) {
         return reply.code(401).send({ error: 'Unauthorized' });
       }
 
-      const { name, avatar } = request.body as {
+      const { name, avatar, groqApiKey } = request.body as {
         name?: string;
         avatar?: string;
+        groqApiKey?: string;
       };
 
       fastify.log.info({
         userId: request.user.userId,
         name,
-        avatar: avatar ? 'present' : 'not present'
+        avatar: avatar ? 'present' : 'not present',
+        groqApiKey: groqApiKey ? 'present' : 'not present',
       }, 'Update profile request');
 
       // Build update data object
-      const updateData: { name?: string; avatar?: string | null } = {};
+      const updateData: { name?: string; avatar?: string | null; groqApiKey?: string | null } = {};
 
       if (name !== undefined) {
         updateData.name = name;
@@ -68,6 +71,11 @@ export async function userRoutes(fastify: FastifyInstance) {
       if (avatar !== undefined) {
         // Allow setting avatar to null or empty string to remove it
         updateData.avatar = avatar || null;
+      }
+
+      if (groqApiKey !== undefined) {
+        // Allow setting groqApiKey to null or empty string to remove it
+        updateData.groqApiKey = groqApiKey || null;
       }
 
       const user = await prisma.user.update({
@@ -79,6 +87,7 @@ export async function userRoutes(fastify: FastifyInstance) {
           name: true,
           avatar: true,
           provider: true,
+          groqApiKey: true,
           createdAt: true,
           updatedAt: true,
         },
