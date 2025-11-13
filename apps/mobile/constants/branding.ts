@@ -119,11 +119,12 @@ export const TYPOGRAPHY = {
     bold: '700' as const,      // Bold emphasis
   },
 
-  // Line Heights
+  // Line Heights - Improved for readability
   lineHeight: {
-    tight: 1.25,     // Headings
-    normal: 1.5,     // Body text
-    relaxed: 1.75,   // Spacious text
+    tight: 1.3,      // Headings
+    normal: 1.6,     // Body text
+    relaxed: 1.8,    // Spacious text
+    loose: 2.0,      // Extra spacious
   },
 
   // Pre-defined Text Styles (with improved readability)
@@ -133,14 +134,14 @@ export const TYPOGRAPHY = {
       fontFamily: 'System',
       fontSize: 24,
       fontWeight: '700' as const,
-      lineHeight: 1.3,
+      lineHeight: 32,      // Fixed pixel value for better spacing
       color: '#1A1A1A',  // High contrast near-black
     },
     h1Dark: {
       fontFamily: 'System',
       fontSize: 24,
       fontWeight: '700' as const,
-      lineHeight: 1.3,
+      lineHeight: 32,
       color: '#FFFFFF',
     },
 
@@ -149,14 +150,14 @@ export const TYPOGRAPHY = {
       fontFamily: 'System',
       fontSize: 18,
       fontWeight: '600' as const,
-      lineHeight: 1.3,
+      lineHeight: 26,      // Fixed pixel value for better spacing
       color: '#1A1A1A',  // High contrast near-black
     },
     h2Dark: {
       fontFamily: 'System',
       fontSize: 18,
       fontWeight: '600' as const,
-      lineHeight: 1.3,
+      lineHeight: 26,
       color: '#FFFFFF',
     },
 
@@ -165,14 +166,14 @@ export const TYPOGRAPHY = {
       fontFamily: 'System',
       fontSize: 16,
       fontWeight: '600' as const,
-      lineHeight: 1.3,
+      lineHeight: 24,      // Fixed pixel value for better spacing
       color: '#1A1A1A',
     },
     h3Dark: {
       fontFamily: 'System',
       fontSize: 16,
       fontWeight: '600' as const,
-      lineHeight: 1.3,
+      lineHeight: 24,
       color: '#FFFFFF',
     },
 
@@ -181,7 +182,7 @@ export const TYPOGRAPHY = {
       fontFamily: 'System',
       fontSize: 16,
       fontWeight: '400' as const,
-      lineHeight: 1.5,
+      lineHeight: 24,      // 1.5x for better readability
       color: '#1A1A1A',  // High contrast near-black
     },
 
@@ -190,7 +191,7 @@ export const TYPOGRAPHY = {
       fontFamily: 'System',
       fontSize: 14,
       fontWeight: '400' as const,
-      lineHeight: 1.5,
+      lineHeight: 20,      // ~1.43x for better readability
       color: '#4A5568',  // Slate gray with good contrast
     },
 
@@ -199,7 +200,7 @@ export const TYPOGRAPHY = {
       fontFamily: 'System',
       fontSize: 16,
       fontWeight: '600' as const,
-      lineHeight: 1.3,
+      lineHeight: 20,      // Tight for buttons
       color: '#FFFFFF',
     },
 
@@ -208,14 +209,14 @@ export const TYPOGRAPHY = {
       fontFamily: 'System',
       fontSize: 12,
       fontWeight: '500' as const,
-      lineHeight: 1.3,
+      lineHeight: 16,      // Compact for tabs
       color: '#718096',  // Inactive with better contrast
     },
     tabLabelActive: {
       fontFamily: 'System',
       fontSize: 12,
       fontWeight: '600' as const,
-      lineHeight: 1.3,
+      lineHeight: 16,
       color: '#E8773D',  // Active warm orange
     },
   },
