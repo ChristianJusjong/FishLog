@@ -37,6 +37,7 @@ export const COLORS = {
 
   // Text Colors - High Contrast for Readability
   text: '#1A1A1A',           // Near-black primary text
+  textPrimary: '#1A1A1A',    // Primary text (alias for text)
   textSecondary: '#4A5568',  // Slate gray secondary text
   textTertiary: '#718096',   // Light slate tertiary text
   textInverse: '#FFFFFF',    // White text on dark backgrounds
@@ -154,6 +155,22 @@ export const TYPOGRAPHY = {
     h2Dark: {
       fontFamily: 'System',
       fontSize: 18,
+      fontWeight: '600' as const,
+      lineHeight: 1.3,
+      color: '#FFFFFF',
+    },
+
+    // H3 - Sub-sections
+    h3: {
+      fontFamily: 'System',
+      fontSize: 16,
+      fontWeight: '600' as const,
+      lineHeight: 1.3,
+      color: '#1A1A1A',
+    },
+    h3Dark: {
+      fontFamily: 'System',
+      fontSize: 16,
       fontWeight: '600' as const,
       lineHeight: 1.3,
       color: '#FFFFFF',
@@ -350,4 +367,18 @@ export const BUTTON_VARIANTS = {
     backgroundColor: 'transparent',
     color: COLORS.primary,
   },
+} as const;
+
+/**
+ * FAB (Floating Action Button) styles
+ */
+export const FAB = {
+  size: 56,
+  backgroundColor: COLORS.accent,
+  color: COLORS.white,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.3,
+  shadowRadius: 8,
+  elevation: 6,
 } as const;
