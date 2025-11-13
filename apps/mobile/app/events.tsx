@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
 
@@ -88,28 +90,31 @@ export default function EventsScreen() {
     const start = new Date(startAt);
     const end = new Date(endAt);
 
-    if (now < start) return { label: 'Kommende', color: '#007AFF' };
-    if (now >= start && now <= end) return { label: 'I gang', color: '#28a745' };
-    return { label: 'Afsluttet', color: '#6c757d' };
+    if (now < start) return { label: 'Kommende', color: COLORS.info };
+    if (now >= start && now <= end) return { label: 'I gang', color: COLORS.success };
+    return { label: 'Afsluttet', color: COLORS.textSecondary };
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.backgroundLight }} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.backgroundLight }} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Events</Text>
         <TouchableOpacity
           style={styles.createButton}
           onPress={() => router.push('/create-event')}
         >
-          <Text style={styles.createButtonText}>+ Opret Event</Text>
+          <Ionicons name="add" size={20} color={COLORS.white} />
+          <Text style={styles.createButtonText}>Opret Event</Text>
         </TouchableOpacity>
       </View>
 
@@ -118,6 +123,11 @@ export default function EventsScreen() {
           style={[styles.filterButton, filter === 'upcoming' && styles.filterButtonActive]}
           onPress={() => setFilter('upcoming')}
         >
+          <Ionicons
+            name="calendar-outline"
+            size={16}
+            color={filter === 'upcoming' ? COLORS.white : COLORS.textSecondary}
+          />
           <Text style={[styles.filterButtonText, filter === 'upcoming' && styles.filterButtonTextActive]}>
             Kommende
           </Text>
@@ -126,6 +136,11 @@ export default function EventsScreen() {
           style={[styles.filterButton, filter === 'ongoing' && styles.filterButtonActive]}
           onPress={() => setFilter('ongoing')}
         >
+          <Ionicons
+            name="play-circle-outline"
+            size={16}
+            color={filter === 'ongoing' ? COLORS.white : COLORS.textSecondary}
+          />
           <Text style={[styles.filterButtonText, filter === 'ongoing' && styles.filterButtonTextActive]}>
             I gang
           </Text>
@@ -134,6 +149,11 @@ export default function EventsScreen() {
           style={[styles.filterButton, filter === 'past' && styles.filterButtonActive]}
           onPress={() => setFilter('past')}
         >
+          <Ionicons
+            name="time-outline"
+            size={16}
+            color={filter === 'past' ? COLORS.white : COLORS.textSecondary}
+          />
           <Text style={[styles.filterButtonText, filter === 'past' && styles.filterButtonTextActive]}>
             Afsluttede
           </Text>
@@ -142,6 +162,11 @@ export default function EventsScreen() {
           style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
           onPress={() => setFilter('all')}
         >
+          <Ionicons
+            name="list-outline"
+            size={16}
+            color={filter === 'all' ? COLORS.white : COLORS.textSecondary}
+          />
           <Text style={[styles.filterButtonText, filter === 'all' && styles.filterButtonTextActive]}>
             Alle
           </Text>
@@ -151,11 +176,12 @@ export default function EventsScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
         }
       >
         {events.length === 0 ? (
           <View style={styles.emptyContainer}>
+            <Ionicons name="calendar-outline" size={64} color={COLORS.textTertiary} />
             <Text style={styles.emptyText}>Ingen events fundet</Text>
             <Text style={styles.emptySubtext}>
               Opret dit første event eller vent på at andre opretter events
@@ -184,30 +210,36 @@ export default function EventsScreen() {
                 )}
 
                 <View style={styles.eventDetails}>
-                  <Text style={styles.eventDetailText}>
-                    📅 {formatDate(event.startAt)}
-                  </Text>
-                  <Text style={styles.eventDetailText}>
-                    🏁 {formatDate(event.endAt)}
-                  </Text>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="calendar" size={14} color={COLORS.textSecondary} />
+                    <Text style={styles.eventDetailText}>{formatDate(event.startAt)}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="flag" size={14} color={COLORS.textSecondary} />
+                    <Text style={styles.eventDetailText}>{formatDate(event.endAt)}</Text>
+                  </View>
                   {event.venue && (
-                    <Text style={styles.eventDetailText}>
-                      📍 {event.venue}
-                    </Text>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="location" size={14} color={COLORS.textSecondary} />
+                      <Text style={styles.eventDetailText}>{event.venue}</Text>
+                    </View>
                   )}
                 </View>
 
                 <View style={styles.eventFooter}>
-                  <Text style={styles.organizerText}>
-                    Arrangør: {event.owner.name}
-                  </Text>
+                  <View style={styles.organizerRow}>
+                    <Ionicons name="person-outline" size={14} color={COLORS.textSecondary} />
+                    <Text style={styles.organizerText}>Arrangør: {event.owner.name}</Text>
+                  </View>
                   <View style={styles.participantsContainer}>
-                    <Text style={styles.participantsText}>
-                      👥 {event.participantCount} deltagere
-                    </Text>
+                    <View style={styles.participantsRow}>
+                      <Ionicons name="people" size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.participantsText}>{event.participantCount} deltagere</Text>
+                    </View>
                     {event.isParticipating && (
                       <View style={styles.participatingBadge}>
-                        <Text style={styles.participatingText}>✓ Tilmeldt</Text>
+                        <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
+                        <Text style={styles.participatingText}>Tilmeldt</Text>
                       </View>
                     )}
                   </View>
@@ -222,158 +254,172 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  loadingContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: 'white',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.border,
+    ...SHADOWS.sm,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
+    ...TYPOGRAPHY.styles.h1,
   },
   createButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    ...SHADOWS.sm,
   },
   createButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 14,
+    ...TYPOGRAPHY.styles.button,
+    fontSize: TYPOGRAPHY.fontSize.sm,
   },
   filterContainer: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: 'white',
-    gap: 8,
+    padding: SPACING.md,
+    backgroundColor: COLORS.surface,
+    gap: SPACING.sm,
   },
   filterButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.backgroundLight,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
   },
   filterButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.primary,
   },
   filterButtonText: {
-    fontSize: 12,
+    ...TYPOGRAPHY.styles.small,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   filterButtonTextActive: {
-    color: 'white',
+    color: COLORS.white,
   },
   scrollView: {
     flex: 1,
-    padding: 16,
   },
   eventCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    ...SHADOWS.md,
   },
   eventHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   eventTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    ...TYPOGRAPHY.styles.h2,
     flex: 1,
   },
   statusBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
-    borderRadius: 4,
-    marginLeft: 8,
+    borderRadius: RADIUS.sm,
+    marginLeft: SPACING.sm,
   },
   statusText: {
-    color: 'white',
+    color: COLORS.white,
     fontSize: 11,
     fontWeight: '600',
   },
   eventDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    ...TYPOGRAPHY.styles.small,
+    marginBottom: SPACING.md,
   },
   eventDetails: {
-    gap: 4,
-    marginBottom: 12,
+    gap: SPACING.xs,
+    marginBottom: SPACING.md,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
   eventDetailText: {
-    fontSize: 13,
-    color: '#555',
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textSecondary,
   },
   eventFooter: {
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingTop: 12,
-    gap: 8,
+    borderTopColor: COLORS.border,
+    paddingTop: SPACING.md,
+    gap: SPACING.sm,
+  },
+  organizerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
   organizerText: {
-    fontSize: 12,
-    color: '#666',
+    ...TYPOGRAPHY.styles.small,
   },
   participantsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  participantsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
   participantsText: {
-    fontSize: 13,
+    ...TYPOGRAPHY.styles.small,
     fontWeight: '600',
-    color: '#333',
   },
   participatingBadge: {
-    backgroundColor: '#e8f5e9',
-    paddingHorizontal: 8,
+    backgroundColor: COLORS.backgroundLight,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: RADIUS.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   participatingText: {
-    color: '#28a745',
+    color: COLORS.success,
     fontSize: 11,
     fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 60,
+    padding: SPACING['2xl'],
+    marginTop: SPACING['2xl'],
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#666',
-    marginBottom: 8,
+    ...TYPOGRAPHY.styles.h2,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#999',
+    ...TYPOGRAPHY.styles.small,
     textAlign: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: SPACING.xl,
   },
 });

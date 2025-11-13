@@ -12,6 +12,8 @@ import {
   Share,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { api } from '../lib/api';
 
 interface Badge {
@@ -72,20 +74,35 @@ export default function BadgesScreen() {
       case 'platinum':
         return '#E5E4E2';
       default:
-        return '#999';
+        return COLORS.textSecondary;
+    }
+  };
+
+  const getTierIcon = (tier: string) => {
+    switch (tier) {
+      case 'bronze':
+        return 'medal';
+      case 'silver':
+        return 'medal';
+      case 'gold':
+        return 'medal';
+      case 'platinum':
+        return 'diamond';
+      default:
+        return 'ribbon';
     }
   };
 
   const getTierLabel = (tier: string) => {
     switch (tier) {
       case 'bronze':
-        return '🥉 Bronze';
+        return 'Bronze';
       case 'silver':
-        return '🥈 Sølv';
+        return 'Sølv';
       case 'gold':
-        return '🥇 Guld';
+        return 'Guld';
       case 'platinum':
-        return '💎 Platin';
+        return 'Platin';
       default:
         return tier;
     }
@@ -105,6 +122,7 @@ export default function BadgesScreen() {
   const renderBadgeCard = (item: BadgeWithProgress) => {
     const isLocked = item.locked;
     const tierColor = getTierColor(item.badge.tier);
+    const tierIcon = getTierIcon(item.badge.tier);
 
     return (
       <TouchableOpacity
@@ -114,9 +132,11 @@ export default function BadgesScreen() {
         activeOpacity={0.7}
       >
         <View style={styles.badgeIconContainer}>
-          <Text style={[styles.badgeIcon, isLocked && styles.badgeIconLocked]}>
-            {isLocked ? '🔒' : item.badge.icon}
-          </Text>
+          {isLocked ? (
+            <Ionicons name="lock-closed" size={36} color={COLORS.textTertiary} />
+          ) : (
+            <Text style={styles.badgeIcon}>{item.badge.icon}</Text>
+          )}
         </View>
 
         <View style={styles.badgeInfo}>
@@ -124,6 +144,7 @@ export default function BadgesScreen() {
             {item.badge.name}
           </Text>
           <View style={[styles.tierBadge, { backgroundColor: tierColor }]}>
+            <Ionicons name={tierIcon} size={10} color={COLORS.white} />
             <Text style={styles.tierText}>{getTierLabel(item.badge.tier)}</Text>
           </View>
         </View>
@@ -141,8 +162,9 @@ export default function BadgesScreen() {
 
         {!isLocked && item.earnedAt && (
           <View style={styles.earnedContainer}>
+            <Ionicons name="checkmark-circle" size={12} color={COLORS.success} />
             <Text style={styles.earnedText}>
-              Opnået {new Date(item.earnedAt).toLocaleDateString('da-DK')}
+              {new Date(item.earnedAt).toLocaleDateString('da-DK')}
             </Text>
           </View>
         )}
@@ -155,7 +177,7 @@ export default function BadgesScreen() {
       <View style={styles.container}>
         <Stack.Screen options={{ title: 'Badges' }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Henter badges...</Text>
         </View>
       </View>
@@ -170,20 +192,23 @@ export default function BadgesScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
         }
       >
         {/* Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
+            <Ionicons name="trophy" size={32} color={COLORS.primary} />
             <Text style={styles.statNumber}>{earnedBadges.length}</Text>
             <Text style={styles.statLabel}>Opnået</Text>
           </View>
           <View style={styles.statBox}>
+            <Ionicons name="lock-closed" size={32} color={COLORS.textSecondary} />
             <Text style={styles.statNumber}>{lockedBadges.length}</Text>
             <Text style={styles.statLabel}>Låst</Text>
           </View>
           <View style={styles.statBox}>
+            <Ionicons name="stats-chart" size={32} color={COLORS.accent} />
             <Text style={styles.statNumber}>
               {Math.round(
                 (earnedBadges.length /
@@ -199,7 +224,10 @@ export default function BadgesScreen() {
         {/* Earned Badges */}
         {earnedBadges.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Dine Badges ({earnedBadges.length})</Text>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="trophy" size={20} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Dine Badges ({earnedBadges.length})</Text>
+            </View>
             <View style={styles.badgesGrid}>
               {earnedBadges.map((item) => renderBadgeCard(item))}
             </View>
@@ -209,7 +237,10 @@ export default function BadgesScreen() {
         {/* Locked Badges */}
         {lockedBadges.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Låste Badges ({lockedBadges.length})</Text>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="lock-closed" size={20} color={COLORS.textSecondary} />
+              <Text style={styles.sectionTitle}>Låste Badges ({lockedBadges.length})</Text>
+            </View>
             <View style={styles.badgesGrid}>
               {lockedBadges.map((item) => renderBadgeCard(item))}
             </View>
@@ -218,7 +249,7 @@ export default function BadgesScreen() {
 
         {earnedBadges.length === 0 && lockedBadges.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🎣</Text>
+            <Ionicons name="fish-outline" size={64} color={COLORS.textTertiary} />
             <Text style={styles.emptyText}>Ingen badges endnu</Text>
             <Text style={styles.emptySubtext}>
               Start med at fange nogle fisk!
@@ -243,14 +274,16 @@ export default function BadgesScreen() {
                     style={styles.closeButton}
                     onPress={() => setSelectedBadge(null)}
                   >
-                    <Text style={styles.closeButtonText}>✕</Text>
+                    <Ionicons name="close" size={24} color={COLORS.textSecondary} />
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.modalBody}>
-                  <Text style={styles.modalIcon}>
-                    {selectedBadge.locked ? '🔒' : selectedBadge.badge.icon}
-                  </Text>
+                  {selectedBadge.locked ? (
+                    <Ionicons name="lock-closed" size={80} color={COLORS.textTertiary} />
+                  ) : (
+                    <Text style={styles.modalIcon}>{selectedBadge.badge.icon}</Text>
+                  )}
                   <Text style={styles.modalTitle}>{selectedBadge.badge.name}</Text>
 
                   <View
@@ -258,10 +291,11 @@ export default function BadgesScreen() {
                       styles.tierBadge,
                       {
                         backgroundColor: getTierColor(selectedBadge.badge.tier),
-                        marginBottom: 16,
+                        marginBottom: SPACING.md,
                       },
                     ]}
                   >
+                    <Ionicons name={getTierIcon(selectedBadge.badge.tier)} size={12} color={COLORS.white} />
                     <Text style={styles.tierText}>
                       {getTierLabel(selectedBadge.badge.tier)}
                     </Text>
@@ -290,6 +324,7 @@ export default function BadgesScreen() {
 
                   {!selectedBadge.locked && selectedBadge.earnedAt && (
                     <View style={styles.modalEarnedContainer}>
+                      <Ionicons name="calendar" size={20} color={COLORS.success} />
                       <Text style={styles.modalEarnedLabel}>Opnået</Text>
                       <Text style={styles.modalEarnedDate}>
                         {new Date(selectedBadge.earnedAt).toLocaleDateString('da-DK', {
@@ -306,7 +341,8 @@ export default function BadgesScreen() {
                       style={styles.shareButton}
                       onPress={() => shareBadge(selectedBadge)}
                     >
-                      <Text style={styles.shareButtonText}>📤 Del Badge</Text>
+                      <Ionicons name="share-social" size={20} color={COLORS.white} />
+                      <Text style={styles.shareButtonText}>Del Badge</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -322,7 +358,7 @@ export default function BadgesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.backgroundLight,
   },
   loadingContainer: {
     flex: 1,
@@ -330,65 +366,59 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: SPACING.md,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.md,
   },
   statBox: {
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    ...TYPOGRAPHY.styles.h1,
+    color: COLORS.primary,
+    marginTop: SPACING.xs,
   },
   statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    ...TYPOGRAPHY.styles.small,
+    marginTop: SPACING.xs,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: SPACING.xl,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  badgesGrid: {
-    gap: 12,
-  },
-  badgeCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.styles.h2,
+  },
+  badgesGrid: {
+    gap: SPACING.md,
+  },
+  badgeCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...SHADOWS.md,
   },
   badgeCardLocked: {
     opacity: 0.6,
@@ -396,86 +426,82 @@ const styles = StyleSheet.create({
   badgeIconContainer: {
     width: 60,
     height: 60,
-    borderRadius: 30,
-    backgroundColor: '#f0f0f0',
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   badgeIcon: {
     fontSize: 36,
-  },
-  badgeIconLocked: {
-    fontSize: 28,
   },
   badgeInfo: {
     flex: 1,
   },
   badgeName: {
-    fontSize: 16,
+    ...TYPOGRAPHY.styles.body,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 6,
+    marginBottom: SPACING.xs,
   },
   badgeNameLocked: {
-    color: '#999',
+    color: COLORS.textSecondary,
   },
   tierBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: RADIUS.full,
   },
   tierText: {
     fontSize: 11,
     fontWeight: '600',
-    color: 'white',
+    color: COLORS.white,
   },
   progressContainer: {
-    marginLeft: 12,
+    marginLeft: SPACING.md,
     width: 80,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
+    backgroundColor: COLORS.border,
+    borderRadius: RADIUS.sm,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.primary,
   },
   progressText: {
     fontSize: 10,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
   earnedContainer: {
-    marginLeft: 12,
+    marginLeft: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   earnedText: {
     fontSize: 11,
-    color: '#28a745',
+    color: COLORS.success,
     fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingTop: 80,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    paddingTop: SPACING['3xl'],
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    ...TYPOGRAPHY.styles.h2,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#666',
+    ...TYPOGRAPHY.styles.small,
   },
   modalOverlay: {
     flex: 1,
@@ -483,15 +509,15 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
     minHeight: 400,
   },
   modalHeader: {
-    padding: 16,
+    padding: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.border,
     alignItems: 'flex-end',
   },
   closeButton: {
@@ -500,73 +526,66 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  closeButtonText: {
-    fontSize: 24,
-    color: '#999',
-    fontWeight: 'bold',
-  },
   modalBody: {
-    padding: 24,
+    padding: SPACING.xl,
     alignItems: 'center',
   },
   modalIcon: {
     fontSize: 80,
-    marginBottom: 16,
+    marginBottom: SPACING.md,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    ...TYPOGRAPHY.styles.h1,
+    marginBottom: SPACING.md,
   },
   modalDescription: {
-    fontSize: 16,
-    color: '#666',
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 24,
+    marginBottom: SPACING.xl,
   },
   modalProgressContainer: {
     width: '100%',
-    marginTop: 16,
+    marginTop: SPACING.md,
   },
   modalProgressLabel: {
-    fontSize: 14,
+    ...TYPOGRAPHY.styles.body,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   modalProgressText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 8,
+    ...TYPOGRAPHY.styles.small,
+    marginTop: SPACING.sm,
     textAlign: 'center',
   },
   modalEarnedContainer: {
-    marginTop: 16,
+    marginTop: SPACING.md,
     alignItems: 'center',
   },
   modalEarnedLabel: {
-    fontSize: 14,
+    ...TYPOGRAPHY.styles.body,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 6,
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.xs,
   },
   modalEarnedDate: {
-    fontSize: 16,
-    color: '#28a745',
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.success,
     fontWeight: '600',
   },
   shareButton: {
-    marginTop: 24,
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    marginTop: SPACING.xl,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    ...SHADOWS.md,
   },
   shareButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
+    ...TYPOGRAPHY.styles.button,
   },
 });

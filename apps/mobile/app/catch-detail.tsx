@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Platform, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Platform, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import MapPicker from '../components/MapPicker';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
@@ -166,8 +168,9 @@ export default function CatchDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Indlæser...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Indlæser fangst...</Text>
       </View>
     );
   }
@@ -208,10 +211,20 @@ export default function CatchDetailScreen() {
         </View>
         {catchData.visibility && (
           <View style={styles.visibilityBadge}>
+            <Ionicons
+              name={
+                catchData.visibility === 'private' ? 'lock-closed' :
+                catchData.visibility === 'friends' ? 'people' :
+                'globe'
+              }
+              size={14}
+              color={COLORS.textSecondary}
+              style={{ marginRight: 4 }}
+            />
             <Text style={styles.visibilityText}>
-              {catchData.visibility === 'private' && '🔒 Privat'}
-              {catchData.visibility === 'friends' && '👥 Venner'}
-              {catchData.visibility === 'public' && '🌍 Offentlig'}
+              {catchData.visibility === 'private' && 'Privat'}
+              {catchData.visibility === 'friends' && 'Venner'}
+              {catchData.visibility === 'public' && 'Offentlig'}
             </Text>
           </View>
         )}
@@ -233,40 +246,48 @@ export default function CatchDetailScreen() {
         <View style={styles.catchDetailsRow}>
           {catchData.lengthCm && (
             <View style={styles.statBox}>
+              <Ionicons name="resize" size={20} color={COLORS.primary} />
               <Text style={styles.statLabel}>Længde</Text>
-              <Text style={styles.statValue}>📏 {catchData.lengthCm} cm</Text>
+              <Text style={styles.statValue}>{catchData.lengthCm} cm</Text>
             </View>
           )}
           {catchData.weightKg && (
             <View style={styles.statBox}>
+              <Ionicons name="scale-outline" size={20} color={COLORS.primary} />
               <Text style={styles.statLabel}>Vægt</Text>
-              <Text style={styles.statValue}>⚖️ {Math.round(catchData.weightKg * 1000)} g</Text>
+              <Text style={styles.statValue}>{Math.round(catchData.weightKg * 1000)} g</Text>
             </View>
           )}
         </View>
 
         {catchData.bait && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>🪱 Agn:</Text>
+            <Ionicons name="bug" size={18} color={COLORS.textSecondary} style={{ marginRight: 8 }} />
+            <Text style={styles.infoLabel}>Agn:</Text>
             <Text style={styles.infoValue}>{catchData.bait}</Text>
           </View>
         )}
         {catchData.rig && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>🎣 Forfang:</Text>
+            <Ionicons name="fish-outline" size={18} color={COLORS.textSecondary} style={{ marginRight: 8 }} />
+            <Text style={styles.infoLabel}>Forfang:</Text>
             <Text style={styles.infoValue}>{catchData.rig}</Text>
           </View>
         )}
         {catchData.technique && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>🎯 Teknik:</Text>
+            <Ionicons name="flag" size={18} color={COLORS.textSecondary} style={{ marginRight: 8 }} />
+            <Text style={styles.infoLabel}>Teknik:</Text>
             <Text style={styles.infoValue}>{catchData.technique}</Text>
           </View>
         )}
 
         {catchData.notes && (
           <View style={styles.notesContainer}>
-            <Text style={styles.notesLabel}>📝 Noter</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <Ionicons name="document-text" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
+              <Text style={styles.notesLabel}>Noter</Text>
+            </View>
             <Text style={styles.notesText}>{catchData.notes}</Text>
           </View>
         )}
@@ -274,7 +295,10 @@ export default function CatchDetailScreen() {
         {/* Map */}
         {catchData.latitude && catchData.longitude ? (
           <View style={styles.mapContainer}>
-            <Text style={styles.mapLabel}>📍 Fangststed</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Ionicons name="location" size={20} color={COLORS.primary} style={{ marginRight: 6 }} />
+              <Text style={styles.mapLabel}>Fangststed</Text>
+            </View>
             <Text style={styles.debugText}>
               Koordinater: {catchData.latitude.toFixed(6)}, {catchData.longitude.toFixed(6)}
             </Text>
@@ -287,7 +311,10 @@ export default function CatchDetailScreen() {
           </View>
         ) : (
           <View style={styles.mapContainer}>
-            <Text style={styles.mapLabel}>📍 Fangststed</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Ionicons name="location" size={20} color={COLORS.textSecondary} style={{ marginRight: 6 }} />
+              <Text style={styles.mapLabel}>Fangststed</Text>
+            </View>
             <Text style={styles.debugText}>Ingen koordinater tilgængelige</Text>
           </View>
         )}
@@ -300,14 +327,16 @@ export default function CatchDetailScreen() {
             style={[styles.button, styles.editButton]}
             onPress={() => router.push(`/edit-catch?id=${catchId}`)}
           >
-            <Text style={styles.buttonText}>✏️ Rediger</Text>
+            <Ionicons name="create" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
+            <Text style={styles.buttonText}>Rediger</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.button, styles.deleteButton]}
             onPress={deleteCatch}
           >
-            <Text style={styles.buttonText}>🗑️ Slet</Text>
+            <Ionicons name="trash" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
+            <Text style={styles.buttonText}>Slet</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -373,6 +402,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   visibilityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f0f0f0',
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -407,10 +438,11 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.surface,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: RADIUS.lg,
     alignItems: 'center',
+    ...SHADOWS.sm,
   },
   statLabel: {
     fontSize: 12,
@@ -426,6 +458,7 @@ const styles = StyleSheet.create({
   },
   infoRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -434,7 +467,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#666',
-    width: 120,
+    width: 100,
   },
   infoValue: {
     fontSize: 16,
@@ -450,8 +483,7 @@ const styles = StyleSheet.create({
   notesLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
+    color: COLORS.textPrimary,
   },
   notesText: {
     fontSize: 16,
@@ -503,20 +535,24 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
+    flexDirection: 'row',
     padding: 16,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: 'center',
+    ...SHADOWS.sm,
   },
   editButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.primary,
   },
   deleteButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: COLORS.error,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
   },
   buttonText: {
     color: 'white',

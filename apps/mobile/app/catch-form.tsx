@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
@@ -206,16 +207,25 @@ export default function CatchFormScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>
-          {isNew === 'true' ? '📝 Udfyld fangstdata' : '✏️ Rediger fangst'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.lg }}>
+          <Ionicons
+            name={isNew === 'true' ? 'document-text' : 'create'}
+            size={28}
+            color={COLORS.primary}
+            style={{ marginRight: 8 }}
+          />
+          <Text style={styles.title}>
+            {isNew === 'true' ? 'Udfyld fangstdata' : 'Rediger fangst'}
+          </Text>
+        </View>
 
         {/* Locked photo preview */}
         {catch_?.photoUrl && (
           <View style={styles.photoContainer}>
             <Image source={{ uri: catch_.photoUrl }} style={styles.photo} resizeMode="cover" />
             <View style={styles.lockedBadge}>
-              <Text style={styles.lockedText}>🔒 Billede låst</Text>
+              <Ionicons name="lock-closed" size={14} color={COLORS.white} style={{ marginRight: 4 }} />
+              <Text style={styles.lockedText}>Billede låst</Text>
             </View>
           </View>
         )}
@@ -223,7 +233,10 @@ export default function CatchFormScreen() {
         {/* GPS coordinates (locked) */}
         {catch_?.latitude && catch_?.longitude && (
           <View style={styles.gpsContainer}>
-            <Text style={styles.gpsLabel}>📍 GPS-koordinater (låst):</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}>
+              <Ionicons name="location" size={16} color={COLORS.secondary} style={{ marginRight: 4 }} />
+              <Text style={styles.gpsLabel}>GPS-koordinater (låst):</Text>
+            </View>
             <Text style={styles.gpsText}>
               {catch_.latitude.toFixed(6)}, {catch_.longitude.toFixed(6)}
             </Text>
@@ -232,7 +245,10 @@ export default function CatchFormScreen() {
 
         {/* Species picker */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>🐟 Art *</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="fish" size={18} color={COLORS.primary} style={{ marginRight: 4 }} />
+            <Text style={styles.label}>Art *</Text>
+          </View>
           <View style={styles.speciesGrid}>
             {FISH_SPECIES.map((fish) => (
               <TouchableOpacity
@@ -257,7 +273,10 @@ export default function CatchFormScreen() {
         {/* Length and Weight */}
         <View style={styles.row}>
           <View style={styles.halfField}>
-            <Text style={styles.label}>📏 Længde (cm)</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="resize" size={16} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
+              <Text style={styles.label}>Længde (cm)</Text>
+            </View>
             <TextInput
               style={styles.input}
               value={lengthCm}
@@ -268,7 +287,10 @@ export default function CatchFormScreen() {
           </View>
 
           <View style={styles.halfField}>
-            <Text style={styles.label}>⚖️ Vægt (kg)</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="scale-outline" size={16} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
+              <Text style={styles.label}>Vægt (kg)</Text>
+            </View>
             <TextInput
               style={styles.input}
               value={weightKg}
@@ -281,7 +303,10 @@ export default function CatchFormScreen() {
 
         {/* Bait and Lure */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>🪱 Agn</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="bug" size={16} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
+            <Text style={styles.label}>Agn</Text>
+          </View>
           <TextInput
             style={styles.input}
             value={bait}
@@ -291,7 +316,10 @@ export default function CatchFormScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>🎣 Wobler/Spin</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="fish-outline" size={16} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
+            <Text style={styles.label}>Wobler/Spin</Text>
+          </View>
           <TextInput
             style={styles.input}
             value={lure}
@@ -302,7 +330,10 @@ export default function CatchFormScreen() {
 
         {/* Rig and Technique */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>🔧 Grej</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="construct" size={16} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
+            <Text style={styles.label}>Grej</Text>
+          </View>
           <TextInput
             style={styles.input}
             value={rig}
@@ -312,7 +343,10 @@ export default function CatchFormScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>🎯 Teknik</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="flag" size={16} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
+            <Text style={styles.label}>Teknik</Text>
+          </View>
           <TextInput
             style={styles.input}
             value={technique}
@@ -323,7 +357,10 @@ export default function CatchFormScreen() {
 
         {/* Notes */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>📝 Noter</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="document-text" size={16} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
+            <Text style={styles.label}>Noter</Text>
+          </View>
           <TextInput
             style={[styles.input, styles.textArea]}
             value={notes}
@@ -336,7 +373,10 @@ export default function CatchFormScreen() {
 
         {/* Visibility */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>👁️ Synlighed</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="eye" size={16} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
+            <Text style={styles.label}>Synlighed</Text>
+          </View>
           <View style={styles.visibilityRow}>
             {['private', 'friends', 'public'].map((v) => (
               <TouchableOpacity
@@ -368,7 +408,10 @@ export default function CatchFormScreen() {
             {saving ? (
               <ActivityIndicator color={COLORS.white} />
             ) : (
-              <Text style={styles.buttonText}>💾 Gem som kladde</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="save" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
+                <Text style={styles.buttonText}>Gem som kladde</Text>
+              </View>
             )}
           </TouchableOpacity>
 
@@ -380,7 +423,10 @@ export default function CatchFormScreen() {
             {saving ? (
               <ActivityIndicator color={COLORS.white} />
             ) : (
-              <Text style={styles.buttonText}>✅ Færdiggør fangst</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="checkmark-circle" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
+                <Text style={styles.buttonText}>Færdiggør fangst</Text>
+              </View>
             )}
           </TouchableOpacity>
         </View>
@@ -407,7 +453,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...TYPOGRAPHY.styles.h1,
-    marginBottom: SPACING.lg,
     textAlign: 'center',
   },
   photoContainer: {
@@ -426,6 +471,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: SPACING.sm,
     right: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,

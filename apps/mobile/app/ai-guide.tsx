@@ -11,6 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { api } from '../lib/api';
 
 const FISH_SPECIES = [
@@ -178,22 +180,25 @@ export default function AIGuideScreen() {
   };
 
   const getSuccessColor = (probability: number) => {
-    if (probability >= 0.7) return '#28a745';
+    if (probability >= 0.7) return COLORS.success;
     if (probability >= 0.5) return '#ffc107';
     if (probability >= 0.3) return '#fd7e14';
-    return '#dc3545';
+    return COLORS.error;
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return '#28a745';
+    if (confidence >= 0.8) return COLORS.success;
     if (confidence >= 0.6) return '#ffc107';
-    return '#6c757d';
+    return COLORS.textSecondary;
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>🤖 AI Fiskeguide</Text>
+        <View style={styles.titleContainer}>
+          <Ionicons name="hardware-chip" size={32} color={COLORS.primary} />
+          <Text style={styles.title}>AI Fiskeguide</Text>
+        </View>
         <Text style={styles.subtitle}>
           Få intelligente råd om hvor og hvordan du skal fiske
         </Text>
@@ -383,13 +388,19 @@ export default function AIGuideScreen() {
         {loading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text style={styles.getAdviceButtonText}>🎯 Få AI Råd</Text>
+          <View style={styles.buttonContent}>
+            <Ionicons name="target" size={20} color="white" />
+            <Text style={styles.getAdviceButtonText}>Få AI Råd</Text>
+          </View>
         )}
       </TouchableOpacity>
 
       {recommendations && (
         <View style={styles.resultsContainer}>
-          <Text style={styles.resultsTitle}>📊 Anbefalinger</Text>
+          <View style={styles.resultsTitleContainer}>
+            <Ionicons name="stats-chart" size={24} color={COLORS.primary} />
+            <Text style={styles.resultsTitle}>Anbefalinger</Text>
+          </View>
 
           {/* Success Probability */}
           <View style={styles.resultCard}>
@@ -415,7 +426,10 @@ export default function AIGuideScreen() {
 
           {/* Weather & Season */}
           <View style={styles.resultCard}>
-            <Text style={styles.resultCardTitle}>🌤️ Forhold</Text>
+            <View style={styles.cardTitleContainer}>
+              <Ionicons name="partly-sunny" size={20} color={COLORS.primary} />
+              <Text style={styles.resultCardTitle}>Forhold</Text>
+            </View>
             <Text style={styles.insight}>{recommendations.weather_impact}</Text>
             <Text style={styles.insight}>{recommendations.seasonal_notes}</Text>
           </View>
@@ -423,7 +437,10 @@ export default function AIGuideScreen() {
           {/* Baits */}
           {recommendations.baits.length > 0 && (
             <View style={styles.resultCard}>
-              <Text style={styles.resultCardTitle}>🎣 Anbefalet Agn</Text>
+              <View style={styles.cardTitleContainer}>
+                <Ionicons name="fish" size={20} color={COLORS.primary} />
+                <Text style={styles.resultCardTitle}>Anbefalet Agn</Text>
+              </View>
               {recommendations.baits.map((bait, index) => (
                 <View key={index} style={styles.recommendationItem}>
                   <View style={styles.recommendationHeader}>
@@ -451,7 +468,10 @@ export default function AIGuideScreen() {
           {/* Lures */}
           {recommendations.lures.length > 0 && (
             <View style={styles.resultCard}>
-              <Text style={styles.resultCardTitle}>🎯 Anbefalet Wobblers</Text>
+              <View style={styles.cardTitleContainer}>
+                <Ionicons name="target" size={20} color={COLORS.primary} />
+                <Text style={styles.resultCardTitle}>Anbefalet Wobblers</Text>
+              </View>
               {recommendations.lures.map((lure, index) => (
                 <View key={index} style={styles.recommendationItem}>
                   <View style={styles.recommendationHeader}>
@@ -481,7 +501,10 @@ export default function AIGuideScreen() {
           {/* Techniques */}
           {recommendations.techniques.length > 0 && (
             <View style={styles.resultCard}>
-              <Text style={styles.resultCardTitle}>⚡ Teknikker</Text>
+              <View style={styles.cardTitleContainer}>
+                <Ionicons name="flash" size={20} color={COLORS.primary} />
+                <Text style={styles.resultCardTitle}>Teknikker</Text>
+              </View>
               {recommendations.techniques.map((technique, index) => (
                 <View key={index} style={styles.recommendationItem}>
                   <Text style={styles.recommendationName}>{technique.name}</Text>
@@ -505,7 +528,10 @@ export default function AIGuideScreen() {
           {/* Nearby Spots */}
           {recommendations.nearby_spots.length > 0 && (
             <View style={styles.resultCard}>
-              <Text style={styles.resultCardTitle}>📍 Gode Steder Tæt På</Text>
+              <View style={styles.cardTitleContainer}>
+                <Ionicons name="location" size={20} color={COLORS.primary} />
+                <Text style={styles.resultCardTitle}>Gode Steder Tæt På</Text>
+              </View>
               {recommendations.nearby_spots.map((spot, index) => (
                 <View key={index} style={styles.spotItem}>
                   <View style={styles.spotHeader}>
@@ -542,63 +568,64 @@ export default function AIGuideScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   header: {
     backgroundColor: 'white',
-    padding: 20,
+    padding: SPACING.lg,
     paddingTop: 60,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    color: COLORS.text,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   card: {
     backgroundColor: 'white',
-    margin: 12,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    margin: SPACING.md,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.lg,
+    ...SHADOWS.md,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    color: COLORS.text,
+    marginBottom: SPACING.md,
   },
   speciesScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
+    marginHorizontal: -SPACING.lg,
+    paddingHorizontal: SPACING.lg,
   },
   speciesChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
     backgroundColor: '#f0f0f0',
-    marginRight: 8,
+    marginRight: SPACING.sm,
     borderWidth: 2,
     borderColor: '#e0e0e0',
   },
   speciesChipActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   speciesChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   speciesChipTextActive: {
     color: 'white',
@@ -607,13 +634,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   dateButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#007AFF',
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -629,47 +656,47 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.text,
   },
   dateHint: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     textTransform: 'capitalize',
   },
   quickDateButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: SPACING.sm,
   },
   quickDateButton: {
     flex: 1,
-    padding: 10,
+    padding: SPACING.sm,
     backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
   },
   quickDateButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   locationButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
+    padding: SPACING.md,
     backgroundColor: '#f8f9fa',
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   locationName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.text,
   },
   locationDescription: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   locationArrow: {
@@ -677,34 +704,34 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   locationList: {
-    marginTop: 8,
+    marginTop: SPACING.sm,
   },
   locationItem: {
-    padding: 12,
+    padding: SPACING.md,
     backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginBottom: 8,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.sm,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   locationItemActive: {
     backgroundColor: '#e7f3ff',
-    borderColor: '#007AFF',
+    borderColor: COLORS.primary,
   },
   locationItemName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.text,
   },
   locationItemDesc: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   inputRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: SPACING.md,
+    marginBottom: SPACING.md,
   },
   inputGroup: {
     flex: 1,
@@ -712,32 +739,34 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
-    marginBottom: 6,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
     fontSize: 14,
     backgroundColor: 'white',
     justifyContent: 'center',
   },
   inputText: {
     fontSize: 14,
-    color: '#333',
+    color: COLORS.text,
   },
   getAdviceButton: {
-    backgroundColor: '#28a745',
-    padding: 18,
-    borderRadius: 12,
-    margin: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    backgroundColor: COLORS.success,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.lg,
+    margin: SPACING.md,
+    ...SHADOWS.md,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
   },
   getAdviceButtonText: {
     color: 'white',
@@ -746,36 +775,42 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   resultsContainer: {
-    margin: 12,
+    margin: SPACING.md,
+  },
+  resultsTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   resultsTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    color: COLORS.text,
   },
   resultCard: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    ...SHADOWS.md,
+  },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   resultCardTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    color: COLORS.text,
   },
   probabilityBar: {
-    padding: 16,
-    borderRadius: 8,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   probabilityText: {
     fontSize: 28,
@@ -784,37 +819,37 @@ const styles = StyleSheet.create({
   },
   resultHint: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
   insight: {
     fontSize: 13,
     color: '#555',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
     lineHeight: 18,
   },
   recommendationItem: {
     backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   recommendationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: SPACING.xs,
   },
   recommendationName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.text,
     flex: 1,
   },
   confidenceBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
   },
   confidenceText: {
     fontSize: 11,
@@ -823,12 +858,12 @@ const styles = StyleSheet.create({
   },
   recommendationType: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginBottom: 4,
   },
   recommendationDetail: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginBottom: 4,
   },
   recommendationReason: {
@@ -837,19 +872,19 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   tipsContainer: {
-    marginTop: 8,
-    paddingLeft: 8,
+    marginTop: SPACING.sm,
+    paddingLeft: SPACING.sm,
   },
   tip: {
     fontSize: 11,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginBottom: 3,
   },
   spotItem: {
     backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   spotHeader: {
     flexDirection: 'row',
@@ -859,16 +894,16 @@ const styles = StyleSheet.create({
   spotDistance: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#007AFF',
+    color: COLORS.primary,
   },
   spotSuccess: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#28a745',
+    color: COLORS.success,
   },
   spotCatches: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginBottom: 4,
   },
   spotReason: {
@@ -877,7 +912,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   footer: {
-    padding: 12,
+    padding: SPACING.md,
     alignItems: 'center',
   },
   footerText: {

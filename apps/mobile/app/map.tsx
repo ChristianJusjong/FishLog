@@ -367,8 +367,14 @@ export default function MapScreen() {
               style={[styles.toggleButton, showHeatmap && styles.toggleButtonActive]}
               onPress={() => setShowHeatmap(!showHeatmap)}
             >
+              <Ionicons
+                name="flame-outline"
+                size={16}
+                color={showHeatmap ? 'white' : '#666'}
+                style={{ marginRight: 4 }}
+              />
               <Text style={[styles.toggleButtonText, showHeatmap && styles.toggleButtonTextActive]}>
-                🌡️ Heatmap
+                Heatmap
               </Text>
             </TouchableOpacity>
 
@@ -376,8 +382,14 @@ export default function MapScreen() {
               style={[styles.toggleButton, showTopSpots && styles.toggleButtonActive]}
               onPress={() => setShowTopSpots(!showTopSpots)}
             >
+              <Ionicons
+                name="bonfire-outline"
+                size={16}
+                color={showTopSpots ? 'white' : '#666'}
+                style={{ marginRight: 4 }}
+              />
               <Text style={[styles.toggleButtonText, showTopSpots && styles.toggleButtonTextActive]}>
-                🔥 Hot Spots
+                Hot Spots
               </Text>
             </TouchableOpacity>
 
@@ -385,8 +397,14 @@ export default function MapScreen() {
               style={[styles.toggleButton, mapType === 'satellite' && styles.toggleButtonActive]}
               onPress={() => setMapType(mapType === 'satellite' ? 'standard' : 'satellite')}
             >
+              <Ionicons
+                name={mapType === 'satellite' ? 'satellite' : 'map-outline'}
+                size={16}
+                color={mapType === 'satellite' ? 'white' : '#666'}
+                style={{ marginRight: 4 }}
+              />
               <Text style={[styles.toggleButtonText, mapType === 'satellite' && styles.toggleButtonTextActive]}>
-                🛰️ {mapType === 'satellite' ? 'Satellit' : 'Kort'}
+                {mapType === 'satellite' ? 'Satellit' : 'Kort'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -442,7 +460,7 @@ export default function MapScreen() {
                     latitude: spot.latitude,
                     longitude: spot.longitude,
                   }}
-                  title={`🔥 Hot Spot - ${spot.catchCount} fangster`}
+                  title={`Hot Spot - ${spot.catchCount} fangster`}
                   description={`${spot.species.join(', ')}\nGns: ${spot.avgWeight}g | Max: ${spot.maxWeight}g`}
                   pinColor="red"
                 />
@@ -485,7 +503,10 @@ export default function MapScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>🎣 AI Fiskeguide</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="fish" size={24} color={COLORS.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.modalTitle}>AI Fiskeguide</Text>
+              </View>
               <TouchableOpacity
                 onPress={() => {
                   setSelectedLocation(null);
@@ -599,6 +620,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   toggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f0f0f0',
     paddingHorizontal: 12,
     paddingVertical: 8,

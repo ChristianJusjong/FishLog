@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
 
@@ -185,9 +187,9 @@ export default function CreateEventScreen() {
             }}
             disabled={loading}
           >
-            <option value="public">🌍 Offentlig (alle kan se)</option>
-            <option value="friends">👥 Venner (kun dine venner)</option>
-            <option value="private">🔒 Privat (kun dig)</option>
+            <option value="public">Offentlig (alle kan se)</option>
+            <option value="friends">Venner (kun dine venner)</option>
+            <option value="private">Privat (kun dig)</option>
           </select>
         ) : (
           <View style={styles.visibilityContainer}>
@@ -196,8 +198,13 @@ export default function CreateEventScreen() {
               onPress={() => setVisibility('public')}
               disabled={loading}
             >
+              <Ionicons
+                name="globe"
+                size={18}
+                color={visibility === 'public' ? COLORS.primary : COLORS.textSecondary}
+              />
               <Text style={[styles.visibilityText, visibility === 'public' && styles.visibilityTextSelected]}>
-                🌍 Offentlig
+                Offentlig
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -205,8 +212,13 @@ export default function CreateEventScreen() {
               onPress={() => setVisibility('friends')}
               disabled={loading}
             >
+              <Ionicons
+                name="people"
+                size={18}
+                color={visibility === 'friends' ? COLORS.primary : COLORS.textSecondary}
+              />
               <Text style={[styles.visibilityText, visibility === 'friends' && styles.visibilityTextSelected]}>
-                👥 Venner
+                Venner
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -214,8 +226,13 @@ export default function CreateEventScreen() {
               onPress={() => setVisibility('private')}
               disabled={loading}
             >
+              <Ionicons
+                name="lock-closed"
+                size={18}
+                color={visibility === 'private' ? COLORS.primary : COLORS.textSecondary}
+              />
               <Text style={[styles.visibilityText, visibility === 'private' && styles.visibilityTextSelected]}>
-                🔒 Privat
+                Privat
               </Text>
             </TouchableOpacity>
           </View>
@@ -229,7 +246,8 @@ export default function CreateEventScreen() {
               onPress={addContest}
               disabled={loading}
             >
-              <Text style={styles.addButtonText}>+ Tilføj</Text>
+              <Ionicons name="add" size={18} color="white" />
+              <Text style={styles.addButtonText}>Tilføj</Text>
             </TouchableOpacity>
           </View>
 
@@ -240,8 +258,9 @@ export default function CreateEventScreen() {
                 <TouchableOpacity
                   onPress={() => removeContest(index)}
                   disabled={loading}
+                  style={styles.removeButton}
                 >
-                  <Text style={styles.removeButton}>🗑️</Text>
+                  <Ionicons name="trash" size={20} color={COLORS.error} />
                 </TouchableOpacity>
               </View>
 
@@ -316,16 +335,16 @@ export default function CreateEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.background,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     marginTop: 40,
-    marginBottom: 20,
+    marginBottom: SPACING.lg,
     textAlign: 'center',
-    color: '#333',
+    color: COLORS.text,
   },
   form: {
     width: '100%',
@@ -335,14 +354,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-    marginTop: 12,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+    marginTop: SPACING.md,
   },
   input: {
     width: '100%',
-    padding: 16,
-    borderRadius: 8,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.md,
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#ddd',
@@ -354,43 +373,49 @@ const styles = StyleSheet.create({
   },
   visibilityContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: SPACING.sm,
   },
   visibilityOption: {
     flex: 1,
-    padding: 12,
-    borderRadius: 8,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
     backgroundColor: 'white',
     borderWidth: 2,
     borderColor: '#ddd',
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: SPACING.xs,
   },
   visibilityOptionSelected: {
-    borderColor: '#007AFF',
+    borderColor: COLORS.primary,
     backgroundColor: '#e3f2fd',
   },
   visibilityText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   visibilityTextSelected: {
-    color: '#007AFF',
+    color: COLORS.primary,
   },
   contestsSection: {
-    marginTop: 20,
+    marginTop: SPACING.lg,
   },
   contestsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   addButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
   addButtonText: {
     color: 'white',
@@ -399,9 +424,9 @@ const styles = StyleSheet.create({
   },
   contestCard: {
     backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: RADIUS.md,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: '#ddd',
   },
@@ -409,53 +434,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   contestLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.text,
   },
   removeButton: {
-    fontSize: 20,
+    padding: SPACING.xs,
   },
   contestFieldLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#555',
     marginBottom: 4,
-    marginTop: 8,
+    marginTop: SPACING.sm,
   },
   contestInput: {
     width: '100%',
-    padding: 12,
-    borderRadius: 8,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
     backgroundColor: '#f8f9fa',
     borderWidth: 1,
     borderColor: '#ddd',
     fontSize: 14,
   },
   submitButton: {
-    backgroundColor: '#28a745',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.success,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.md,
+    marginTop: SPACING.xl,
+    ...SHADOWS.sm,
   },
   cancelButton: {
-    backgroundColor: '#6c757d',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.textSecondary,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.md,
+    marginTop: SPACING.md,
+    ...SHADOWS.sm,
   },
   disabledButton: {
     opacity: 0.6,

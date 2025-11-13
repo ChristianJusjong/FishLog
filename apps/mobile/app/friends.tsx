@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, TextInput, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, TextInput, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import BottomNavigation from '../components/BottomNavigation';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 
@@ -267,15 +269,17 @@ export default function FriendsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
-        <Text style={styles.loadingText}>Indlæser...</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.backgroundLight }} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Indlæser...</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      {/* Weather & Location Card */}
+    <View style={{ flex: 1, backgroundColor: COLORS.backgroundLight }}>
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -283,20 +287,29 @@ export default function FriendsScreen() {
       <View style={styles.searchSection}>
         <Text style={styles.sectionTitle}>Søg efter brugere</Text>
         <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Søg på navn eller email..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Søg på navn eller email..."
+              placeholderTextColor={COLORS.textTertiary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
           <TouchableOpacity
             style={styles.searchButton}
             onPress={searchUsers}
             disabled={searching}
           >
-            <Text style={styles.searchButtonText}>
-              {searching ? 'Søger...' : 'Søg'}
-            </Text>
+            {searching ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <>
+                <Ionicons name="search" size={20} color={COLORS.white} />
+                <Text style={styles.searchButtonText}>Søg</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -306,8 +319,12 @@ export default function FriendsScreen() {
             {searchResults.map((user) => (
               <View key={user.id} style={styles.userCard}>
                 <View style={styles.userInfo}>
-                  {user.avatar && (
+                  {user.avatar ? (
                     <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
+                  ) : (
+                    <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
+                      <Ionicons name="person" size={24} color={COLORS.textSecondary} />
+                    </View>
                   )}
                   <View>
                     <Text style={styles.userName}>{user.name}</Text>
@@ -318,6 +335,7 @@ export default function FriendsScreen() {
                   style={styles.addButton}
                   onPress={() => sendFriendRequest(user.id)}
                 >
+                  <Ionicons name="person-add" size={18} color={COLORS.white} />
                   <Text style={styles.addButtonText}>Tilføj</Text>
                 </TouchableOpacity>
               </View>
@@ -329,12 +347,19 @@ export default function FriendsScreen() {
       {/* Received requests */}
       {friendsData.receivedRequests.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Anmodninger ({friendsData.receivedRequests.length})</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="mail" size={20} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Anmodninger ({friendsData.receivedRequests.length})</Text>
+          </View>
           {friendsData.receivedRequests.map((request) => (
             <View key={request.friendshipId} style={styles.userCard}>
               <View style={styles.userInfo}>
-                {request.user.avatar && (
+                {request.user.avatar ? (
                   <Image source={{ uri: request.user.avatar }} style={styles.userAvatar} />
+                ) : (
+                  <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
+                    <Ionicons name="person" size={24} color={COLORS.textSecondary} />
+                  </View>
                 )}
                 <View>
                   <Text style={styles.userName}>{request.user.name}</Text>
@@ -346,12 +371,14 @@ export default function FriendsScreen() {
                   style={[styles.actionButton, styles.acceptButton]}
                   onPress={() => acceptFriendRequest(request.friendshipId)}
                 >
+                  <Ionicons name="checkmark" size={18} color={COLORS.white} />
                   <Text style={styles.actionButtonText}>Accepter</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.rejectButton]}
                   onPress={() => rejectFriendRequest(request.friendshipId)}
                 >
+                  <Ionicons name="close" size={18} color={COLORS.white} />
                   <Text style={styles.actionButtonText}>Afvis</Text>
                 </TouchableOpacity>
               </View>
@@ -362,9 +389,13 @@ export default function FriendsScreen() {
 
       {/* Friends list */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Mine venner ({friendsData.friends.length})</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="people" size={20} color={COLORS.primary} />
+          <Text style={styles.sectionTitle}>Mine venner ({friendsData.friends.length})</Text>
+        </View>
         {friendsData.friends.length === 0 ? (
           <View style={styles.emptyState}>
+            <Ionicons name="people-outline" size={64} color={COLORS.textTertiary} />
             <Text style={styles.emptyText}>Ingen venner endnu</Text>
             <Text style={styles.emptySubtext}>Søg efter brugere for at tilføje venner</Text>
           </View>
@@ -372,8 +403,12 @@ export default function FriendsScreen() {
           friendsData.friends.map((friend) => (
             <View key={friend.friendshipId} style={styles.userCard}>
               <View style={styles.userInfo}>
-                {friend.friend.avatar && (
+                {friend.friend.avatar ? (
                   <Image source={{ uri: friend.friend.avatar }} style={styles.userAvatar} />
+                ) : (
+                  <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
+                    <Ionicons name="person" size={24} color={COLORS.textSecondary} />
+                  </View>
                 )}
                 <View>
                   <Text style={styles.userName}>{friend.friend.name}</Text>
@@ -388,17 +423,27 @@ export default function FriendsScreen() {
       {/* Sent requests */}
       {friendsData.sentRequests.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sendte anmodninger ({friendsData.sentRequests.length})</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="send" size={20} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Sendte anmodninger ({friendsData.sentRequests.length})</Text>
+          </View>
           {friendsData.sentRequests.map((request) => (
             <View key={request.friendshipId} style={styles.userCard}>
               <View style={styles.userInfo}>
-                {request.user.avatar && (
+                {request.user.avatar ? (
                   <Image source={{ uri: request.user.avatar }} style={styles.userAvatar} />
+                ) : (
+                  <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
+                    <Ionicons name="person" size={24} color={COLORS.textSecondary} />
+                  </View>
                 )}
                 <View>
                   <Text style={styles.userName}>{request.user.name}</Text>
                   <Text style={styles.userEmail}>{request.user.email}</Text>
-                  <Text style={styles.pendingText}>Venter på svar...</Text>
+                  <View style={styles.pendingBadge}>
+                    <Ionicons name="time" size={12} color={COLORS.warning} />
+                    <Text style={styles.pendingText}>Venter på svar...</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -407,102 +452,93 @@ export default function FriendsScreen() {
       )}
       </ScrollView>
 
-      {/* Bottom Navigation */}
       <BottomNavigation />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 20,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-  },
-  backButtonText: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 50,
-  },
-  searchSection: {
-    marginBottom: 24,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  searchInput: {
+  loadingContainer: {
     flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginRight: 8,
-    fontSize: 16,
-  },
-  searchButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingHorizontal: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    padding: SPACING.lg,
+  },
+  searchSection: {
+    marginBottom: SPACING.xl,
+  },
+  section: {
+    marginBottom: SPACING.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.styles.h2,
+    color: COLORS.text,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  searchIcon: {
+    marginRight: SPACING.sm,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    fontSize: TYPOGRAPHY.fontSize.base,
+    color: COLORS.text,
+  },
+  searchButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    minWidth: 90,
+    ...SHADOWS.sm,
+  },
   searchButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    ...TYPOGRAPHY.styles.button,
+    fontSize: TYPOGRAPHY.fontSize.sm,
   },
   resultsList: {
-    marginTop: 12,
+    marginTop: SPACING.md,
   },
   userCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.md,
   },
   userInfo: {
     flexDirection: 'row',
@@ -512,68 +548,84 @@ const styles = StyleSheet.create({
   userAvatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    marginRight: 12,
+    borderRadius: RADIUS.full,
+    marginRight: SPACING.md,
+  },
+  avatarPlaceholder: {
+    backgroundColor: COLORS.backgroundLight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   userName: {
-    fontSize: 16,
+    ...TYPOGRAPHY.styles.body,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 4,
   },
   userEmail: {
-    fontSize: 14,
-    color: '#666',
+    ...TYPOGRAPHY.styles.small,
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
   },
   pendingText: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.warning,
     fontStyle: 'italic',
   },
   addButton: {
-    backgroundColor: '#28a745',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: COLORS.success,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
   addButtonText: {
-    color: 'white',
-    fontSize: 14,
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.fontSize.sm,
     fontWeight: '600',
   },
   requestActions: {
     flexDirection: 'row',
+    gap: SPACING.sm,
   },
   actionButton: {
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginLeft: 8,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
   acceptButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: COLORS.success,
   },
   rejectButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: COLORS.error,
   },
   actionButtonText: {
-    color: 'white',
-    fontSize: 14,
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.fontSize.sm,
     fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
-    padding: 32,
+    padding: SPACING['2xl'],
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    ...SHADOWS.sm,
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    ...TYPOGRAPHY.styles.h3,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#666',
+    ...TYPOGRAPHY.styles.small,
     textAlign: 'center',
   },
 });

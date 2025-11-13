@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Linking, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
-import { COLORS, SPACING, RADIUS } from '@/constants/branding';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { BUTTON_STYLES, INPUT_STYLE, LABEL_STYLE } from '@/constants/theme';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
 
@@ -16,6 +18,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleEmailLogin = async () => {
     if (!email || !password) {
@@ -71,88 +74,135 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Hook 🎣</Text>
-        <Text style={styles.subtitle}>Din digitale fiskebog</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            {/* Header Section */}
+            <View style={styles.headerSection}>
+              <View style={styles.logoContainer}>
+                <Ionicons name="fish" size={48} color={COLORS.primary} />
+              </View>
+              <Text style={styles.title}>Hook</Text>
+              <Text style={styles.subtitle}>Din digitale fiskebog</Text>
+            </View>
 
-        {/* Email/Password Login */}
-        <View style={styles.formContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={COLORS.textTertiary}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!loading}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Adgangskode"
-            placeholderTextColor={COLORS.textTertiary}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
+            {/* Email/Password Login */}
+            <View style={styles.formContainer}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="mail-outline" size={20} color={COLORS.iconDefault} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="din@email.dk"
+                    placeholderTextColor={COLORS.textTertiary}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    editable={!loading}
+                  />
+                </View>
+              </View>
 
-          <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
-            onPress={handleEmailLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Log ind</Text>
-            )}
-          </TouchableOpacity>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Adgangskode</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="lock-closed-outline" size={20} color={COLORS.iconDefault} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor={COLORS.textTertiary}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    editable={!loading}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                    <Ionicons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color={COLORS.iconDefault}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-          <TouchableOpacity
-            style={[styles.button, styles.secondaryButton]}
-            onPress={handleSignup}
-            disabled={loading}
-          >
-            <Text style={styles.secondaryButtonText}>Opret konto</Text>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                onPress={handleEmailLogin}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color={COLORS.white} />
+                ) : (
+                  <>
+                    <Text style={styles.primaryButtonText}>Log ind</Text>
+                    <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
+                  </>
+                )}
+              </TouchableOpacity>
 
-          {/* Test Login Button */}
-          <TouchableOpacity
-            style={[styles.button, styles.testButton]}
-            onPress={handleTestLogin}
-            disabled={loading}
-          >
-            <Text style={styles.testButtonText}>Test Login (Udvikler)</Text>
-          </TouchableOpacity>
-        </View>
+              <TouchableOpacity
+                style={[styles.secondaryButton, loading && styles.buttonDisabled]}
+                onPress={handleSignup}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.secondaryButtonText}>Opret ny konto</Text>
+              </TouchableOpacity>
+            </View>
 
-        {/* OAuth Divider */}
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>eller</Text>
-          <View style={styles.dividerLine} />
-        </View>
+            {/* OAuth Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>eller</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-        {/* OAuth Buttons */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.googleButton]}
-            onPress={handleGoogleLogin}
-            disabled={loading}
-          >
-            <Text style={styles.oauthButtonText}>Log ind med Google</Text>
-          </TouchableOpacity>
+            {/* OAuth Buttons */}
+            <View style={styles.oauthContainer}>
+              <TouchableOpacity
+                style={[styles.oauthButton, loading && styles.buttonDisabled]}
+                onPress={handleGoogleLogin}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-google" size={20} color={COLORS.text} />
+                <Text style={styles.oauthButtonText}>Fortsæt med Google</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.button, styles.facebookButton]}
-            onPress={handleFacebookLogin}
-            disabled={loading}
-          >
-            <Text style={styles.oauthButtonText}>Log ind med Facebook</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+              <TouchableOpacity
+                style={[styles.oauthButton, loading && styles.buttonDisabled]}
+                onPress={handleFacebookLogin}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-facebook" size={20} color={COLORS.text} />
+                <Text style={styles.oauthButtonText}>Fortsæt med Facebook</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Test Login Button */}
+            <TouchableOpacity
+              style={[styles.testButton, loading && styles.buttonDisabled]}
+              onPress={handleTestLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="code-outline" size={16} color={COLORS.textSecondary} />
+              <Text style={styles.testButtonText}>Test Login (Udvikler)</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -162,98 +212,99 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: SPACING.lg,
+    padding: SPACING.xl,
+  },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: SPACING['2xl'],
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: RADIUS.xl,
+    backgroundColor: COLORS.primaryLight + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
   },
   title: {
-    fontSize: 48,
-    fontWeight: 'bold',
+    ...TYPOGRAPHY.styles.h1,
+    fontSize: TYPOGRAPHY.fontSize['4xl'],
     color: COLORS.primary,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   subtitle: {
-    fontSize: 18,
+    ...TYPOGRAPHY.styles.body,
     color: COLORS.textSecondary,
-    marginBottom: SPACING['2xl'],
   },
   formContainer: {
     width: '100%',
-    maxWidth: 340,
+    maxWidth: 400,
     marginBottom: SPACING.lg,
   },
-  input: {
-    backgroundColor: COLORS.surfaceVariant,
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
+  inputGroup: {
     marginBottom: SPACING.md,
-    fontSize: 16,
-    color: COLORS.text,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
-  buttonContainer: {
-    width: '100%',
-    maxWidth: 340,
-    gap: SPACING.md,
+  label: {
+    ...LABEL_STYLE,
   },
-  button: {
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
+  inputWrapper: {
+    flexDirection: 'row',
     alignItems: 'center',
+    ...INPUT_STYLE,
+    paddingLeft: SPACING.md,
+  },
+  inputIcon: {
+    marginRight: SPACING.sm,
+  },
+  input: {
+    flex: 1,
+    fontSize: TYPOGRAPHY.fontSize.base,
+    color: COLORS.text,
+    paddingVertical: SPACING.xs,
+  },
+  eyeIcon: {
+    padding: SPACING.xs,
   },
   primaryButton: {
-    backgroundColor: COLORS.primary,
-    marginTop: 4,
+    ...BUTTON_STYLES.accent.container,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+    minHeight: 52,
+    ...SHADOWS.md,
+  },
+  primaryButtonText: {
+    ...BUTTON_STYLES.accent.text,
   },
   secondaryButton: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  testButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginTop: SPACING.sm,
-  },
-  googleButton: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  facebookButton: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  buttonText: {
-    color: COLORS.textInverse,
-    fontSize: 16,
-    fontWeight: '600',
+    ...BUTTON_STYLES.outline.container,
+    marginTop: SPACING.md,
+    minHeight: 52,
   },
   secondaryButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: '600',
+    ...BUTTON_STYLES.outline.text,
   },
-  oauthButtonText: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  testButtonText: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
+  buttonDisabled: {
+    opacity: 0.6,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    maxWidth: 340,
+    maxWidth: 400,
     marginVertical: SPACING.xl,
   },
   dividerLine: {
@@ -262,8 +313,44 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
   },
   dividerText: {
+    ...TYPOGRAPHY.styles.small,
     color: COLORS.textTertiary,
     paddingHorizontal: SPACING.md,
-    fontSize: 14,
+  },
+  oauthContainer: {
+    width: '100%',
+    maxWidth: 400,
+    gap: SPACING.md,
+  },
+  oauthButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    minHeight: 52,
+    ...SHADOWS.sm,
+  },
+  oauthButtonText: {
+    ...TYPOGRAPHY.styles.button,
+    color: COLORS.text,
+    fontWeight: TYPOGRAPHY.fontWeight.medium,
+  },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    backgroundColor: 'transparent',
+    padding: SPACING.md,
+    marginTop: SPACING.xl,
+  },
+  testButtonText: {
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textSecondary,
   },
 });

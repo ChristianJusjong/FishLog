@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import MapPicker from '../components/MapPicker';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
@@ -275,14 +277,14 @@ export default function EditCatchScreen() {
 
   if (loadingData) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }} edges={['top']}>
         <Text style={styles.loadingText}>Indlæser...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Rediger Fangst</Text>
 
@@ -402,9 +404,12 @@ export default function EditCatchScreen() {
           onPress={handleImageSelect}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>
-            {selectedImage ? '📷 Skift Billede' : '📷 Vælg Billede'}
-          </Text>
+          <View style={styles.buttonContent}>
+            <Ionicons name="camera" size={20} color="white" />
+            <Text style={styles.buttonText}>
+              {selectedImage ? 'Skift Billede' : 'Vælg Billede'}
+            </Text>
+          </View>
         </TouchableOpacity>
 
         <Text style={styles.label}>Noter</Text>
@@ -435,9 +440,9 @@ export default function EditCatchScreen() {
             }}
             disabled={loading}
           >
-            <option value="private">🔒 Privat (kun dig)</option>
-            <option value="friends">👥 Venner (kun dine venner)</option>
-            <option value="public">🌍 Offentlig (alle kan se)</option>
+            <option value="private">Privat (kun dig)</option>
+            <option value="friends">Venner (kun dine venner)</option>
+            <option value="public">Offentlig (alle kan se)</option>
           </select>
         ) : (
           <View style={styles.visibilityContainer}>
@@ -446,8 +451,13 @@ export default function EditCatchScreen() {
               onPress={() => setVisibility('private')}
               disabled={loading}
             >
+              <Ionicons
+                name="lock-closed"
+                size={18}
+                color={visibility === 'private' ? COLORS.primary : COLORS.textSecondary}
+              />
               <Text style={[styles.visibilityText, visibility === 'private' && styles.visibilityTextSelected]}>
-                🔒 Privat
+                Privat
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -455,8 +465,13 @@ export default function EditCatchScreen() {
               onPress={() => setVisibility('friends')}
               disabled={loading}
             >
+              <Ionicons
+                name="people"
+                size={18}
+                color={visibility === 'friends' ? COLORS.primary : COLORS.textSecondary}
+              />
               <Text style={[styles.visibilityText, visibility === 'friends' && styles.visibilityTextSelected]}>
-                👥 Venner
+                Venner
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -464,8 +479,13 @@ export default function EditCatchScreen() {
               onPress={() => setVisibility('public')}
               disabled={loading}
             >
+              <Ionicons
+                name="globe"
+                size={18}
+                color={visibility === 'public' ? COLORS.primary : COLORS.textSecondary}
+              />
               <Text style={[styles.visibilityText, visibility === 'public' && styles.visibilityTextSelected]}>
-                🌍 Offentlig
+                Offentlig
               </Text>
             </TouchableOpacity>
           </View>
@@ -481,9 +501,12 @@ export default function EditCatchScreen() {
           }}
         />
         {latitude && longitude && (
-          <Text style={styles.coordinatesText}>
-            📍 Valgt position: {latitude.toFixed(5)}, {longitude.toFixed(5)}
-          </Text>
+          <View style={styles.coordinatesContainer}>
+            <Ionicons name="location" size={16} color={COLORS.success} />
+            <Text style={styles.coordinatesText}>
+              Valgt position: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+            </Text>
+          </View>
         )}
 
         <TouchableOpacity
@@ -512,26 +535,26 @@ export default function EditCatchScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.background,
   },
   scrollContainer: {
     flexGrow: 1,
-    padding: 20,
+    padding: SPACING.lg,
   },
   loadingText: {
     fontSize: 18,
-    color: '#666',
+    color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 50,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.lg,
     textAlign: 'center',
-    color: '#333',
+    color: COLORS.text,
   },
   form: {
     width: '100%',
@@ -541,14 +564,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-    marginTop: 12,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+    marginTop: SPACING.md,
   },
   input: {
     width: '100%',
-    padding: 16,
-    borderRadius: 8,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.md,
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#ddd',
@@ -560,20 +583,22 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.md,
+    marginTop: SPACING.lg,
+    ...SHADOWS.sm,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.primary,
   },
   cancelButton: {
-    backgroundColor: '#6c757d',
+    backgroundColor: COLORS.textSecondary,
   },
   buttonDisabled: {
     backgroundColor: '#ccc',
@@ -585,48 +610,56 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   uploadButton: {
-    backgroundColor: '#6c757d',
-    marginTop: 8,
+    backgroundColor: COLORS.textSecondary,
+    marginTop: SPACING.sm,
   },
   previewImage: {
     width: '100%',
     height: 200,
-    borderRadius: 8,
-    marginBottom: 12,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.md,
+  },
+  coordinatesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
+    padding: SPACING.md,
+    backgroundColor: '#e8f5e9',
+    borderRadius: RADIUS.md,
+    justifyContent: 'center',
   },
   coordinatesText: {
     fontSize: 13,
-    color: '#333',
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: '#e8f5e9',
-    borderRadius: 8,
-    textAlign: 'center',
+    color: COLORS.text,
   },
   visibilityContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: SPACING.sm,
   },
   visibilityOption: {
     flex: 1,
-    padding: 12,
-    borderRadius: 8,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
     backgroundColor: 'white',
     borderWidth: 2,
     borderColor: '#ddd',
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: SPACING.xs,
   },
   visibilityOptionSelected: {
-    borderColor: '#007AFF',
+    borderColor: COLORS.primary,
     backgroundColor: '#e3f2fd',
   },
   visibilityText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   visibilityTextSelected: {
-    color: '#007AFF',
+    color: COLORS.primary,
   },
 });

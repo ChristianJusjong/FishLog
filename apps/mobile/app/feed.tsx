@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, TextInput, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, TextInput, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import BottomNavigation from '../components/BottomNavigation';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { CARD_STYLE } from '@/constants/theme';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
 
@@ -51,6 +53,7 @@ export default function FeedScreen() {
   const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
   const [locations, setLocations] = useState<{ [key: string]: string }>({});
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -92,7 +95,10 @@ export default function FeedScreen() {
     return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   };
 
-  const fetchFeed = async () => {
+  const fetchFeed = async (isRefreshing = false) => {
+    if (!isRefreshing) {
+      setLoading(true);
+    }
     try {
       const accessToken = await AsyncStorage.getItem('accessToken');
 
@@ -143,7 +149,13 @@ export default function FeedScreen() {
       }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchFeed(true);
   };
 
   const toggleLike = async (catchId: string) => {
@@ -258,7 +270,11 @@ export default function FeedScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.loadingContainer}>
+        <View style={styles.logoContainer}>
+          <Ionicons name="fish" size={48} color={COLORS.primary} />
+        </View>
+        <ActivityIndicator size="large" color={COLORS.accent} style={styles.loader} />
         <Text style={styles.loadingText}>Indlæser feed...</Text>
       </View>
     );
@@ -306,11 +322,21 @@ export default function FeedScreen() {
         <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={true}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={COLORS.accent}
+              colors={[COLORS.accent]}
+            />
+          }
         >
       {activeTab === 'catches' ? (
         catches.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emoji}>👥</Text>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="fish-outline" size={64} color={COLORS.iconDefault} />
+            </View>
             <Text style={styles.emptyText}>Ingen fangster i feed</Text>
             <Text style={styles.emptySubtext}>Tilføj venner for at se deres fangster</Text>
           </View>
@@ -326,8 +352,12 @@ export default function FeedScreen() {
               {/* User info */}
               <View style={styles.userHeader}>
                 <View style={styles.userInfo}>
-                  {catch_.user.avatar && (
+                  {catch_.user.avatar ? (
                     <Image source={{ uri: catch_.user.avatar }} style={styles.userAvatar} />
+                  ) : (
+                    <View style={styles.userAvatarPlaceholder}>
+                      <Ionicons name="person" size={20} color={COLORS.primary} />
+                    </View>
                   )}
                   <Text style={styles.userName}>{catch_.user.name}</Text>
                 </View>
@@ -351,26 +381,41 @@ export default function FeedScreen() {
 
                 <View style={styles.catchDetails}>
                   {catch_.lengthCm && (
-                    <Text style={styles.catchDetail}>📏 {catch_.lengthCm} cm</Text>
+                    <View style={styles.catchDetailBadge}>
+                      <Ionicons name="resize-outline" size={16} color={COLORS.primary} />
+                      <Text style={styles.catchDetailText}>{catch_.lengthCm} cm</Text>
+                    </View>
                   )}
                   {catch_.weightKg && (
-                    <Text style={styles.catchDetail}>⚖️ {Math.round(catch_.weightKg * 1000)} g</Text>
+                    <View style={styles.catchDetailBadge}>
+                      <Ionicons name="scale-outline" size={16} color={COLORS.primary} />
+                      <Text style={styles.catchDetailText}>{Math.round(catch_.weightKg * 1000)} g</Text>
+                    </View>
                   )}
                 </View>
 
                 {catch_.bait && (
-                  <Text style={styles.catchInfo}>🪱 Agn: {catch_.bait}</Text>
+                  <View style={styles.catchInfoRow}>
+                    <Ionicons name="bug-outline" size={16} color={COLORS.textSecondary} />
+                    <Text style={styles.catchInfo}>Agn: {catch_.bait}</Text>
+                  </View>
                 )}
                 {catch_.technique && (
-                  <Text style={styles.catchInfo}>🎯 Teknik: {catch_.technique}</Text>
+                  <View style={styles.catchInfoRow}>
+                    <Ionicons name="settings-outline" size={16} color={COLORS.textSecondary} />
+                    <Text style={styles.catchInfo}>Teknik: {catch_.technique}</Text>
+                  </View>
                 )}
                 {catch_.notes && (
                   <Text style={styles.catchNotes}>{catch_.notes}</Text>
                 )}
                 {catch_.latitude && catch_.longitude && (
-                  <Text style={styles.catchInfo}>
-                    📍 {locations[catch_.id] || 'Henter sted...'}
-                  </Text>
+                  <View style={styles.catchInfoRow}>
+                    <Ionicons name="location-outline" size={16} color={COLORS.textSecondary} />
+                    <Text style={styles.catchInfo}>
+                      {locations[catch_.id] || 'Henter sted...'}
+                    </Text>
+                  </View>
                 )}
               </View>
 
@@ -384,8 +429,14 @@ export default function FeedScreen() {
                   accessibilityRole="button"
                   accessibilityState={{ selected: catch_.isLikedByMe }}
                 >
-                  <Text style={styles.actionIcon}>{catch_.isLikedByMe ? '❤️' : '🤍'}</Text>
-                  <Text style={styles.actionText}>{catch_.likesCount}</Text>
+                  <Ionicons
+                    name={catch_.isLikedByMe ? "heart" : "heart-outline"}
+                    size={22}
+                    color={catch_.isLikedByMe ? COLORS.error : COLORS.iconDefault}
+                  />
+                  <Text style={[styles.actionText, catch_.isLikedByMe && styles.actionTextActive]}>
+                    {catch_.likesCount}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -396,8 +447,14 @@ export default function FeedScreen() {
                   accessibilityRole="button"
                   accessibilityState={{ expanded: showComments[catch_.id] }}
                 >
-                  <Text style={styles.actionIcon}>💬</Text>
-                  <Text style={styles.actionText}>{catch_.commentsCount}</Text>
+                  <Ionicons
+                    name={showComments[catch_.id] ? "chatbubble" : "chatbubble-outline"}
+                    size={22}
+                    color={showComments[catch_.id] ? COLORS.accent : COLORS.iconDefault}
+                  />
+                  <Text style={[styles.actionText, showComments[catch_.id] && styles.actionTextActive]}>
+                    {catch_.commentsCount}
+                  </Text>
                 </TouchableOpacity>
               </View>
 
@@ -473,39 +530,51 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: SPACING.md,
     paddingBottom: 80, // Extra padding for bottom navigation
-    backgroundColor: COLORS.backgroundLight, // Light Grey (#F0F2F5)
+    backgroundColor: COLORS.backgroundLight,
   },
-  title: {
-    ...TYPOGRAPHY.styles.h1,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.lg,
-    textAlign: 'center',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: RADIUS.xl,
+    backgroundColor: COLORS.primaryLight + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  loader: {
+    marginBottom: SPACING.md,
   },
   loadingText: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...TYPOGRAPHY.styles.body,
     color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: SPACING.xl,
   },
   emptyState: {
     alignItems: 'center',
-    marginTop: SPACING.xl,
+    marginTop: SPACING['2xl'],
   },
-  emoji: {
-    fontSize: 64,
-    marginBottom: SPACING.md,
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: RADIUS['2xl'],
+    backgroundColor: COLORS.gray100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
+    ...TYPOGRAPHY.styles.h2,
     marginBottom: SPACING.sm,
   },
   emptySubtext: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...TYPOGRAPHY.styles.body,
     color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   feedList: {
     width: '100%',
@@ -540,6 +609,15 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginRight: SPACING.sm,
   },
+  userAvatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: SPACING.sm,
+    backgroundColor: COLORS.primaryLight + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   userName: {
     fontSize: 16,
     fontWeight: '600',
@@ -566,19 +644,34 @@ const styles = StyleSheet.create({
   },
   catchDetails: {
     flexDirection: 'row',
-    marginBottom: SPACING.sm,
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+    flexWrap: 'wrap',
   },
-  catchDetail: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: COLORS.text,
-    marginRight: SPACING.md,
+  catchDetailBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    backgroundColor: COLORS.primaryLight + '20',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+  },
+  catchDetailText: {
+    ...TYPOGRAPHY.styles.small,
+    fontWeight: TYPOGRAPHY.fontWeight.semibold,
+    color: COLORS.primary,
+  },
+  catchInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    marginBottom: SPACING.xs,
   },
   catchInfo: {
-    fontSize: 14,
-    fontWeight: '400',
+    ...TYPOGRAPHY.styles.small,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+    flex: 1,
   },
   catchNotes: {
     fontSize: 14,
@@ -597,6 +690,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.xs,
     marginRight: SPACING.lg,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
@@ -605,14 +699,13 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.backgroundLight,
   },
-  actionIcon: {
-    fontSize: 20,
-    marginRight: SPACING.xs,
-  },
   actionText: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...TYPOGRAPHY.styles.small,
+    fontWeight: TYPOGRAPHY.fontWeight.semibold,
     color: COLORS.textSecondary,
+  },
+  actionTextActive: {
+    color: COLORS.text,
   },
   commentsSection: {
     padding: SPACING.md,

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Platform, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomNavigation from '../components/BottomNavigation';
 import WeatherLocationCard from '../components/WeatherLocationCard';
-import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/branding';
+import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, BUTTON_STYLES, CARD_STYLE, EMPTY_STATE, LOADING_CONTAINER } from '@/constants/theme';
 
 const API_URL = 'https://fishlog-production.up.railway.app';
 
@@ -54,12 +54,8 @@ export default function CatchesScreen() {
         },
       });
 
-      console.log('Fetch catches response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched catches:', data.length, 'catches');
-        console.log('Catches data:', JSON.stringify(data, null, 2));
         setCatches(data);
       } else if (response.status === 401) {
         Alert.alert('Session udløbet', 'Log venligst ind igen', [
@@ -75,240 +71,201 @@ export default function CatchesScreen() {
     }
   };
 
-  const deleteCatch = async (id: string) => {
-    console.log('deleteCatch called with id:', id);
-
-    // Use native confirm for web, Alert.alert for native
-    const confirmed = Platform.OS === 'web'
-      ? window.confirm('Er du sikker på, at du vil slette denne fangst?')
-      : await new Promise<boolean>((resolve) => {
-          Alert.alert(
-            'Slet fangst',
-            'Er du sikker på, at du vil slette denne fangst?',
-            [
-              { text: 'Annuller', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Slet', style: 'destructive', onPress: () => resolve(true) },
-            ]
-          );
-        });
-
-    if (!confirmed) {
-      console.log('User cancelled delete');
-      return;
-    }
-
-    console.log('User confirmed delete for id:', id);
-    try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      console.log('Making DELETE request to:', `${API_URL}/catches/${id}`);
-
-      const response = await fetch(`${API_URL}/catches/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      console.log('DELETE response status:', response.status);
-
-      if (response.ok) {
-        console.log('Delete successful, updating state');
-        // Update state immediately to remove deleted catch
-        setCatches(prevCatches => prevCatches.filter(c => c.id !== id));
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Delete failed:', errorData);
-        if (Platform.OS === 'web') {
-          alert(`Fejl: ${errorData.error || 'Status: ' + response.status}`);
-        } else {
-          Alert.alert('Fejl', errorData.error || `Status: ${response.status}`);
-        }
-      }
-    } catch (error) {
-      console.error('Delete error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Ukendt fejl';
-      if (Platform.OS === 'web') {
-        alert(`Fejl: ${errorMessage}`);
-      } else {
-        Alert.alert('Fejl', errorMessage);
-      }
-    }
-  };
-
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.backgroundLight }} edges={['top']}>
-        <Text style={styles.loadingText}>Indlæser fangster...</Text>
-      </SafeAreaView>
+      <View style={styles.safeArea}>
+        <WeatherLocationCard showLocation={true} showWeather={true} />
+        <View style={styles.loadingContainer}>
+          <View style={styles.logoContainer}>
+            <Ionicons name="fish" size={48} color={COLORS.primary} />
+          </View>
+          <ActivityIndicator size="large" color={COLORS.accent} style={styles.loader} />
+          <Text style={styles.loadingText}>Indlæser fangster...</Text>
+        </View>
+      </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.backgroundLight }}>
-      {/* Weather & Location Card */}
+    <View style={styles.safeArea}>
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <TouchableOpacity
-        style={[styles.button, styles.addButton]}
-        onPress={() => router.push('/add-catch')}
-      >
-        <Text style={styles.buttonText}>+ Tilføj Fangst</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push('/add-catch')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add-circle" size={20} color={COLORS.white} style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>Tilføj Fangst</Text>
+        </TouchableOpacity>
 
-      {catches.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emoji}>🎣</Text>
-          <Text style={styles.emptyText}>Ingen fangster endnu</Text>
-          <Text style={styles.emptySubtext}>Tilføj din første fangst!</Text>
-        </View>
-      ) : (
-        <View style={styles.catchesList}>
-          {catches.map((catch_) => (
-            <TouchableOpacity
-              key={catch_.id}
-              style={styles.catchCard}
-              onPress={() => {
-                if (catch_.isDraft) {
-                  router.push({
-                    pathname: '/catch-form',
-                    params: { catchId: catch_.id, isNew: 'false' }
-                  });
-                } else {
-                  router.push(`/catch-detail?id=${catch_.id}`);
-                }
-              }}
-              activeOpacity={0.9}
-            >
-              {catch_.photoUrl && (
-                <Image source={{ uri: catch_.photoUrl }} style={styles.catchImage} />
-              )}
+        {catches.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="fish-outline" size={64} color={COLORS.iconDefault} />
+            </View>
+            <Text style={styles.emptyText}>Ingen fangster endnu</Text>
+            <Text style={styles.emptySubtext}>Tilføj din første fangst og start din fiskebog!</Text>
+          </View>
+        ) : (
+          <View style={styles.catchesList}>
+            {catches.map((catch_) => (
+              <TouchableOpacity
+                key={catch_.id}
+                style={styles.catchCard}
+                onPress={() => {
+                  if (catch_.isDraft) {
+                    router.push({
+                      pathname: '/catch-form',
+                      params: { catchId: catch_.id, isNew: 'false' }
+                    });
+                  } else {
+                    router.push(`/catch-detail?id=${catch_.id}`);
+                  }
+                }}
+                activeOpacity={0.9}
+              >
+                {catch_.photoUrl && (
+                  <Image source={{ uri: catch_.photoUrl }} style={styles.catchImage} resizeMode="cover" />
+                )}
 
-              <View style={styles.catchHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={styles.catchSpecies}>
-                    {catch_.species || 'Ukompletteret fangst'}
-                  </Text>
-                  {catch_.isDraft && (
-                    <View style={styles.draftBadge}>
-                      <Text style={styles.draftBadgeText}>Kladde</Text>
+                <View style={styles.catchContent}>
+                  <View style={styles.catchHeader}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                      <Text style={styles.catchSpecies} numberOfLines={1}>
+                        {catch_.species || 'Ukompletteret fangst'}
+                      </Text>
+                      {catch_.isDraft && (
+                        <View style={styles.draftBadge}>
+                          <Text style={styles.draftBadgeText}>Kladde</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.catchDate}>
+                      {new Date(catch_.createdAt).toLocaleDateString('da-DK')}
+                    </Text>
+                  </View>
+
+                  {(catch_.lengthCm || catch_.weightKg) && (
+                    <View style={styles.catchDetails}>
+                      {catch_.lengthCm && (
+                        <View style={styles.catchDetailBadge}>
+                          <Ionicons name="resize-outline" size={14} color={COLORS.primary} />
+                          <Text style={styles.catchDetailText}>{catch_.lengthCm} cm</Text>
+                        </View>
+                      )}
+                      {catch_.weightKg && (
+                        <View style={styles.catchDetailBadge}>
+                          <Ionicons name="scale-outline" size={14} color={COLORS.primary} />
+                          <Text style={styles.catchDetailText}>{Math.round(catch_.weightKg * 1000)} g</Text>
+                        </View>
+                      )}
                     </View>
                   )}
+
+                  {catch_.bait && (
+                    <View style={styles.catchInfoRow}>
+                      <Ionicons name="bug-outline" size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.catchInfo}>Agn: {catch_.bait}</Text>
+                    </View>
+                  )}
+                  {catch_.technique && (
+                    <View style={styles.catchInfoRow}>
+                      <Ionicons name="settings-outline" size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.catchInfo}>Teknik: {catch_.technique}</Text>
+                    </View>
+                  )}
+                  {catch_.latitude && catch_.longitude && (
+                    <View style={styles.catchInfoRow}>
+                      <Ionicons name="location-outline" size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.catchInfo}>
+                        {catch_.latitude.toFixed(4)}, {catch_.longitude.toFixed(4)}
+                      </Text>
+                    </View>
+                  )}
+                  {catch_.notes && (
+                    <Text style={styles.catchNotes} numberOfLines={2}>{catch_.notes}</Text>
+                  )}
                 </View>
-                <Text style={styles.catchDate}>
-                  {new Date(catch_.createdAt).toLocaleDateString('da-DK')}
-                </Text>
-              </View>
-
-              <View style={styles.catchDetails}>
-                {catch_.lengthCm && (
-                  <Text style={styles.catchDetail}>📏 {catch_.lengthCm} cm</Text>
-                )}
-                {catch_.weightKg && (
-                  <Text style={styles.catchDetail}>⚖️ {Math.round(catch_.weightKg * 1000)} g</Text>
-                )}
-              </View>
-
-              {catch_.bait && (
-                <Text style={styles.catchInfo}>🪱 Agn: {catch_.bait}</Text>
-              )}
-              {catch_.technique && (
-                <Text style={styles.catchInfo}>🎯 Teknik: {catch_.technique}</Text>
-              )}
-              {catch_.latitude && catch_.longitude && (
-                <Text style={styles.catchInfo}>
-                  📍 Position: {catch_.latitude.toFixed(4)}, {catch_.longitude.toFixed(4)}
-                </Text>
-              )}
-              {catch_.notes && (
-                <Text style={styles.catchNotes}>{catch_.notes}</Text>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
-      {/* Bottom Navigation */}
       <BottomNavigation />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: SPACING.lg,
+  safeArea: {
+    flex: 1,
     backgroundColor: COLORS.backgroundLight,
+  },
+  loadingContainer: {
+    ...LOADING_CONTAINER,
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: RADIUS.xl,
+    backgroundColor: COLORS.primaryLight + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  loader: {
+    marginBottom: SPACING.md,
+  },
+  loadingText: {
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.textSecondary,
   },
   scrollContainer: {
     flexGrow: 1,
     padding: SPACING.lg,
     paddingBottom: 100,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: SPACING.sm,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-  },
-  backButtonText: {
-    fontSize: 14,
-    color: COLORS.accent,
-    fontWeight: '600',
-  },
-  title: {
-    ...TYPOGRAPHY.styles.h1,
-    fontSize: 32,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.lg,
-    textAlign: 'center',
-  },
-  loadingText: {
-    fontSize: 18,
-    fontWeight: '400',
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: 50,
-  },
-  button: {
+  addButton: {
+    ...BUTTON_STYLES.primary.container,
+    flexDirection: 'row',
+    justifyContent: 'center',
     width: '100%',
     maxWidth: 600,
     alignSelf: 'center',
-    padding: SPACING.md,
-    borderRadius: RADIUS.full,
     marginBottom: SPACING.lg,
-    ...SHADOWS.md,
+    minHeight: 52,
   },
-  addButton: {
-    backgroundColor: COLORS.primary,
+  buttonIcon: {
+    marginRight: SPACING.xs,
   },
   buttonText: {
-    color: COLORS.textInverse,
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    ...BUTTON_STYLES.primary.text,
   },
   emptyState: {
-    alignItems: 'center',
-    marginTop: 50,
+    ...EMPTY_STATE,
+    marginTop: SPACING['2xl'],
   },
-  emoji: {
-    fontSize: 64,
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: RADIUS['2xl'],
+    backgroundColor: COLORS.gray100,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: SPACING.lg,
   },
   emptyText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: COLORS.text,
+    ...TYPOGRAPHY.styles.h2,
+    color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
   emptySubtext: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...TYPOGRAPHY.styles.body,
     color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   catchesList: {
     width: '100%',
@@ -316,72 +273,70 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   catchCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    ...SHADOWS.md,
+    ...CARD_STYLE,
+    overflow: 'hidden',
+    padding: 0,
   },
   catchImage: {
     width: '100%',
     height: 200,
-    borderRadius: RADIUS.lg,
-    marginBottom: SPACING.md,
     backgroundColor: COLORS.backgroundLight,
+  },
+  catchContent: {
+    padding: SPACING.md,
   },
   catchHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
+    alignItems: 'flex-start',
+    marginBottom: SPACING.sm,
   },
   catchSpecies: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.text,
+    ...TYPOGRAPHY.styles.h3,
+    color: COLORS.textPrimary,
   },
   catchDate: {
-    fontSize: 14,
-    fontWeight: '400',
+    ...TYPOGRAPHY.styles.small,
     color: COLORS.textSecondary,
   },
   catchDetails: {
     flexDirection: 'row',
-    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+    flexWrap: 'wrap',
   },
-  catchDetail: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: COLORS.text,
-    marginRight: SPACING.md,
+  catchDetailBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    backgroundColor: COLORS.primaryLight + '20',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
   },
-  catchInfo: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: COLORS.textSecondary,
+  catchDetailText: {
+    ...TYPOGRAPHY.styles.small,
+    fontWeight: TYPOGRAPHY.fontWeight.semibold,
+    color: COLORS.primary,
+  },
+  catchInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
     marginBottom: SPACING.xs,
   },
+  catchInfo: {
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textSecondary,
+    flex: 1,
+  },
   catchNotes: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: COLORS.text,
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textPrimary,
     marginTop: SPACING.sm,
-    padding: SPACING.md,
+    padding: SPACING.sm,
     backgroundColor: COLORS.backgroundLight,
-    borderRadius: RADIUS.lg,
-  },
-  deleteButton: {
-    marginTop: SPACING.md,
-    padding: SPACING.md,
-    backgroundColor: COLORS.error,
-    borderRadius: RADIUS.full,
-    ...SHADOWS.sm,
-  },
-  deleteButtonText: {
-    color: COLORS.textInverse,
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
+    borderRadius: RADIUS.md,
   },
   draftBadge: {
     backgroundColor: COLORS.warning || '#FFA500',
@@ -390,8 +345,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   draftBadgeText: {
-    color: COLORS.textInverse,
-    fontSize: 12,
-    fontWeight: '600',
+    ...TYPOGRAPHY.styles.tiny,
+    color: COLORS.white,
+    fontWeight: TYPOGRAPHY.fontWeight.semibold,
   },
 });

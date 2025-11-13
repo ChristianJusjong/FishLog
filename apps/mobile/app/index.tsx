@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuth } from '../contexts/AuthContext';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 
 // Keep splash screen visible while loading
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -33,8 +35,12 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#007AFF" />
-      <Text style={styles.text}>Starting app...</Text>
+      <View style={styles.logoContainer}>
+        <Ionicons name="fish" size={64} color={COLORS.primary} />
+      </View>
+      <Text style={styles.title}>Hook</Text>
+      <ActivityIndicator size="large" color={COLORS.accent} style={styles.loader} />
+      <Text style={styles.text}>Indlæser...</Text>
     </View>
   );
 }
@@ -44,11 +50,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F0F2F5',
+    backgroundColor: COLORS.background,
+  },
+  logoContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: RADIUS['2xl'],
+    backgroundColor: COLORS.primaryLight + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  title: {
+    ...TYPOGRAPHY.styles.h1,
+    fontSize: TYPOGRAPHY.fontSize['4xl'],
+    color: COLORS.primary,
+    marginBottom: SPACING.xl,
+  },
+  loader: {
+    marginBottom: SPACING.md,
   },
   text: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666666',
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.textSecondary,
   },
 });

@@ -1,14 +1,13 @@
 import React, { useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwipeableScreen from '../components/SwipeableScreen';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import BottomNavigation from '../components/BottomNavigation';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, BUTTON_STYLES, AVATAR_STYLES, CARD_STYLE } from '@/constants/theme';
 import i18n from '../i18n';
 import { logger } from '../utils/logger';
 
@@ -35,8 +34,12 @@ export default function ProfileScreen() {
 
   if (loading || !user) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.backgroundLight }]}>
-        <ActivityIndicator size="large" color={theme.primary} />
+      <View style={styles.loadingContainer}>
+        <View style={styles.logoContainer}>
+          <Ionicons name="person" size={48} color={COLORS.primary} />
+        </View>
+        <ActivityIndicator size="large" color={COLORS.accent} style={styles.loader} />
+        <Text style={styles.loadingText}>Indlæser profil...</Text>
       </View>
     );
   }
@@ -48,132 +51,132 @@ export default function ProfileScreen() {
 
   return (
     <SwipeableScreen currentScreen="/profile">
-      <View style={{ flex: 1, backgroundColor: theme.backgroundLight }}>
+      <View style={styles.safeArea}>
       {/* Weather & Location Card */}
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.container, { backgroundColor: theme.backgroundLight }]}
+        contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={true}
       >
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           {user.avatar ? (
-            <Image source={{ uri: user.avatar }} style={[styles.avatar, { borderColor: theme.accent }]} />
+            <Image source={{ uri: user.avatar }} style={styles.avatar} />
           ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: theme.primary }]}>
-              <Text style={styles.avatarPlaceholderText}>
-                {user.name.charAt(0).toUpperCase()}
-              </Text>
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Ionicons name="person" size={48} color={COLORS.white} />
             </View>
           )}
-          <View style={{ minHeight: 36 }}>
-            <Text style={[styles.userName, { color: theme.text }]} numberOfLines={1}>{user.name}</Text>
-          </View>
-          <View style={{ minHeight: 24 }}>
-            <Text style={[styles.userEmail, { color: theme.textSecondary }]} numberOfLines={1}>{user.email}</Text>
-          </View>
+          <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>
+          <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text>
         </View>
 
         {/* Profile Stats Card */}
-        <View style={[styles.statsCard, { backgroundColor: theme.surface }]}>
+        <View style={styles.statsCard}>
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: theme.primary }]}>0</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{i18n.t('profile.catches')}</Text>
+            <Ionicons name="fish" size={24} color={COLORS.primary} style={styles.statIcon} />
+            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statLabel}>{i18n.t('profile.catches')}</Text>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
+          <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: theme.primary }]}>0</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{i18n.t('profile.friends')}</Text>
+            <Ionicons name="people" size={24} color={COLORS.accent} style={styles.statIcon} />
+            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statLabel}>{i18n.t('profile.friends')}</Text>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
+          <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: theme.primary }]}>0</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{i18n.t('navigation.events')}</Text>
+            <Ionicons name="trophy" size={24} color={COLORS.secondary} style={styles.statIcon} />
+            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statLabel}>{i18n.t('navigation.events')}</Text>
           </View>
         </View>
 
         {/* Action Buttons */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: theme.primary, shadowColor: theme.primary }]}
-            onPress={() => router.push('/edit-profile')}
-          >
-            <MaterialCommunityIcons name="pencil" size={20} color={theme.textInverse} style={{ marginRight: SPACING.sm }} />
-            <Text style={[styles.primaryButtonText, { color: theme.textInverse }]}>{i18n.t('profile.editProfile')}</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => router.push('/edit-profile')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="create-outline" size={20} color={COLORS.white} style={styles.buttonIcon} />
+          <Text style={styles.primaryButtonText}>{i18n.t('profile.editProfile')}</Text>
+        </TouchableOpacity>
 
-        <View style={styles.actionsContainer}>
+        <View style={styles.secondaryButtonsRow}>
           <TouchableOpacity
-            style={[styles.secondaryButton, { backgroundColor: theme.surface, borderColor: theme.primary }]}
+            style={styles.secondaryButton}
             onPress={() => router.push('/friends')}
+            activeOpacity={0.8}
           >
-            <MaterialCommunityIcons name="account-group" size={20} color={theme.primary} style={{ marginRight: SPACING.sm }} />
-            <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>{i18n.t('profile.friends')}</Text>
+            <Ionicons name="people-outline" size={20} color={COLORS.primary} style={styles.buttonIcon} />
+            <Text style={styles.secondaryButtonText}>{i18n.t('profile.friends')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.secondaryButton, { backgroundColor: theme.surface, borderColor: theme.primary }]}
+            style={styles.secondaryButton}
             onPress={() => router.push('/groups')}
+            activeOpacity={0.8}
           >
-            <MaterialCommunityIcons name="account-group" size={20} color={theme.primary} style={{ marginRight: SPACING.sm }} />
-            <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>{i18n.t('profile.groups')}</Text>
+            <Ionicons name="people-circle-outline" size={20} color={COLORS.primary} style={styles.buttonIcon} />
+            <Text style={styles.secondaryButtonText}>{i18n.t('profile.groups')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Settings Section */}
-        <View style={[styles.settingsSection, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('profile.settings')}</Text>
+        <View style={styles.settingsSection}>
+          <Text style={styles.sectionTitle}>{i18n.t('profile.settings')}</Text>
 
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => router.push('/settings')}
+            activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="cog-outline" size={24} color={theme.text} style={{ marginRight: SPACING.md }} />
+            <Ionicons name="settings-outline" size={24} color={COLORS.textPrimary} style={styles.settingIcon} />
             <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>{i18n.t('profile.appSettings')}</Text>
-              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{i18n.t('profile.themeLanguageEtc')}</Text>
+              <Text style={styles.settingLabel}>{i18n.t('profile.appSettings')}</Text>
+              <Text style={styles.settingValue}>{i18n.t('profile.themeLanguageEtc')}</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textTertiary} />
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
-            <MaterialCommunityIcons name="bell-outline" size={24} color={theme.text} style={{ marginRight: SPACING.md }} />
+          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+            <Ionicons name="notifications-outline" size={24} color={COLORS.textPrimary} style={styles.settingIcon} />
             <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>{i18n.t('profile.notifications')}</Text>
-              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{i18n.t('profile.enabled')}</Text>
+              <Text style={styles.settingLabel}>{i18n.t('profile.notifications')}</Text>
+              <Text style={styles.settingValue}>{i18n.t('profile.enabled')}</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textTertiary} />
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
-            <MaterialCommunityIcons name="earth" size={24} color={theme.text} style={{ marginRight: SPACING.md }} />
+          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+            <Ionicons name="eye-outline" size={24} color={COLORS.textPrimary} style={styles.settingIcon} />
             <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>{i18n.t('profile.visibility')}</Text>
-              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{i18n.t('profile.private')}</Text>
+              <Text style={styles.settingLabel}>{i18n.t('profile.visibility')}</Text>
+              <Text style={styles.settingValue}>{i18n.t('profile.private')}</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textTertiary} />
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
-            <MaterialCommunityIcons name="shield-check" size={24} color={theme.text} style={{ marginRight: SPACING.md }} />
+          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+            <Ionicons name="shield-checkmark-outline" size={24} color={COLORS.textPrimary} style={styles.settingIcon} />
             <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>{i18n.t('profile.loginMethod')}</Text>
-              <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{user.provider}</Text>
+              <Text style={styles.settingLabel}>{i18n.t('profile.loginMethod')}</Text>
+              <Text style={styles.settingValue}>{user.provider}</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textTertiary} />
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
           </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: theme.error }]} onPress={handleLogout}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
+          <Ionicons name="log-out-outline" size={20} color={COLORS.white} style={styles.buttonIcon} />
           <Text style={styles.logoutButtonText}>{i18n.t('auth.logOut')}</Text>
         </TouchableOpacity>
 
         {/* Version Info */}
-        <Text style={[styles.versionText, { color: theme.textTertiary }]}>{i18n.t('profile.version')} 1.0.0</Text>
+        <Text style={styles.versionText}>{i18n.t('profile.version')} 1.0.0</Text>
       </ScrollView>
 
       {/* Bottom Navigation */}
@@ -184,169 +187,163 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundLight,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: RADIUS.xl,
+    backgroundColor: COLORS.primaryLight + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  loader: {
+    marginBottom: SPACING.md,
+  },
+  loadingText: {
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.textSecondary,
   },
   container: {
     padding: SPACING.lg,
-    paddingBottom: 120, // Extra padding for bottom navigation
+    paddingBottom: 120,
   },
   profileHeader: {
     alignItems: 'center',
     paddingVertical: SPACING.xl,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    ...AVATAR_STYLES.xlarge,
     marginBottom: SPACING.md,
-    borderWidth: 3,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
+    borderWidth: 4,
+    borderColor: COLORS.primary,
+    ...SHADOWS.md,
   },
   avatarPlaceholder: {
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarPlaceholderText: {
-    fontSize: 48,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-  },
   userName: {
-    fontSize: 28,
-    fontWeight: '700',
+    ...TYPOGRAPHY.styles.h1,
+    fontSize: TYPOGRAPHY.fontSize['2xl'],
     marginBottom: SPACING.xs,
+    color: COLORS.textPrimary,
   },
   userEmail: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...TYPOGRAPHY.styles.body,
+    color: COLORS.textSecondary,
   },
   statsCard: {
+    ...CARD_STYLE,
     flexDirection: 'row',
-    borderRadius: RADIUS.xl,
-    padding: SPACING.lg,
     marginBottom: SPACING.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
+  statIcon: {
+    marginBottom: SPACING.xs,
+  },
   statNumber: {
-    fontSize: 32,
-    fontWeight: '700',
+    ...TYPOGRAPHY.styles.h1,
+    fontSize: TYPOGRAPHY.fontSize['3xl'],
+    color: COLORS.textPrimary,
     marginBottom: SPACING.xs,
   },
   statLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   statDivider: {
     width: 1,
+    backgroundColor: COLORS.border,
     marginHorizontal: SPACING.sm,
   },
-  actionsContainer: {
+  primaryButton: {
+    ...BUTTON_STYLES.accent.container,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+    minHeight: 52,
+  },
+  primaryButtonText: {
+    ...BUTTON_STYLES.accent.text,
+  },
+  buttonIcon: {
+    marginRight: SPACING.xs,
+  },
+  secondaryButtonsRow: {
     flexDirection: 'row',
     gap: SPACING.md,
     marginBottom: SPACING.xl,
   },
-  primaryButton: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
   secondaryButton: {
+    ...BUTTON_STYLES.outline.container,
     flex: 1,
     flexDirection: 'row',
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.full,
-    alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    minHeight: 52,
   },
   secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...BUTTON_STYLES.outline.text,
   },
   settingsSection: {
-    borderRadius: RADIUS.xl,
-    padding: SPACING.md,
+    ...CARD_STYLE,
     marginBottom: SPACING.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...TYPOGRAPHY.styles.h2,
+    color: COLORS.textPrimary,
     marginBottom: SPACING.md,
-    paddingHorizontal: SPACING.sm,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.sm,
     borderRadius: RADIUS.md,
+  },
+  settingIcon: {
+    marginRight: SPACING.md,
   },
   settingContent: {
     flex: 1,
   },
   settingLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...TYPOGRAPHY.styles.body,
+    fontWeight: TYPOGRAPHY.fontWeight.medium,
+    color: COLORS.textPrimary,
     marginBottom: 2,
   },
   settingValue: {
-    fontSize: 14,
-    fontWeight: '400',
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textSecondary,
   },
   logoutButton: {
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.full,
-    alignItems: 'center',
+    ...BUTTON_STYLES.primary.container,
+    backgroundColor: COLORS.error,
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginBottom: SPACING.md,
-    ...SHADOWS.sm,
+    minHeight: 52,
   },
   logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    ...BUTTON_STYLES.primary.text,
   },
   versionText: {
-    fontSize: 14,
-    fontWeight: '400',
+    ...TYPOGRAPHY.styles.small,
+    color: COLORS.textTertiary,
     textAlign: 'center',
     marginTop: SPACING.sm,
   },
