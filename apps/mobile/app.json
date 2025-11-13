@@ -10,7 +10,7 @@
       "typedRoutes": true
     },
     "splash": {
-      "image": "./assets/logo-white.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#F97316"
     },
@@ -31,11 +31,7 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
-      ],
-      "statusBar": {
-        "translucent": true,
-        "backgroundColor": "#00000000"
-      }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
