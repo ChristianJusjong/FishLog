@@ -365,8 +365,11 @@ export async function authRoutes(fastify: FastifyInstance) {
         },
       };
     } catch (error) {
-      fastify.log.error(error);
-      return reply.code(500).send({ error: 'Signup failed' });
+      fastify.log.error('Signup error:', error);
+      return reply.code(500).send({
+        error: 'Signup failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
@@ -423,8 +426,11 @@ export async function authRoutes(fastify: FastifyInstance) {
         },
       };
     } catch (error) {
-      fastify.log.error(error);
-      return reply.code(500).send({ error: 'Login failed' });
+      fastify.log.error('Login error:', error);
+      return reply.code(500).send({
+        error: 'Login failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
@@ -484,8 +490,11 @@ export async function authRoutes(fastify: FastifyInstance) {
         },
       };
     } catch (error) {
-      fastify.log.error(error);
-      return reply.code(500).send({ error: 'Test login failed' });
+      fastify.log.error('Test login error:', error);
+      return reply.code(500).send({
+        error: 'Test login failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 }
