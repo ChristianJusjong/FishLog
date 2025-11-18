@@ -260,27 +260,86 @@ Vær meget konkret og specifik. Basér dine anbefalinger på biologisk korrekt i
         context += `\nGiv praktiske råd om:\n1. Bedste tid på dagen\n2. Valg af agn og teknik\n3. Hvor dybt at fiske\n4. Forventede fiskearter\n`;
 
         const groq = getGroqClient(userApiKey);
-        const completion = await groq.chat.completions.create({
-          messages: [
-            {
-              role: 'user',
-              content: context,
-            },
-          ],
-          model: 'llama-3.3-70b-versatile',
-          temperature: 0.7,
-          max_tokens: 800,
-        });
+
+        let completion;
+        try {
+          completion = await groq.chat.completions.create({
+            messages: [
+              {
+                role: 'user',
+                content: context,
+              },
+            ],
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.7,
+            max_tokens: 800,
+          });
+        } catch (groqError: any) {
+          fastify.log.error(groqError, 'Groq API error');
+
+          // Check if it's a Groq service error (500, 502, 503, 504)
+          if (groqError.status >= 500 && groqError.status < 600) {
+            // Provide fallback advice when Groq is down
+            const fallbackAdvice = `🎣 AI-tjenesten er midlertidigt utilgængelig, men her er nogle generelle fiskeråd:\n\n` +
+              `📍 **Baseret på din placering og vejrforhold:**\n\n` +
+              `🌡️ Temperatur: ${weather.temperature}°C\n` +
+              `💨 Vind: ${weather.windSpeed} m/s\n\n` +
+              `**Generelle råd:**\n` +
+              `• Fisk ofte bedst i skumringen - tidlig morgen eller sen eftermiddag\n` +
+              `• Ved temperatur under 10°C: Fisk dybere og brug langsommere teknikker\n` +
+              `• Ved temperatur 10-20°C: Prøv midtvands med varierede agn\n` +
+              `• Ved temperatur over 20°C: Fisk i skyggefulde områder\n` +
+              `• Ved vindstyrke under 5 m/s: Godt til fluefiskeri\n` +
+              `• Ved vindstyrke 5-10 m/s: Brug tungere agn og fisk læsiden\n` +
+              `• Ved vindstyrke over 10 m/s: Overvej at finde mere beskyttede steder\n\n` +
+              (nearbyCatchStats && nearbyCatchStats.totalCatches > 0
+                ? `📊 **Lokale data viser:**\n` +
+                  `• ${nearbyCatchStats.totalCatches} tidligere fangster i området\n` +
+                  (nearbyCatchStats.commonSpecies.length > 0
+                    ? `• Almindelige arter: ${nearbyCatchStats.commonSpecies.join(', ')}\n`
+                    : '') +
+                  `• Gennemsnitlig vægt: ${Math.round(nearbyCatchStats.avgWeight)}g\n\n`
+                : '') +
+              `💡 Tip: Prøv AI-guiden igen om lidt for mere personlige råd!`;
+
+            return { advice: fallbackAdvice, isFallback: true };
+          }
+
+          // Check for rate limit errors
+          if (groqError.status === 429) {
+            return {
+              advice: '⏳ Der er for mange forespørgsler lige nu. Prøv venligst igen om et øjeblik.',
+              isFallback: true
+            };
+          }
+
+          // Check for authentication errors
+          if (groqError.status === 401 || groqError.status === 403) {
+            return {
+              advice: '🔑 AI API-nøglen er ugyldig eller mangler. Kontakt support for hjælp.',
+              isFallback: true
+            };
+          }
+
+          // Re-throw for other errors to be caught by outer catch
+          throw groqError;
+        }
 
         const advice = completion.choices[0]?.message?.content || 'Ingen råd tilgængelige.';
 
-        return { advice };
+        return { advice, isFallback: false };
       } catch (error) {
-        fastify.log.error(error);
+        fastify.log.error(error, 'Unexpected error in fishing advice endpoint');
         reply.code(500);
         return {
+          advice: '❌ Der opstod en uventet fejl. Prøv venligst igen senere.\n\n' +
+                  '💡 I mellemtiden kan du:\n' +
+                  '• Tjekke tidligere fangster i området\n' +
+                  '• Se på vejrudsigten for de kommende dage\n' +
+                  '• Dele dine fangster med venner',
           error: 'Failed to generate fishing advice',
           message: error instanceof Error ? error.message : 'Unknown error',
+          isFallback: true
         };
       }
     }

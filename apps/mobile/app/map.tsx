@@ -16,11 +16,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import BottomNavigation from '../components/BottomNavigation';
+import FloatingMenu from '../components/FloatingMenu';
+import MapFloatingMenu from '../components/MapFloatingMenu';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import { SPACING, COLORS } from '@/constants/branding';
+import { api } from '../lib/api';
 
-const API_URL = 'https://fishlog-production.up.railway.app';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
 // Danish fish species for filter
 const FISH_SPECIES = [
@@ -73,11 +75,14 @@ export default function MapScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [showTopSpots, setShowTopSpots] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showDepthChart, setShowDepthChart] = useState(false);
   const [mapType, setMapType] = useState<'standard' | 'satellite' | 'hybrid'>('satellite');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [aiAdvice, setAiAdvice] = useState<string>('');
   const [loadingAiAdvice, setLoadingAiAdvice] = useState(false);
+  const [depthInfo, setDepthInfo] = useState<{ depth: number | null; waterName: string | null; coords: { latitude: number; longitude: number } } | null>(null);
+  const [loadingDepthInfo, setLoadingDepthInfo] = useState(false);
   const [region, setRegion] = useState({
     latitude: 56.26, // Denmark center
     longitude: 9.5,
@@ -200,6 +205,71 @@ export default function MapScreen() {
     return 300 + (normalized * 700); // 300m to 1000m
   };
 
+  const handleLongPress = async (event: any) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    console.log('Long press detected at:', latitude, longitude);
+    setLoadingDepthInfo(true);
+    setDepthInfo(null);
+
+    let depth: number | null = null;
+    let waterName = 'Ukendt farvand';
+
+    try {
+      // Fetch water body name from OpenStreetMap Nominatim
+      try {
+        const nameResponse = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=12&addressdetails=1`
+        );
+        if (nameResponse.ok) {
+          const nameData = await nameResponse.json();
+          waterName = nameData.address?.water || nameData.address?.bay || nameData.address?.lake ||
+                      nameData.address?.river || nameData.name || nameData.display_name?.split(',')[0] || 'Ukendt farvand';
+          console.log('Water name:', waterName);
+        }
+      } catch (nameError) {
+        console.error('Failed to fetch water name:', nameError);
+      }
+
+      // Try to fetch depth from EMODnet REST API
+      try {
+        const depthUrl = `https://rest.emodnet-bathymetry.eu/depth_sample?geom=POINT(${longitude}%20${latitude})&crs=4326`;
+        console.log('Fetching depth from:', depthUrl);
+        const depthResponse = await fetch(depthUrl);
+        console.log('Depth response status:', depthResponse.status);
+
+        if (depthResponse.ok) {
+          const depthText = await depthResponse.text();
+          console.log('Depth response text:', depthText.substring(0, 200));
+
+          try {
+            const depthData = JSON.parse(depthText);
+            // Convert meters to centimeters
+            depth = depthData.avg !== undefined ? Math.round(depthData.avg * 100) : null;
+            console.log('Parsed depth (cm):', depth);
+          } catch (parseError) {
+            console.error('Failed to parse depth JSON:', parseError);
+            console.log('Response was:', depthText);
+          }
+        } else {
+          console.error('Depth API returned error:', depthResponse.status);
+        }
+      } catch (depthError) {
+        console.error('Failed to fetch depth:', depthError);
+      }
+
+      setDepthInfo({ depth, waterName, coords: { latitude, longitude } });
+    } catch (error) {
+      console.error('Failed to fetch depth info:', error);
+      setDepthInfo({
+        depth: null,
+        waterName: 'Kunne ikke hente information',
+        coords: { latitude, longitude }
+      });
+    } finally {
+      setLoadingDepthInfo(false);
+    }
+  };
+
   const handleMapPress = async (event: any) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setSelectedLocation({ latitude, longitude });
@@ -207,7 +277,6 @@ export default function MapScreen() {
     setAiAdvice('');
 
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
 
       // Fetch weather data for the location
       const weatherResponse = await fetch(
@@ -228,7 +297,7 @@ export default function MapScreen() {
         location: { latitude, longitude },
         weather: {
           temperature: Math.round(weatherData.current.temperature_2m),
-          windSpeed: Math.round(weatherData.current.wind_speed_10m),
+          windSpeed: Math.round(weatherData.current.wind_speed_10m / 3.6), // Convert km/h to m/s
           weatherCode: weatherData.current.weather_code
         },
         nearbyCatchStats: nearbyCatches.length > 0 ? {
@@ -241,29 +310,33 @@ export default function MapScreen() {
                 new Date().getMonth() < 9 ? 'sommer' : 'efterår'
       };
 
-      // Call AI service through backend
-      const aiResponse = await fetch(`${API_URL}/ai/fishing-advice`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(context),
-      });
+      // Call AI service through backend using api client (handles token refresh)
+      const { data } = await api.post('/ai/fishing-advice', context);
+      console.log('AI advice response:', data);
 
-      if (aiResponse.ok) {
-        const data = await aiResponse.json();
-        console.log('AI advice response:', data);
+      // Handle both successful AI responses and fallback advice
+      if (data.advice) {
         setAiAdvice(data.advice);
       } else {
-        const errorData = await aiResponse.json().catch(() => ({}));
-        console.error('AI advice error:', aiResponse.status, errorData);
-        setAiAdvice(`AI-rådgivning ikke tilgængelig. Status: ${aiResponse.status}`);
+        setAiAdvice('Ingen råd tilgængelige på nuværende tidspunkt.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to get AI advice:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Ukendt fejl';
-      setAiAdvice(`Kunne ikke hente fiskerådgivning: ${errorMessage}`);
+
+      // Check if error response contains fallback advice
+      if (error.response?.data?.advice) {
+        setAiAdvice(error.response.data.advice);
+      } else {
+        const errorMessage = error.response?.data?.message || error.message || 'Ukendt fejl';
+        setAiAdvice(
+          `❌ Kunne ikke hente AI-rådgivning.\n\n` +
+          `Fejl: ${errorMessage}\n\n` +
+          `💡 Prøv at:\n` +
+          `• Tjekke din internetforbindelse\n` +
+          `• Opdatere appen\n` +
+          `• Prøve igen om lidt`
+        );
+      }
     } finally {
       setLoadingAiAdvice(false);
     }
@@ -276,27 +349,18 @@ export default function MapScreen() {
       {/* Weather & Location Card */}
       <WeatherLocationCard showLocation={true} showWeather={true} />
 
-      {/* Floating Filter Button */}
-      <TouchableOpacity
-        style={[
-          styles.floatingFilterButton,
-          { bottom: 80 + Math.max(insets.bottom, 8) } // Above bottom navigation with safe area
-        ]}
-        onPress={() => setShowFilters(!showFilters)}
-      >
-        <Ionicons
-          name={showFilters ? "close" : "options-outline"}
-          size={24}
-          color="white"
-        />
-      </TouchableOpacity>
+      {/* Map Floating Menu */}
+      <MapFloatingMenu
+        onFilterPress={() => setShowFilters(!showFilters)}
+        showFilter={showFilters}
+      />
 
       {/* Center on User Location Button */}
       {userLocation && (
         <TouchableOpacity
           style={[
             styles.locationButton,
-            { bottom: 80 + Math.max(insets.bottom, 8) + 70 } // Above filter button
+            { bottom: insets.bottom + 20 + 68 } // Above filter button
           ]}
           onPress={centerOnUserLocation}
         >
@@ -407,6 +471,25 @@ export default function MapScreen() {
                 {mapType === 'satellite' ? 'Satellit' : 'Kort'}
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.toggleButton, showDepthChart && styles.toggleButtonActive]}
+              onPress={() => {
+                console.log('Depth chart toggle pressed, current state:', showDepthChart);
+                setShowDepthChart(!showDepthChart);
+                console.log('Depth chart new state:', !showDepthChart);
+              }}
+            >
+              <Ionicons
+                name="water-outline"
+                size={16}
+                color={showDepthChart ? 'white' : '#666'}
+                style={{ marginRight: 4 }}
+              />
+              <Text style={[styles.toggleButtonText, showDepthChart && styles.toggleButtonTextActive]}>
+                Dybdekort
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -425,6 +508,7 @@ export default function MapScreen() {
             initialRegion={region}
             onRegionChangeComplete={setRegion}
             onPress={handleMapPress}
+            onLongPress={handleLongPress}
             mapType={mapType}
           >
             {/* Labels overlay for satellite view - modern dark labels */}
@@ -436,6 +520,19 @@ export default function MapScreen() {
                 opacity={0.9}
               />
             )}
+
+            {/* Water Depth Chart - Shows water areas with depth colors */}
+            {showDepthChart && (() => {
+              console.log('Rendering water depth chart - EMODnet multicolour');
+              return (
+                <UrlTile
+                  urlTemplate="https://tiles.emodnet-bathymetry.eu/v11/mean_multicolour/web_mercator/{z}/{x}/{y}.png"
+                  maximumZ={15}
+                  zIndex={100}
+                  opacity={0.7}
+                />
+              );
+            })()}
 
             {/* Heatmap circles */}
             {showHeatmap && heatmapData.map((point, index) => (
@@ -486,9 +583,52 @@ export default function MapScreen() {
                 pinColor="blue"
               />
             )}
+
+            {/* Depth info marker */}
+            {depthInfo && (
+              <Marker
+                coordinate={depthInfo.coords}
+                title={depthInfo.waterName || 'Vandområde'}
+                description={depthInfo.depth ? `Dybde: ${depthInfo.depth}cm` : 'Dybde ikke tilgængelig'}
+              >
+                <Ionicons name="water" size={28} color="#0066CC" />
+              </Marker>
+            )}
           </MapView>
         )}
       </View>
+
+      {/* Depth Info Card */}
+      {depthInfo && (
+        <View style={styles.depthInfoCard}>
+          <View style={styles.depthInfoHeader}>
+            <Ionicons name="water" size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
+            <Text style={styles.depthInfoTitle}>{depthInfo.waterName}</Text>
+            <TouchableOpacity onPress={() => setDepthInfo(null)} style={{ marginLeft: 'auto' }}>
+              <Ionicons name="close-circle" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+          {loadingDepthInfo ? (
+            <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 8 }} />
+          ) : (
+            <>
+              {depthInfo.depth !== null ? (
+                <View style={styles.depthInfoContent}>
+                  <Text style={styles.depthInfoLabel}>Dybde:</Text>
+                  <Text style={styles.depthInfoValue}>{depthInfo.depth}cm</Text>
+                </View>
+              ) : (
+                <Text style={styles.depthInfoNoData}>Dybdedata ikke tilgængelig for dette område</Text>
+              )}
+              <View style={styles.depthInfoCoords}>
+                <Text style={styles.depthInfoCoordsText}>
+                  📍 {depthInfo.coords.latitude.toFixed(4)}°N, {depthInfo.coords.longitude.toFixed(4)}°Ø
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
+      )}
 
       {/* AI Advice Modal */}
       <Modal
@@ -533,7 +673,7 @@ export default function MapScreen() {
       </Modal>
 
       {/* Bottom Navigation */}
-      <BottomNavigation />
+      <FloatingMenu />
     </View>
   );
 }
@@ -545,10 +685,10 @@ const styles = StyleSheet.create({
   },
   floatingFilterButton: {
     position: 'absolute',
-    right: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    left: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -561,10 +701,10 @@ const styles = StyleSheet.create({
   },
   locationButton: {
     position: 'absolute',
-    right: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    left: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: COLORS.accent,
     justifyContent: 'center',
     alignItems: 'center',
@@ -693,5 +833,61 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
+  },
+  depthInfoCard: {
+    position: 'absolute',
+    top: 80,
+    left: 16,
+    right: 16,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  depthInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  depthInfoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  depthInfoContent: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
+  },
+  depthInfoLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 8,
+  },
+  depthInfoValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  depthInfoNoData: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  depthInfoCoords: {
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  depthInfoCoordsText: {
+    fontSize: 12,
+    color: '#999',
   },
 });
