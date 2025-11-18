@@ -9,6 +9,8 @@ import {
   ScrollView,
   Platform,
   Modal,
+  TextInput,
+  Linking,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle, PROVIDER_GOOGLE, PROVIDER_DEFAULT, UrlTile } from 'react-native-maps';
@@ -89,6 +91,18 @@ export default function MapScreen() {
     latitudeDelta: 0.4, // ~20km radius (0.4 degrees ≈ 44km height)
     longitudeDelta: 0.4,
   });
+
+  // Favorite location state
+  const [showFavoriteModal, setShowFavoriteModal] = useState(false);
+  const [favoriteName, setFavoriteName] = useState('');
+  const [favoriteFishSpecies, setFavoriteFishSpecies] = useState('');
+  const [favoriteBottomType, setFavoriteBottomType] = useState('');
+  const [favoriteDepth, setFavoriteDepth] = useState('');
+  const [favoritePrivacy, setFavoritePrivacy] = useState<'public' | 'groups' | 'friends' | 'private'>('private');
+  const [favoriteParkingLat, setFavoriteParkingLat] = useState('');
+  const [favoriteParkingLng, setFavoriteParkingLng] = useState('');
+  const [favoriteNotes, setFavoriteNotes] = useState('');
+  const [savingFavorite, setSavingFavorite] = useState(false);
 
   const getUserLocation = async () => {
     try {
@@ -342,6 +356,84 @@ export default function MapScreen() {
     }
   };
 
+  const openSaveFavoriteModal = () => {
+    if (!selectedLocation) {
+      Alert.alert('Fejl', 'Vælg venligst en lokation på kortet først');
+      return;
+    }
+    setShowFavoriteModal(true);
+  };
+
+  const saveFavoriteLocation = async () => {
+    if (!selectedLocation) {
+      Alert.alert('Fejl', 'Ingen lokation valgt');
+      return;
+    }
+
+    if (!favoriteName.trim()) {
+      Alert.alert('Fejl', 'Indtast venligst et navn til stedet');
+      return;
+    }
+
+    setSavingFavorite(true);
+
+    try {
+      const payload = {
+        name: favoriteName,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+        fishSpecies: favoriteFishSpecies || undefined,
+        bottomType: favoriteBottomType || undefined,
+        depth: favoriteDepth ? parseFloat(favoriteDepth) : undefined,
+        privacy: favoritePrivacy,
+        parkingLatitude: favoriteParkingLat ? parseFloat(favoriteParkingLat) : undefined,
+        parkingLongitude: favoriteParkingLng ? parseFloat(favoriteParkingLng) : undefined,
+        notes: favoriteNotes || undefined,
+      };
+
+      await api.post('/favorite-spots', payload);
+
+      Alert.alert('Succes', 'Favoritsted gemt!');
+
+      // Reset form
+      setShowFavoriteModal(false);
+      setFavoriteName('');
+      setFavoriteFishSpecies('');
+      setFavoriteBottomType('');
+      setFavoriteDepth('');
+      setFavoritePrivacy('private');
+      setFavoriteParkingLat('');
+      setFavoriteParkingLng('');
+      setFavoriteNotes('');
+    } catch (error: any) {
+      console.error('Failed to save favorite location:', error);
+      Alert.alert(
+        'Fejl',
+        error.response?.data?.error || 'Kunne ikke gemme favoritsted'
+      );
+    } finally {
+      setSavingFavorite(false);
+    }
+  };
+
+  const openInGoogleMaps = (lat: number, lng: number) => {
+    const url = Platform.select({
+      ios: `maps://app?daddr=${lat},${lng}`,
+      android: `google.navigation:q=${lat},${lng}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+    });
+
+    if (url) {
+      Linking.canOpenURL(url).then((supported) => {
+        if (supported) {
+          Linking.openURL(url);
+        } else {
+          Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
+        }
+      });
+    }
+  };
+
   const maxIntensity = Math.max(...heatmapData.map(p => p.intensity), 1);
 
   return (
@@ -353,6 +445,7 @@ export default function MapScreen() {
       <MapFloatingMenu
         onFilterPress={() => setShowFilters(!showFilters)}
         showFilter={showFilters}
+        onSaveFavorite={openSaveFavoriteModal}
       />
 
       {/* Center on User Location Button */}
@@ -672,6 +765,159 @@ export default function MapScreen() {
         </View>
       </Modal>
 
+      {/* Favorite Location Modal */}
+      <Modal
+        visible={showFavoriteModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowFavoriteModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowFavoriteModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.modalTitle}>Gem Favoritsted</Text>
+
+              <Text style={styles.inputLabel}>Navn *</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="F.eks. 'Min hemmelige plet'"
+                value={favoriteName}
+                onChangeText={setFavoriteName}
+                placeholderTextColor="#999"
+              />
+
+              <Text style={styles.inputLabel}>Fiskearter</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="F.eks. 'Gedde, Aborre'"
+                value={favoriteFishSpecies}
+                onChangeText={setFavoriteFishSpecies}
+                placeholderTextColor="#999"
+              />
+
+              <Text style={styles.inputLabel}>Bundforhold</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="F.eks. 'Sand, sten'"
+                value={favoriteBottomType}
+                onChangeText={setFavoriteBottomType}
+                placeholderTextColor="#999"
+              />
+
+              <Text style={styles.inputLabel}>Dybde (meter)</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="F.eks. '5'"
+                value={favoriteDepth}
+                onChangeText={setFavoriteDepth}
+                keyboardType="decimal-pad"
+                placeholderTextColor="#999"
+              />
+
+              <Text style={styles.inputLabel}>Parkering (Koordinater)</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TextInput
+                  style={[styles.textInput, { flex: 1 }]}
+                  placeholder="Breddegrad"
+                  value={favoriteParkingLat}
+                  onChangeText={setFavoriteParkingLat}
+                  keyboardType="decimal-pad"
+                  placeholderTextColor="#999"
+                />
+                <TextInput
+                  style={[styles.textInput, { flex: 1 }]}
+                  placeholder="Længdegrad"
+                  value={favoriteParkingLng}
+                  onChangeText={setFavoriteParkingLng}
+                  keyboardType="decimal-pad"
+                  placeholderTextColor="#999"
+                />
+              </View>
+              {favoriteParkingLat && favoriteParkingLng && (
+                <TouchableOpacity
+                  style={styles.mapsButton}
+                  onPress={() => openInGoogleMaps(parseFloat(favoriteParkingLat), parseFloat(favoriteParkingLng))}
+                >
+                  <Ionicons name="navigate" size={20} color="#FFFFFF" />
+                  <Text style={styles.mapsButtonText}>Kør til parkering</Text>
+                </TouchableOpacity>
+              )}
+
+              <Text style={styles.inputLabel}>Deling</Text>
+              <View style={styles.privacyButtons}>
+                {[
+                  { value: 'public', label: 'Offentlig', icon: 'globe' },
+                  { value: 'groups', label: 'Grupper', icon: 'people' },
+                  { value: 'friends', label: 'Venner', icon: 'person-add' },
+                  { value: 'private', label: 'Privat', icon: 'lock-closed' },
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.privacyButton,
+                      favoritePrivacy === option.value && styles.privacyButtonActive,
+                    ]}
+                    onPress={() => setFavoritePrivacy(option.value as any)}
+                  >
+                    <Ionicons
+                      name={option.icon as any}
+                      size={20}
+                      color={favoritePrivacy === option.value ? '#FFFFFF' : COLORS.primary}
+                    />
+                    <Text
+                      style={[
+                        styles.privacyButtonText,
+                        favoritePrivacy === option.value && styles.privacyButtonTextActive,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.inputLabel}>Noter</Text>
+              <TextInput
+                style={[styles.textInput, { height: 80, textAlignVertical: 'top' }]}
+                placeholder="Personlige noter om stedet..."
+                value={favoriteNotes}
+                onChangeText={setFavoriteNotes}
+                multiline
+                placeholderTextColor="#999"
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: '#ccc', flex: 1 }]}
+                  onPress={() => setShowFavoriteModal(false)}
+                >
+                  <Text style={styles.modalButtonText}>Annuller</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: COLORS.primary, flex: 1 }]}
+                  onPress={saveFavoriteLocation}
+                  disabled={savingFavorite}
+                >
+                  {savingFavorite ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.modalButtonText}>Gem</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Bottom Navigation */}
       <FloatingMenu />
     </View>
@@ -889,5 +1135,92 @@ const styles = StyleSheet.create({
   depthInfoCoordsText: {
     fontSize: 12,
     color: '#999',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 15,
+    marginBottom: 5,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  privacyButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 8,
+  },
+  privacyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    backgroundColor: '#FFFFFF',
+  },
+  privacyButtonActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  privacyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  privacyButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  mapsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#4285F4',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  mapsButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
