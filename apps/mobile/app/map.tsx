@@ -767,7 +767,18 @@ export default function MapScreen() {
                   <Text style={styles.loadingText}>Analyserer fiskemuligheder...</Text>
                 </View>
               ) : aiAdvice ? (
-                <Text style={styles.adviceText}>{aiAdvice}</Text>
+                <>
+                  <Text style={styles.adviceText}>{aiAdvice}</Text>
+
+                  {/* Save to Favorites Button */}
+                  <TouchableOpacity
+                    style={styles.saveFavoriteButton}
+                    onPress={openSaveFavoriteModal}
+                  >
+                    <Ionicons name="heart" size={24} color="#FFFFFF" />
+                    <Text style={styles.saveFavoriteButtonText}>Føj til Favoritter</Text>
+                  </TouchableOpacity>
+                </>
               ) : null}
             </ScrollView>
           </View>
@@ -1245,5 +1256,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  saveFavoriteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#EF4444',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  saveFavoriteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
   },
 });
