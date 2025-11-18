@@ -92,41 +92,54 @@ export async function aiRoutes(fastify: FastifyInstance) {
         const season = getSeason(timestamp);
         const timeOfDay = getTimeOfDay(timestamp);
 
-        // Build comprehensive context for AI with all environmental data
-        let context = `Du er en dansk fiskeriekspert. Baseret på følgende information, giv detaljerede anbefalinger om fiskeri:\n\n`;
+        // Build context for AI with location, weather, and water conditions
+        let context = `Du er en erfaren dansk fiskeriekspert med omfattende viden om fiskeri i Danmark.
 
-        // Location and species
-        context += `Målart: ${payload.species}\n`;
-        context += `Placering: ${payload.latitude}, ${payload.longitude}\n`;
-        context += `Tidspunkt: ${timeOfDay}\n`;
-        context += `Sæson: ${season}\n\n`;
+Jeg planlægger at fiske efter ${payload.species}.
 
-        // Environmental conditions
-        context += `Vejrforhold:\n`;
-        if (payload.air_temp !== undefined) context += `- Lufttemperatur: ${payload.air_temp}°C\n`;
-        if (payload.wind_speed !== undefined) context += `- Vindhastighed: ${payload.wind_speed} m/s\n`;
-        if (payload.cloud_cover !== undefined) context += `- Skydække: ${payload.cloud_cover}%\n`;
-        if (payload.precipitation !== undefined) context += `- Nedbør: ${payload.precipitation}mm\n`;
-        if (payload.pressure !== undefined) context += `- Lufttryk: ${payload.pressure} hPa\n`;
+Baseret på LOKATION, VEJR, VANDFORHOLD og din VIDEN OM FARVANDET i dette område, skal du give mig professionelle anbefalinger.
 
-        context += `\nVandforhold:\n`;
-        if (payload.water_temp !== undefined) context += `- Vandtemperatur: ${payload.water_temp}°C\n`;
-        if (payload.depth !== undefined) context += `- Dybde: ${payload.depth}m\n`;
-        if (payload.bottom_type) context += `- Bundtype: ${payload.bottom_type}\n`;
+LOKATION:
+Placering: ${payload.latitude} nord, ${payload.longitude} øst
+Tidspunkt: ${timeOfDay}
+Sæson: ${season}
+`;
 
-        context += `\nGiv detaljerede anbefalinger om:\n`;
-        context += `1. Bedste tidspunkt på dagen at fiske\n`;
-        context += `2. Agn (naturligt agn med type og årsag)\n`;
-        context += `3. Lokkemidler (kunstigt med type, farve, størrelse og årsag)\n`;
-        context += `4. Fiskeudstyr:\n`;
-        context += `   - Fiskestang (type, længde, handling)\n`;
-        context += `   - Hjul (type, størrelse)\n`;
-        context += `   - Line (type, diameter/styrke)\n`;
-        context += `5. Fisketeknik og indspilningsmetode\n`;
-        context += `6. Anbefalet dybde at fiske på\n`;
-        context += `7. Vejrets påvirkning på fiskeriet\n`;
-        context += `8. Sæsonmæssige noter\n\n`;
-        context += `Vær konkret og specifik i dine anbefalinger.`;
+        // Add weather conditions if available
+        if (payload.air_temp !== undefined || payload.wind_speed !== undefined ||
+            payload.cloud_cover !== undefined || payload.precipitation !== undefined ||
+            payload.pressure !== undefined) {
+          context += `\nVEJRFORHOLD:\n`;
+          if (payload.air_temp !== undefined) context += `- Lufttemperatur: ${payload.air_temp}°C\n`;
+          if (payload.wind_speed !== undefined) context += `- Vindhastighed: ${payload.wind_speed} m/s\n`;
+          if (payload.cloud_cover !== undefined) context += `- Skydække: ${payload.cloud_cover}%\n`;
+          if (payload.precipitation !== undefined) context += `- Nedbør: ${payload.precipitation}mm\n`;
+          if (payload.pressure !== undefined) context += `- Lufttryk: ${payload.pressure} hPa\n`;
+        }
+
+        // Add water conditions if available
+        if (payload.water_temp !== undefined || payload.depth !== undefined || payload.bottom_type) {
+          context += `\nVANDFORHOLD:\n`;
+          if (payload.water_temp !== undefined) context += `- Vandtemperatur: ${payload.water_temp}°C\n`;
+          if (payload.depth !== undefined) context += `- Dybde: ${payload.depth}m\n`;
+          if (payload.bottom_type) context += `- Bundtype: ${payload.bottom_type}\n`;
+        }
+
+        context += `\nVIGTIGT: Brug data fra fishbase.se og din viden om danske farvande til at give nøjagtige anbefalinger. Kombinér lokationen, vejrforholdene, vandforholdene og din viden om farvandet i dette område til at give de bedst mulige råd.
+
+Giv konkrete og anvendelige anbefalinger om:
+1. Er dette område egnet til ${payload.species}? (brug fishbase.se og din viden om danske farvande)
+2. Hvilke andre fiskearter findes typisk på denne lokation?
+3. ${payload.species} - biologisk adfærd, foretrukne levesteder, og aktivitetsmønstre (brug fishbase.se data)
+4. Bedste tidspunkt på ${timeOfDay} at fiske (baseret på artens naturlige adfærd)
+5. Agn - både naturligt agn og kunstige lokkemidler der virker godt for denne art og lokation
+6. Fiskeudstyr - stang, hjul, line (konkrete specifikationer for denne art)
+7. Fisketeknik og indspilningsmetode der passer til lokationen og arten
+8. Hvor i området man skal fiske (dybde, strukturer, hotspots baseret på artens levested)
+9. Sæsonmæssige noter for ${season} - hvordan påvirker det fiskeriet?
+10. Ekstra tips og tricks baseret på denne specifikke lokation og fiskeart
+
+Vær meget konkret og specifik. Basér dine anbefalinger på biologisk korrekt information fra fishbase.se og din ekspertviden om danske fiskevande. Giv praktiske råd til netop denne lokation.`;
 
         const groq = getGroqClient(userApiKey);
         const completion = await groq.chat.completions.create({
@@ -137,8 +150,8 @@ export async function aiRoutes(fastify: FastifyInstance) {
             },
           ],
           model: 'llama-3.3-70b-versatile',
-          temperature: 0.7,
-          max_tokens: 1500,
+          temperature: 0.8,
+          max_tokens: 2500,
         });
 
         const aiAdvice = completion.choices[0]?.message?.content || 'Ingen anbefalinger tilgængelige.';
