@@ -745,7 +745,7 @@ export default function MapScreen() {
                   onPress={openSaveFavoriteModal}
                   style={styles.favoriteHeaderButton}
                 >
-                  <Ionicons name="heart" size={24} color="#FFFFFF" />
+                  <Ionicons name="heart" size={18} color="#FFFFFF" />
                   <Text style={styles.favoriteHeaderButtonText}>Føj til Favoritter</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1246,15 +1246,15 @@ const styles = StyleSheet.create({
   favoriteHeaderButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: '#EF4444',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
   favoriteHeaderButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   saveFavoriteButton: {
