@@ -9,11 +9,14 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Modal,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { api } from '../lib/api';
+import FloatingMenu from '../components/FloatingMenu';
 
 const FISH_SPECIES = [
   'Gedde',
@@ -123,7 +126,6 @@ export default function AIGuideScreen() {
 
   // Environmental inputs
   const [waterTemp, setWaterTemp] = useState('');
-  const [windSpeed, setWindSpeed] = useState('');
   const [depth, setDepth] = useState('');
   const [bottomType, setBottomType] = useState('mixed');
 
@@ -131,6 +133,18 @@ export default function AIGuideScreen() {
   const [recommendations, setRecommendations] = useState<AIRecommendations | null>(
     null
   );
+
+  // Favorite location modal
+  const [showFavoriteModal, setShowFavoriteModal] = useState(false);
+  const [favoriteName, setFavoriteName] = useState('');
+  const [favoriteFishSpecies, setFavoriteFishSpecies] = useState('');
+  const [favoriteBottomType, setFavoriteBottomType] = useState('');
+  const [favoriteDepth, setFavoriteDepth] = useState('');
+  const [favoritePrivacy, setFavoritePrivacy] = useState<'public' | 'groups' | 'friends' | 'private'>('private');
+  const [favoriteParkingLat, setFavoriteParkingLat] = useState('');
+  const [favoriteParkingLng, setFavoriteParkingLng] = useState('');
+  const [favoriteNotes, setFavoriteNotes] = useState('');
+  const [savingFavorite, setSavingFavorite] = useState(false);
 
   const formatDate = (date: Date) => {
     const day = date.getDate().toString().padStart(2, '0');
@@ -153,7 +167,6 @@ export default function AIGuideScreen() {
         longitude: selectedLocation.longitude,
         timestamp: formatDateForAPI(selectedDate),
         water_temp: waterTemp ? parseFloat(waterTemp) : undefined,
-        wind_speed: windSpeed ? parseFloat(windSpeed) : undefined,
         depth: depth ? parseFloat(depth) : undefined,
         bottom_type: bottomType || undefined,
       };
@@ -192,12 +205,89 @@ export default function AIGuideScreen() {
     return COLORS.textSecondary;
   };
 
+  const openAddFavoriteModal = () => {
+    setFavoriteName(selectedLocation.name);
+    setFavoriteDepth(depth);
+    setFavoriteBottomType(bottomType);
+    setShowFavoriteModal(true);
+  };
+
+  const saveFavoriteLocation = async () => {
+    if (!favoriteName.trim()) {
+      Alert.alert('Fejl', 'Navn er påkrævet');
+      return;
+    }
+
+    setSavingFavorite(true);
+    try {
+      const payload = {
+        name: favoriteName,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+        fishSpecies: favoriteFishSpecies || undefined,
+        bottomType: favoriteBottomType || undefined,
+        depth: favoriteDepth ? parseFloat(favoriteDepth) : undefined,
+        privacy: favoritePrivacy,
+        parkingLatitude: favoriteParkingLat ? parseFloat(favoriteParkingLat) : undefined,
+        parkingLongitude: favoriteParkingLng ? parseFloat(favoriteParkingLng) : undefined,
+        notes: favoriteNotes || undefined,
+      };
+
+      await api.post('/favorite-spots', payload);
+
+      Alert.alert('Success', 'Favoritsted gemt!');
+      setShowFavoriteModal(false);
+
+      // Reset form
+      setFavoriteName('');
+      setFavoriteFishSpecies('');
+      setFavoriteBottomType('');
+      setFavoriteDepth('');
+      setFavoritePrivacy('private');
+      setFavoriteParkingLat('');
+      setFavoriteParkingLng('');
+      setFavoriteNotes('');
+    } catch (error: any) {
+      console.error('Failed to save favorite location:', error);
+      Alert.alert('Fejl', error.response?.data?.error || 'Kunne ikke gemme favoritsted');
+    } finally {
+      setSavingFavorite(false);
+    }
+  };
+
+  const openInGoogleMaps = (lat: number, lng: number) => {
+    const url = Platform.select({
+      ios: `maps://app?daddr=${lat},${lng}`,
+      android: `google.navigation:q=${lat},${lng}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+    });
+
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        Linking.openURL(webUrl);
+      }
+    });
+  };
+
   return (
-    <ScrollView style={styles.container}>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Ionicons name="hardware-chip" size={32} color={COLORS.primary} />
-          <Text style={styles.title}>AI Fiskeguide</Text>
+        <View style={styles.headerTop}>
+          <View style={styles.titleContainer}>
+            <Ionicons name="hardware-chip" size={32} color={COLORS.primary} />
+            <Text style={styles.title}>AI Fiskeguide</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={openAddFavoriteModal}
+          >
+            <Ionicons name="heart" size={24} color={COLORS.white} />
+            <Text style={styles.favoriteButtonText}>Føj til Favoritter</Text>
+          </TouchableOpacity>
         </View>
         <Text style={styles.subtitle}>
           Få intelligente råd om hvor og hvordan du skal fiske
@@ -342,14 +432,7 @@ export default function AIGuideScreen() {
             />
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Vind (m/s)</Text>
-            <TextInput
-              style={styles.input}
-              value={windSpeed}
-              onChangeText={setWindSpeed}
-              placeholder="5"
-              keyboardType="decimal-pad"
-            />
+            {/* Wind speed removed - conversion too complex */}
           </View>
         </View>
         <View style={styles.inputRow}>
@@ -561,7 +644,171 @@ export default function AIGuideScreen() {
       )}
 
       <View style={styles.bottomSpacer} />
-    </ScrollView>
+      </ScrollView>
+
+      {/* Favorite Location Modal */}
+      <Modal
+        visible={showFavoriteModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowFavoriteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Gem Favoritsted</Text>
+              <TouchableOpacity onPress={() => setShowFavoriteModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.modalLabel}>Navn *</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={favoriteName}
+                onChangeText={setFavoriteName}
+                placeholder="F.eks. Silkeborg Søerne - Nordøst hjørne"
+                placeholderTextColor={COLORS.textTertiary}
+              />
+
+              <Text style={styles.modalLabel}>Fiskearter</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={favoriteFishSpecies}
+                onChangeText={setFavoriteFishSpecies}
+                placeholder="F.eks. Gedde, Aborre, Sandart"
+                placeholderTextColor={COLORS.textTertiary}
+              />
+
+              <Text style={styles.modalLabel}>Bundforhold</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={favoriteBottomType}
+                onChangeText={setFavoriteBottomType}
+                placeholder="F.eks. Sand, mudder, sten"
+                placeholderTextColor={COLORS.textTertiary}
+              />
+
+              <Text style={styles.modalLabel}>Dybde (meter)</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={favoriteDepth}
+                onChangeText={setFavoriteDepth}
+                placeholder="F.eks. 3.5"
+                keyboardType="decimal-pad"
+                placeholderTextColor={COLORS.textTertiary}
+              />
+
+              <Text style={styles.modalLabel}>Deling</Text>
+              <View style={styles.privacyButtons}>
+                <TouchableOpacity
+                  style={[styles.privacyButton, favoritePrivacy === 'public' && styles.privacyButtonActive]}
+                  onPress={() => setFavoritePrivacy('public')}
+                >
+                  <Text style={[styles.privacyButtonText, favoritePrivacy === 'public' && styles.privacyButtonTextActive]}>
+                    Offentlig
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.privacyButton, favoritePrivacy === 'groups' && styles.privacyButtonActive]}
+                  onPress={() => setFavoritePrivacy('groups')}
+                >
+                  <Text style={[styles.privacyButtonText, favoritePrivacy === 'groups' && styles.privacyButtonTextActive]}>
+                    Grupper
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.privacyButton, favoritePrivacy === 'friends' && styles.privacyButtonActive]}
+                  onPress={() => setFavoritePrivacy('friends')}
+                >
+                  <Text style={[styles.privacyButtonText, favoritePrivacy === 'friends' && styles.privacyButtonTextActive]}>
+                    Venner
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.privacyButton, favoritePrivacy === 'private' && styles.privacyButtonActive]}
+                  onPress={() => setFavoritePrivacy('private')}
+                >
+                  <Text style={[styles.privacyButtonText, favoritePrivacy === 'private' && styles.privacyButtonTextActive]}>
+                    Privat
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.modalLabel}>Parkeringsforhold (Valgfrit)</Text>
+              <View style={styles.parkingRow}>
+                <View style={styles.parkingInput}>
+                  <Text style={styles.parkingInputLabel}>Breddegrad</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={favoriteParkingLat}
+                    onChangeText={setFavoriteParkingLat}
+                    placeholder="56.1697"
+                    keyboardType="decimal-pad"
+                    placeholderTextColor={COLORS.textTertiary}
+                  />
+                </View>
+                <View style={styles.parkingInput}>
+                  <Text style={styles.parkingInputLabel}>Længdegrad</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={favoriteParkingLng}
+                    onChangeText={setFavoriteParkingLng}
+                    placeholder="9.5511"
+                    keyboardType="decimal-pad"
+                    placeholderTextColor={COLORS.textTertiary}
+                  />
+                </View>
+              </View>
+
+              {favoriteParkingLat && favoriteParkingLng && (
+                <TouchableOpacity
+                  style={styles.navigateButton}
+                  onPress={() => openInGoogleMaps(parseFloat(favoriteParkingLat), parseFloat(favoriteParkingLng))}
+                >
+                  <Ionicons name="navigate" size={20} color={COLORS.white} />
+                  <Text style={styles.navigateButtonText}>Kør til parkering</Text>
+                </TouchableOpacity>
+              )}
+
+              <Text style={styles.modalLabel}>Noter</Text>
+              <TextInput
+                style={[styles.modalInput, styles.textArea]}
+                value={favoriteNotes}
+                onChangeText={setFavoriteNotes}
+                placeholder="Yderligere information..."
+                placeholderTextColor={COLORS.textTertiary}
+                multiline
+                numberOfLines={4}
+              />
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowFavoriteModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Annuller</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={saveFavoriteLocation}
+                disabled={savingFavorite}
+              >
+                {savingFavorite ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Gem</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <FloatingMenu />
+    </View>
   );
 }
 
@@ -921,5 +1168,161 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 40,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  favoriteButton: {
+    backgroundColor: COLORS.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    gap: SPACING.xs,
+    ...SHADOWS.sm,
+  },
+  favoriteButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    ...TYPOGRAPHY.styles.h2,
+  },
+  modalBody: {
+    padding: SPACING.lg,
+  },
+  modalLabel: {
+    ...TYPOGRAPHY.styles.body,
+    fontWeight: '600',
+    marginBottom: SPACING.sm,
+    marginTop: SPACING.md,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    fontSize: 16,
+    color: COLORS.text,
+    backgroundColor: COLORS.backgroundLight,
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  privacyButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    flexWrap: 'wrap',
+  },
+  privacyButton: {
+    flex: 1,
+    minWidth: '45%',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.backgroundLight,
+    alignItems: 'center',
+  },
+  privacyButtonActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  privacyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  privacyButtonTextActive: {
+    color: COLORS.white,
+  },
+  parkingRow: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  parkingInput: {
+    flex: 1,
+  },
+  parkingInputLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+  navigateButton: {
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.md,
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+    ...SHADOWS.md,
+  },
+  navigateButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: SPACING.lg,
+    gap: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundLight,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  saveButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    ...SHADOWS.sm,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.white,
   },
 });

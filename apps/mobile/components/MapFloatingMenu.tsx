@@ -20,7 +20,7 @@ interface MapFloatingMenuProps {
 }
 
 const menuItems: MenuItem[] = [
-  { icon: 'heart', label: 'Gem sted', action: 'save-favorite', color: '#EF4444' },
+  { icon: 'heart', label: 'Føj til Favoritter', action: 'save-favorite', color: '#EF4444' },
   { icon: 'options-outline', label: 'Filter', action: 'filter', color: COLORS.accent },
   { icon: 'location', label: 'Favoritsteder', action: 'navigate', route: '/favorite-spots', color: COLORS.primary },
 ];
