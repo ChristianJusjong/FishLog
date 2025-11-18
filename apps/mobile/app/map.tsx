@@ -740,15 +740,24 @@ export default function MapScreen() {
                 <Ionicons name="fish" size={24} color={COLORS.primary} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>AI Fiskeguide</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setSelectedLocation(null);
-                  setAiAdvice('');
-                }}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={28} color="#333" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <TouchableOpacity
+                  onPress={openSaveFavoriteModal}
+                  style={styles.favoriteHeaderButton}
+                >
+                  <Ionicons name="heart" size={24} color="#FFFFFF" />
+                  <Text style={styles.favoriteHeaderButtonText}>Føj til Favoritter</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedLocation(null);
+                    setAiAdvice('');
+                  }}
+                  style={styles.closeButton}
+                >
+                  <Ionicons name="close" size={28} color="#333" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <ScrollView style={styles.modalBody}>
@@ -1221,6 +1230,20 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  favoriteHeaderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  favoriteHeaderButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
   },
 });
