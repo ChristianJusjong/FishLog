@@ -34,7 +34,7 @@
     "groq-sdk": "^0.35.0",
     "jsonwebtoken": "^9.0.2",
     "sharp": "^0.34.5",
-    "ws": "^7.5.10",
+    "ws": "^8.18.3",
     "zod": "^3.25.76"
   },
   "devDependencies": {
