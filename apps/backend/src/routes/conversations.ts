@@ -10,7 +10,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { participantIds, name } = request.body as {
         participantIds: string[];
         name?: string;
@@ -61,7 +61,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
         conversation,
       });
     } catch (error) {
-      fastify.log.error('Error creating conversation:', error);
+      fastify.log.error(error, 'Error creating conversation');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -71,7 +71,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
 
       const conversations = await prisma.conversation.findMany({
         where: {
@@ -145,7 +145,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
         count: conversationsWithUnread.length,
       });
     } catch (error) {
-      fastify.log.error('Error fetching conversations:', error);
+      fastify.log.error(error, 'Error fetching conversations');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -155,7 +155,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { id } = request.params as { id: string };
       const { limit = 50, offset = 0 } = request.query as {
         limit?: number;
@@ -219,7 +219,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      fastify.log.error('Error fetching conversation:', error);
+      fastify.log.error(error, 'Error fetching conversation');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -229,7 +229,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { id } = request.params as { id: string };
       const { text, imageUrl } = request.body as {
         text: string;
@@ -282,7 +282,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
         message,
       });
     } catch (error) {
-      fastify.log.error('Error sending message:', error);
+      fastify.log.error(error, 'Error sending message');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -292,7 +292,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { id } = request.params as { id: string };
 
       const participant = await prisma.conversationParticipant.findFirst({
@@ -313,7 +313,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
 
       return reply.send({ success: true });
     } catch (error) {
-      fastify.log.error('Error marking conversation as read:', error);
+      fastify.log.error(error, 'Error marking conversation as read');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -323,7 +323,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { id } = request.params as { id: string };
       const { participantIds } = request.body as { participantIds: string[] };
 
@@ -381,7 +381,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
         addedParticipants,
       });
     } catch (error) {
-      fastify.log.error('Error adding participants:', error);
+      fastify.log.error(error, 'Error adding participants');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -391,7 +391,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { id, participantId } = request.params as {
         id: string;
         participantId: string;
@@ -437,7 +437,7 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
 
       return reply.send({ success: true });
     } catch (error) {
-      fastify.log.error('Error removing participant:', error);
+      fastify.log.error(error, 'Error removing participant');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
