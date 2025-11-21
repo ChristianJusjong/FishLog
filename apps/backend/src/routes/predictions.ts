@@ -8,7 +8,7 @@ export async function predictionsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
 
       // Optional: User can provide their own Groq API key
       const userApiKey = request.headers['x-groq-api-key'] as string | undefined;
@@ -20,7 +20,7 @@ export async function predictionsRoutes(fastify: FastifyInstance) {
         predictions,
       });
     } catch (error: any) {
-      fastify.log.error('Error generating predictions:', error);
+      fastify.log.error(error, 'Error generating predictions');
       return reply.status(500).send({
         error: error.message || 'Failed to generate predictions'
       });

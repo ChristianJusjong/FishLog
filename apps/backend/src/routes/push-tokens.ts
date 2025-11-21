@@ -8,7 +8,7 @@ export async function pushTokenRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { token, device } = request.body as { token: string; device?: string };
 
       if (!token) {
@@ -22,7 +22,7 @@ export async function pushTokenRoutes(fastify: FastifyInstance) {
         pushToken,
       });
     } catch (error: any) {
-      fastify.log.error('Error registering push token:', error);
+      fastify.log.error(error, 'Error registering push token');
       return reply.status(400).send({ error: error.message || 'Failed to register push token' });
     }
   });
@@ -38,7 +38,7 @@ export async function pushTokenRoutes(fastify: FastifyInstance) {
 
       return reply.send({ success: true });
     } catch (error) {
-      fastify.log.error('Error unregistering push token:', error);
+      fastify.log.error(error, 'Error unregistering push token');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

@@ -12,7 +12,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { blockedUserId, reason } = request.body as { blockedUserId: string; reason?: string };
 
       if (!blockedUserId) {
@@ -75,7 +75,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      fastify.log.error('Error blocking user:', error);
+      fastify.log.error(error, 'Error blocking user');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -85,7 +85,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { blockedUserId } = request.params as { blockedUserId: string };
 
       const block = await prisma.blockedUser.findUnique({
@@ -112,7 +112,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         message: 'User unblocked successfully',
       });
     } catch (error) {
-      fastify.log.error('Error unblocking user:', error);
+      fastify.log.error(error, 'Error unblocking user');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -122,7 +122,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
 
       const blocks = await prisma.blockedUser.findMany({
         where: {
@@ -161,7 +161,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         count: blockedUsers.length,
       });
     } catch (error) {
-      fastify.log.error('Error fetching blocked users:', error);
+      fastify.log.error(error, 'Error fetching blocked users');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -171,7 +171,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { targetUserId } = request.params as { targetUserId: string };
 
       const block = await prisma.blockedUser.findUnique({
@@ -197,7 +197,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         isBlockedBy: !!blockedByThem,
       });
     } catch (error) {
-      fastify.log.error('Error checking block status:', error);
+      fastify.log.error(error, 'Error checking block status');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -209,7 +209,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { mutedUserId } = request.body as { mutedUserId: string };
 
       if (!mutedUserId) {
@@ -261,7 +261,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      fastify.log.error('Error muting user:', error);
+      fastify.log.error(error, 'Error muting user');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -271,7 +271,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { mutedUserId } = request.params as { mutedUserId: string };
 
       const mute = await prisma.mutedUser.findUnique({
@@ -298,7 +298,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         message: 'User unmuted successfully',
       });
     } catch (error) {
-      fastify.log.error('Error unmuting user:', error);
+      fastify.log.error(error, 'Error unmuting user');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -308,7 +308,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
 
       const mutes = await prisma.mutedUser.findMany({
         where: {
@@ -346,7 +346,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         count: mutedUsers.length,
       });
     } catch (error) {
-      fastify.log.error('Error fetching muted users:', error);
+      fastify.log.error(error, 'Error fetching muted users');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -356,7 +356,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { targetUserId } = request.params as { targetUserId: string };
 
       const mute = await prisma.mutedUser.findUnique({
@@ -372,7 +372,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         isMuted: !!mute,
       });
     } catch (error) {
-      fastify.log.error('Error checking mute status:', error);
+      fastify.log.error(error, 'Error checking mute status');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -384,7 +384,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
       const { contentType, contentId, category, description } = request.body as {
         contentType: string;
         contentId: string;
@@ -453,7 +453,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      fastify.log.error('Error creating report:', error);
+      fastify.log.error(error, 'Error creating report');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -463,7 +463,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
-      const userId = request.userId;
+      const userId = request.user!.userId;
 
       const reports = await prisma.contentReport.findMany({
         where: {
@@ -479,7 +479,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         count: reports.length,
       });
     } catch (error) {
-      fastify.log.error('Error fetching user reports:', error);
+      fastify.log.error(error, 'Error fetching user reports');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -517,7 +517,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         count: reports.length,
       });
     } catch (error) {
-      fastify.log.error('Error fetching reports:', error);
+      fastify.log.error(error, 'Error fetching reports');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -557,7 +557,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         data: {
           status,
           resolution,
-          reviewedBy: request.userId,
+          reviewedBy: request.user!.userId,
           reviewedAt: new Date(),
         },
       });
@@ -568,7 +568,7 @@ export default async function moderationRoutes(fastify: FastifyInstance) {
         report: updatedReport,
       });
     } catch (error) {
-      fastify.log.error('Error updating report:', error);
+      fastify.log.error(error, 'Error updating report');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
