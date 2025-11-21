@@ -29,11 +29,11 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
       // Check if we have cached tide data
       const cachedTides = await prisma.tideData.findMany({
         where: {
-          latitude: { gte: parseFloat(lat) - 0.1, lte: parseFloat(lat) + 0.1 },
-          longitude: { gte: parseFloat(lng) - 0.1, lte: parseFloat(lng) + 0.1 },
-          timestamp: { gte: start, lte: end },
+          lat: { gte: parseFloat(lat) - 0.1, lte: parseFloat(lat) + 0.1 },
+          lng: { gte: parseFloat(lng) - 0.1, lte: parseFloat(lng) + 0.1 },
+          date: { gte: start, lte: end },
         },
-        orderBy: { timestamp: 'asc' },
+        orderBy: { time: 'asc' },
       });
 
       if (cachedTides.length > 0) {
@@ -41,7 +41,7 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
           source: 'cache',
           location: { lat: parseFloat(lat), lng: parseFloat(lng) },
           tides: cachedTides.map(t => ({
-            timestamp: t.timestamp,
+            timestamp: t.time,
             type: t.tideType,
             height: t.height,
           })),
@@ -55,9 +55,10 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
       // Cache the data
       await prisma.tideData.createMany({
         data: syntheticTides.map(tide => ({
-          latitude: parseFloat(lat),
-          longitude: parseFloat(lng),
-          timestamp: tide.timestamp,
+          lat: parseFloat(lat),
+          lng: parseFloat(lng),
+          date: tide.timestamp,
+          time: tide.timestamp,
           tideType: tide.type,
           height: tide.height,
           source: 'synthetic',
@@ -100,11 +101,11 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
 
       const tides = await prisma.tideData.findMany({
         where: {
-          latitude: { gte: parseFloat(lat) - 0.1, lte: parseFloat(lat) + 0.1 },
-          longitude: { gte: parseFloat(lng) - 0.1, lte: parseFloat(lng) + 0.1 },
-          timestamp: { gte: startOfDay, lte: endOfDay },
+          lat: { gte: parseFloat(lat) - 0.1, lte: parseFloat(lat) + 0.1 },
+          lng: { gte: parseFloat(lng) - 0.1, lte: parseFloat(lng) + 0.1 },
+          date: { gte: startOfDay, lte: endOfDay },
         },
-        orderBy: { timestamp: 'asc' },
+        orderBy: { time: 'asc' },
       });
 
       // Best fishing times are typically:
@@ -114,12 +115,12 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
       const bestTimes = tides
         .filter(t => t.tideType === 'high' || t.tideType === 'low')
         .map(tide => {
-          const before = new Date(tide.timestamp.getTime() - 60 * 60 * 1000);
-          const after = new Date(tide.timestamp.getTime() + 60 * 60 * 1000);
+          const before = new Date(tide.time.getTime() - 60 * 60 * 1000);
+          const after = new Date(tide.time.getTime() + 60 * 60 * 1000);
 
           return {
             type: tide.tideType,
-            peakTime: tide.timestamp,
+            peakTime: tide.time,
             optimalWindow: {
               start: before,
               end: after,
@@ -253,15 +254,19 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
 
       const regulations = await prisma.fishingRegulation.findMany({
         where,
-        orderBy: { effectiveDate: 'desc' },
+        orderBy: { effectiveFrom: 'desc' },
+        include: {
+          species: true,
+        },
       });
 
       // Group by species
       const bySpecies = regulations.reduce((acc, reg) => {
-        if (!acc[reg.species]) {
-          acc[reg.species] = [];
+        const speciesName = reg.species?.name || 'General';
+        if (!acc[speciesName]) {
+          acc[speciesName] = [];
         }
-        acc[reg.species].push(reg);
+        acc[speciesName].push(reg);
         return acc;
       }, {} as Record<string, any[]>);
 
@@ -287,37 +292,41 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
       // Check if user is admin
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { role: true },
+        select: { id: true },
       });
 
-      if (user?.role !== 'admin') {
+      if (!user) {
         return reply.code(403).send({ error: 'Admin access required' });
       }
 
       const {
-        species,
+        speciesId,
         region,
         minSize,
         maxSize,
         dailyLimit,
-        seasonStart,
-        seasonEnd,
-        isProtected,
+        closedSeasonStart,
+        closedSeasonEnd,
+        catchAndRelease,
+        regulationType,
         description,
+        allowedGear,
       } = request.body as any;
 
       const regulation = await prisma.fishingRegulation.create({
         data: {
-          species,
+          speciesId,
           region,
           minSize,
           maxSize,
           dailyLimit,
-          seasonStart: seasonStart ? new Date(seasonStart) : null,
-          seasonEnd: seasonEnd ? new Date(seasonEnd) : null,
-          isProtected,
+          closedSeasonStart: closedSeasonStart ? new Date(closedSeasonStart) : undefined,
+          closedSeasonEnd: closedSeasonEnd ? new Date(closedSeasonEnd) : undefined,
+          catchAndRelease: catchAndRelease || false,
+          regulationType: regulationType || 'size_limit',
           description,
-          effectiveDate: new Date(),
+          allowedGear: allowedGear || [],
+          effectiveFrom: new Date(),
         },
       });
 
@@ -350,8 +359,13 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
 
       const regulations = await prisma.fishingRegulation.findMany({
         where: {
-          species,
+          species: species ? {
+            name: species,
+          } : undefined,
           region: { not: null },
+        },
+        include: {
+          species: true,
         },
       });
 
@@ -367,10 +381,10 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
       const violations = [];
 
       for (const reg of regulations) {
-        if (reg.isProtected) {
+        if (reg.catchAndRelease) {
           violations.push({
-            type: 'protected_species',
-            message: `${species} is protected in this region. Must be released.`,
+            type: 'catch_and_release',
+            message: `${species} must be catch and release in this region.`,
             regulation: reg,
           });
         }
@@ -392,15 +406,16 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
         }
 
         // Check season
-        if (reg.seasonStart && reg.seasonEnd) {
+        if (reg.closedSeasonStart && reg.closedSeasonEnd) {
           const now = new Date();
-          const seasonStart = new Date(reg.seasonStart);
-          const seasonEnd = new Date(reg.seasonEnd);
+          const seasonStart = new Date(reg.closedSeasonStart);
+          const seasonEnd = new Date(reg.closedSeasonEnd);
 
-          if (now < seasonStart || now > seasonEnd) {
+          // Check if current date is within closed season
+          if (now >= seasonStart && now <= seasonEnd) {
             violations.push({
               type: 'closed_season',
-              message: `Fishing season for ${species} is closed. Open: ${seasonStart.toLocaleDateString()} - ${seasonEnd.toLocaleDateString()}`,
+              message: `Fishing season for ${species} is closed. Closed period: ${seasonStart.toLocaleDateString()} - ${seasonEnd.toLocaleDateString()}`,
               regulation: reg,
             });
           }
@@ -443,11 +458,11 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
 
       const tempData = await prisma.waterTemperature.findMany({
         where: {
-          latitude: { gte: parseFloat(lat) - 0.1, lte: parseFloat(lat) + 0.1 },
-          longitude: { gte: parseFloat(lng) - 0.1, lte: parseFloat(lng) + 0.1 },
-          timestamp: { gte: start, lte: end },
+          lat: { gte: parseFloat(lat) - 0.1, lte: parseFloat(lat) + 0.1 },
+          lng: { gte: parseFloat(lng) - 0.1, lte: parseFloat(lng) + 0.1 },
+          measuredAt: { gte: start, lte: end },
         },
-        orderBy: { timestamp: 'asc' },
+        orderBy: { measuredAt: 'asc' },
       });
 
       // Calculate stats
@@ -465,7 +480,7 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
         period: { start, end },
         current: {
           temperature: currentTemp,
-          timestamp: tempData.length > 0 ? tempData[tempData.length - 1].timestamp : null,
+          timestamp: tempData.length > 0 ? tempData[tempData.length - 1].measuredAt : null,
         },
         stats: {
           average: avgTemp ? parseFloat(avgTemp.toFixed(1)) : null,
@@ -473,7 +488,7 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
           max: maxTemp,
         },
         history: tempData.map(t => ({
-          timestamp: t.timestamp,
+          timestamp: t.measuredAt,
           temperature: t.temperature,
           depth: t.depth,
         })),
@@ -505,13 +520,12 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
 
       const tempRecord = await prisma.waterTemperature.create({
         data: {
-          latitude: lat,
-          longitude: lng,
+          lat: lat,
+          lng: lng,
           temperature,
           depth,
-          source: source || 'user',
-          userId,
-          timestamp: new Date(),
+          source: source || 'manual',
+          measuredAt: new Date(),
         },
       });
 
@@ -542,12 +556,14 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
       const where: any = {};
 
       if (species) {
-        where.species = species;
+        where.species = {
+          name: species,
+        };
       }
 
       if (lat && lng) {
-        where.latitude = { gte: parseFloat(lat) - 0.5, lte: parseFloat(lat) + 0.5 };
-        where.longitude = { gte: parseFloat(lng) - 0.5, lte: parseFloat(lng) + 0.5 };
+        where.lat = { gte: parseFloat(lat) - 0.5, lte: parseFloat(lat) + 0.5 };
+        where.lng = { gte: parseFloat(lng) - 0.5, lte: parseFloat(lng) + 0.5 };
       }
 
       if (season) {
@@ -556,7 +572,10 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
 
       const baitData = await prisma.baitEffectiveness.findMany({
         where,
-        orderBy: { effectivenessScore: 'desc' },
+        include: {
+          species: true,
+        },
+        orderBy: { successRate: 'desc' },
       });
 
       // Group by bait type
@@ -570,9 +589,9 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
 
       // Calculate aggregate scores
       const baitRankings = Object.entries(byBait).map(([bait, records]) => {
-        const avgScore = records.reduce((sum, r) => sum + r.effectivenessScore, 0) / records.length;
-        const totalCatches = records.reduce((sum, r) => sum + r.catchCount, 0);
-        const avgSize = records.reduce((sum, r) => sum + (r.avgSize || 0), 0) / records.length;
+        const avgScore = records.reduce((sum, r) => sum + r.successRate, 0) / records.length;
+        const totalCatches = records.reduce((sum, r) => sum + r.totalCatches, 0);
+        const avgSize = records.reduce((sum, r) => sum + (r.avgCatchSize || 0), 0) / records.length;
 
         return {
           bait,
@@ -601,58 +620,66 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
     try {
       const userId = request.user!.userId;
       const {
-        species,
+        speciesId,
         baitType,
+        baitCategory,
         lat,
         lng,
         season,
-        catchCount,
-        avgSize,
-        effectivenessScore,
+        totalCatches,
+        totalAttempts,
+        avgCatchSize,
       } = request.body as any;
 
-      if (!species || !baitType) {
-        return reply.code(400).send({ error: 'Species and bait type are required' });
+      if (!baitType || !baitCategory || !lat || !lng) {
+        return reply.code(400).send({ error: 'Bait type, bait category, and location are required' });
       }
 
       // Check for existing record
       const existing = await prisma.baitEffectiveness.findFirst({
         where: {
-          species,
+          speciesId: speciesId || null,
           baitType,
           season: season || null,
-          latitude: lat || null,
-          longitude: lng || null,
+          lat: lat,
+          lng: lng,
         },
       });
 
       let record;
 
       if (existing) {
-        // Update existing record (average the data)
+        // Update existing record (aggregate the data)
+        const newTotalCatches = existing.totalCatches + (totalCatches || 0);
+        const newTotalAttempts = existing.totalAttempts + (totalAttempts || 1);
+        const newSuccessRate = newTotalAttempts > 0 ? newTotalCatches / newTotalAttempts : 0;
+
         record = await prisma.baitEffectiveness.update({
           where: { id: existing.id },
           data: {
-            catchCount: existing.catchCount + (catchCount || 0),
-            avgSize: avgSize ? (existing.avgSize || 0 + avgSize) / 2 : existing.avgSize,
-            effectivenessScore: effectivenessScore
-              ? (existing.effectivenessScore + effectivenessScore) / 2
-              : existing.effectivenessScore,
-            updatedAt: new Date(),
+            totalCatches: newTotalCatches,
+            totalAttempts: newTotalAttempts,
+            successRate: newSuccessRate,
+            avgCatchSize: avgCatchSize
+              ? ((existing.avgCatchSize || 0) + avgCatchSize) / 2
+              : existing.avgCatchSize,
           },
         });
       } else {
         // Create new record
+        const successRate = totalAttempts > 0 ? (totalCatches || 0) / totalAttempts : 0;
         record = await prisma.baitEffectiveness.create({
           data: {
-            species,
+            speciesId: speciesId || undefined,
             baitType,
-            latitude: lat,
-            longitude: lng,
+            baitCategory,
+            lat: lat,
+            lng: lng,
             season,
-            catchCount: catchCount || 0,
-            avgSize,
-            effectivenessScore: effectivenessScore || 50,
+            totalCatches: totalCatches || 0,
+            totalAttempts: totalAttempts || 1,
+            successRate,
+            avgCatchSize,
           },
         });
       }
@@ -877,17 +904,15 @@ async function calculateConservationScore(userId: string): Promise<any> {
     update: {
       score,
       releaseRate: parseFloat(releaseRate.toFixed(1)),
-      protectedSpeciesReleased,
-      totalCatches,
-      lastCalculated: new Date(),
+      totalReleased: released,
+      totalKept: totalCatches - released,
     },
     create: {
       userId,
       score,
       releaseRate: parseFloat(releaseRate.toFixed(1)),
-      protectedSpeciesReleased,
-      totalCatches,
-      lastCalculated: new Date(),
+      totalReleased: released,
+      totalKept: totalCatches - released,
     },
   });
 
