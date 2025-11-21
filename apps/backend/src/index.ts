@@ -4,6 +4,7 @@ import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import rateLimit from '@fastify/rate-limit';
 import helmet from '@fastify/helmet';
+import websocket from '@fastify/websocket';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { authRoutes } from './routes/auth';
@@ -19,6 +20,31 @@ import { badgeRoutes } from './routes/badges';
 import { adminRoutes } from './routes/admin';
 import { clubsRoutes } from './routes/clubs';
 import { groupsRoutes } from './routes/groups';
+import { statisticsRoutes } from './routes/statistics';
+import { favoriteSpotRoutes } from './routes/favorite-spots';
+import { challengesRoutes } from './routes/challenges';
+import { challengeCommentsRoutes } from './routes/challenge-comments';
+import { challengeTemplatesRoutes } from './routes/challenge-templates';
+import { messagesRoutes } from './routes/messages';
+import { weatherRoutes } from './routes/weather';
+import { personalBestsRoutes } from './routes/personal-bests';
+import { notificationsRoutes } from './routes/notifications';
+import moderationRoutes from './routes/moderation';
+import { conversationsRoutes } from './routes/conversations';
+import { websocketRoutes } from './routes/websocket';
+import { pushTokenRoutes } from './routes/push-tokens';
+import { predictionsRoutes } from './routes/predictions';
+import { sessionsRoutes } from './routes/sessions';
+import { segmentsRoutes } from './routes/segments';
+import { kudosRoutes } from './routes/kudos';
+import { premiumAnalyticsRoutes } from './routes/premium-analytics';
+import { fishingFeaturesRoutes } from './routes/fishing-features';
+import { nativeAdsRoutes } from './routes/native-ads';
+import xpRoutes from './routes/xp';
+import { publicProfileRoutes } from './routes/public-profile';
+import { hotSpotsRoutes } from './routes/hot-spots';
+import { speciesRoutes } from './routes/species';
+import { leaderboardRoutes } from './routes/leaderboard';
 import { initializeDatabase } from './utils/init-db';
 import 'dotenv/config';
 
@@ -69,6 +95,9 @@ fastify.register(fastifyStatic, {
   prefix: '/',
 });
 
+// WebSocket support
+fastify.register(websocket);
+
 // Register routes
 fastify.register(authRoutes);
 fastify.register(userRoutes);
@@ -83,6 +112,31 @@ fastify.register(badgeRoutes);
 fastify.register(adminRoutes);
 fastify.register(clubsRoutes);
 fastify.register(groupsRoutes);
+fastify.register(statisticsRoutes);
+fastify.register(favoriteSpotRoutes);
+fastify.register(challengesRoutes);
+fastify.register(challengeCommentsRoutes);
+fastify.register(challengeTemplatesRoutes);
+fastify.register(messagesRoutes);
+fastify.register(weatherRoutes);
+fastify.register(personalBestsRoutes);
+fastify.register(notificationsRoutes);
+fastify.register(moderationRoutes);
+fastify.register(conversationsRoutes);
+fastify.register(websocketRoutes);
+fastify.register(pushTokenRoutes);
+fastify.register(predictionsRoutes);
+fastify.register(sessionsRoutes);
+fastify.register(segmentsRoutes);
+fastify.register(kudosRoutes);
+fastify.register(premiumAnalyticsRoutes);
+fastify.register(fishingFeaturesRoutes);
+fastify.register(nativeAdsRoutes);
+fastify.register(xpRoutes);
+fastify.register(publicProfileRoutes);
+fastify.register(hotSpotsRoutes);
+fastify.register(speciesRoutes);
+fastify.register(leaderboardRoutes);
 
 // Health check endpoint
 fastify.get('/health', async (request, reply) => {

@@ -23,83 +23,126 @@ model Location {
 }
 
 model User {
-  id                String              @id @default(cuid())
-  email             String              @unique
-  name              String
-  password          String?             // For email/password auth (hashed)
-  avatar            String?
-  provider          String?             // 'google', 'facebook', 'email', or 'test'
-  providerId        String?             // OAuth provider's user ID
-  refreshToken      String?             @db.Text
-  groqApiKey        String?             // User's personal Groq API key
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  catches           Catch[]
-  sentRequests      Friendship[]        @relation("FriendRequester")
-  receivedRequests  Friendship[]        @relation("FriendAccepter")
-  likes             Like[]
-  comments          Comment[]
-  ownedEvents       Event[]
-  eventParticipants EventParticipant[]
-  badges            UserBadge[]
-  validatedCatches  CatchValidation[]
-  ownedClubs        Club[]
-  clubMemberships   ClubMember[]
-  clubMessages      ClubMessage[]
-  groupMemberships  GroupMembership[]
-  groupPosts        GroupPost[]
-  groupPostLikes    GroupPostLike[]
-  groupPostComments GroupPostComment[]
-  groupMessages     GroupMessage[]
-  favoriteSpots     FavoriteSpot[]
-  trips             Trip[]
-  tripParticipants  TripParticipant[]
-  gear              Gear[]
-  licenses          FishingLicense[]
-  streaks           Streak[]
-  notifications     Notification[]
-  ownedChallenges   Challenge[]       @relation("ownedChallenges")
-  challengeParticipants ChallengeParticipant[] @relation("challengeParticipants")
-  challengeComments ChallengeComment[]
-  sentMessages      Message[]         @relation("sentMessages")
-  receivedMessages  Message[]         @relation("receivedMessages")
-  personalBests     PersonalBest[]
+  id                       String                    @id @default(cuid())
+  email                    String                    @unique
+  name                     String
+  password                 String? // For email/password auth (hashed)
+  avatar                   String?
+  provider                 String? // 'google', 'facebook', 'email', or 'test'
+  providerId               String? // OAuth provider's user ID
+  refreshToken             String?                   @db.Text
+  groqApiKey               String? // User's personal Groq API key
+  // Privacy Settings
+  profileVisibility        String                    @default("public") @map("profile_visibility") // 'public', 'friends', 'private'
+  // XP & Level System
+  totalXP                  Int                       @default(0) @map("total_xp")
+  level                    Int                       @default(1)
+  currentLevelXP           Int                       @default(0) @map("current_level_xp")
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  catches                  Catch[]
+  sentRequests             Friendship[]              @relation("FriendRequester")
+  receivedRequests         Friendship[]              @relation("FriendAccepter")
+  likes                    Like[]
+  comments                 Comment[]
+  ownedEvents              Event[]
+  eventParticipants        EventParticipant[]
+  badges                   UserBadge[]
+  validatedCatches         CatchValidation[]
+  ownedClubs               Club[]
+  clubMemberships          ClubMember[]
+  clubMessages             ClubMessage[]
+  groupMemberships         GroupMembership[]
+  groupPosts               GroupPost[]
+  groupPostLikes           GroupPostLike[]
+  groupPostComments        GroupPostComment[]
+  groupMessages            GroupMessage[]
+  favoriteSpots            FavoriteSpot[]
+  trips                    Trip[]
+  tripParticipants         TripParticipant[]
+  gear                     Gear[]
+  licenses                 FishingLicense[]
+  streaks                  Streak[]
+  notifications            Notification[]
+  ownedChallenges          Challenge[]               @relation("ownedChallenges")
+  challengeParticipants    ChallengeParticipant[]    @relation("challengeParticipants")
+  challengeComments        ChallengeComment[]
+  sentMessages             Message[]                 @relation("sentMessages")
+  receivedMessages         Message[]                 @relation("receivedMessages")
+  personalBests            PersonalBest[]
+  albums                   Album[]                   @relation("userAlbums")
+  blockedUsers             BlockedUser[]             @relation("BlockerUser")
+  blockedByUsers           BlockedUser[]             @relation("BlockedUser")
+  mutedUsers               MutedUser[]               @relation("MuterUser")
+  mutedByUsers             MutedUser[]               @relation("MutedUser")
+  contentReports           ContentReport[]           @relation("ReportSubmitter")
+  conversationParticipants ConversationParticipant[] @relation("ConversationMember")
+  conversationMessages     ConversationMessage[]     @relation("ConversationMessageSender")
+  pushTokens               PushToken[]               @relation("UserPushTokens")
+  // Strava-like features
+  sessions                 FishingSession[]
+  segmentEfforts           SegmentEffort[]
+  legends                  LocalLegend[]
+  createdSegments          Segment[]
+  goals                    UserGoal[]
+  conservationScore        ConservationScore?
+  premium                  PremiumSubscription?
+  sessionKudos             SessionKudos[]
+  catchKudos               CatchKudos[]
+  segmentLeaderboards      SegmentLeaderboard[]
+  sessionComments          SessionComment[]
+  // Native advertising
+  adImpressions            AdImpression[]
+  adClicks                 AdClick[]
+  adConversions            AdConversion[]
+  // FiskeDex
+  fiskedexEntries          FiskeDexEntry[]
 
   @@unique([provider, providerId])
   @@map("users")
 }
 
 model Catch {
-  id         String    @id @default(cuid())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  species    String?
-  lengthCm   Float?
-  weightKg   Float?
-  bait       String?
-  lure       String?
-  rig        String?
-  technique  String?
-  notes      String?   @db.Text
-  latitude   Float?
-  longitude  Float?
-  photoUrl      String?
-  photoHash     String?   // SHA-256 hash of image for verification
-  exifData      String?   @db.Text // JSON: timestamp, GPS, device model, etc.
-  isDraft       Boolean   @default(true) // true = incomplete, false = completed
-  visibility    String    @default("private") // 'private', 'friends', 'public'
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime        @updatedAt
-  likes         Like[]
-  comments      Comment[]
-  validations   CatchValidation[]
-  clubMessages  ClubMessage[]
-  groupPosts    GroupPost[]
-  groupMessages GroupMessage[]
-  weatherData   WeatherData?
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  species          String?
+  lengthCm         Float?
+  weightKg         Float?
+  score            Float?            @default(0) // Calculated as: rarity × weight
+  bait             String?
+  lure             String?
+  rig              String?
+  technique        String?
+  notes            String?           @db.Text
+  latitude         Float?
+  longitude        Float?
+  photoUrl         String?
+  photoHash        String? // SHA-256 hash of image for verification
+  exifData         String?           @db.Text // JSON: timestamp, GPS, device model, etc.
+  isDraft          Boolean           @default(true) // true = incomplete, false = completed
+  visibility       String            @default("private") // 'private', 'friends', 'public'
+  // Strava-like features
+  sessionId        String?
+  session          FishingSession?   @relation(fields: [sessionId], references: [id])
+  isReleased       Boolean           @default(false)
+  releaseCondition String? // 'excellent', 'good', 'fair', 'poor'
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  likes            Like[]
+  comments         Comment[]
+  validations      CatchValidation[]
+  clubMessages     ClubMessage[]
+  groupPosts       GroupPost[]
+  groupMessages    GroupMessage[]
+  weatherData      WeatherData?
+  kudos            CatchKudos[]
+  segmentEfforts   SegmentEffort[]
 
   @@index([userId])
   @@index([isDraft])
+  @@index([sessionId])
+  @@index([score])
   @@map("catches")
 }
 
@@ -130,6 +173,56 @@ model Friendship {
   @@map("friendships")
 }
 
+model BlockedUser {
+  id        String   @id @default(cuid())
+  blockerId String   @map("blocker_id") // User who is blocking
+  blockedId String   @map("blocked_id") // User who is being blocked
+  blocker   User     @relation("BlockerUser", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("BlockedUser", fields: [blockedId], references: [id], onDelete: Cascade)
+  reason    String?  @db.Text // Optional reason for blocking
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("blocked_users")
+}
+
+model MutedUser {
+  id        String   @id @default(cuid())
+  muterId   String   @map("muter_id") // User who is muting
+  mutedId   String   @map("muted_id") // User who is being muted
+  muter     User     @relation("MuterUser", fields: [muterId], references: [id], onDelete: Cascade)
+  muted     User     @relation("MutedUser", fields: [mutedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([muterId, mutedId])
+  @@index([muterId])
+  @@index([mutedId])
+  @@map("muted_users")
+}
+
+model ContentReport {
+  id          String    @id @default(cuid())
+  reporterId  String    @map("reporter_id") // User submitting the report
+  reporter    User      @relation("ReportSubmitter", fields: [reporterId], references: [id], onDelete: Cascade)
+  contentType String    @map("content_type") // 'catch', 'comment', 'user', 'group_post', etc.
+  contentId   String    @map("content_id") // ID of the reported content
+  category    String // 'spam', 'inappropriate', 'harassment', 'fake', 'other'
+  description String?   @db.Text // Additional details from reporter
+  status      String    @default("pending") // 'pending', 'reviewed', 'resolved', 'dismissed'
+  resolution  String?   @db.Text // Admin notes on resolution
+  reviewedBy  String?   @map("reviewed_by") // Admin who reviewed it
+  reviewedAt  DateTime? @map("reviewed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([reporterId])
+  @@index([contentType, contentId])
+  @@index([status])
+  @@map("content_reports")
+}
+
 model Like {
   id        String   @id @default(cuid())
   userId    String
@@ -158,19 +251,19 @@ model Comment {
 }
 
 model Event {
-  id            String              @id @default(cuid())
-  ownerId       String
-  title         String
-  description   String?             @db.Text
-  startAt       DateTime
-  endAt         DateTime
-  venue         String?
-  visibility    String              @default("public") // 'private', 'friends', 'public'
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  owner         User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  contests      Contest[]
-  participants  EventParticipant[]
+  id           String             @id @default(cuid())
+  ownerId      String
+  title        String
+  description  String?            @db.Text
+  startAt      DateTime
+  endAt        DateTime
+  venue        String?
+  visibility   String             @default("public") // 'private', 'friends', 'public'
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  owner        User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contests     Contest[]
+  participants EventParticipant[]
 
   @@index([ownerId])
   @@index([startAt])
@@ -180,8 +273,8 @@ model Event {
 model Contest {
   id            String   @id @default(cuid())
   eventId       String
-  rule          String   // 'biggest_total', 'biggest_single', 'most_catches'
-  speciesFilter String?  // Filter by specific species, null = all species
+  rule          String // 'biggest_total', 'biggest_single', 'most_catches'
+  speciesFilter String? // Filter by specific species, null = all species
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -191,12 +284,12 @@ model Contest {
 }
 
 model EventParticipant {
-  id        String   @id @default(cuid())
-  eventId   String
-  userId    String
-  joinedAt  DateTime @default(now())
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String   @id @default(cuid())
+  eventId  String
+  userId   String
+  joinedAt DateTime @default(now())
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -208,8 +301,8 @@ model Badge {
   id          String      @id @default(cuid())
   name        String      @unique
   description String      @db.Text
-  icon        String      // Emoji or icon identifier
-  rule        String      // Rule type: 'first_catch', 'catch_count_10', 'biggest_fish_5kg', etc.
+  icon        String // Emoji or icon identifier
+  rule        String // Rule type: 'first_catch', 'catch_count_10', 'biggest_fish_5kg', etc.
   ruleData    String?     @db.Text // JSON data for rule parameters
   tier        String      @default("bronze") // 'bronze', 'silver', 'gold', 'platinum'
   createdAt   DateTime    @default(now())
@@ -220,13 +313,13 @@ model Badge {
 }
 
 model UserBadge {
-  id        String   @id @default(cuid())
-  userId    String
-  badgeId   String
-  earnedAt  DateTime @default(now())
-  progress  Int?     // For progressive badges (e.g., 7 out of 10 catches)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+  progress Int? // For progressive badges (e.g., 7 out of 10 catches)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
   @@index([userId])
@@ -240,7 +333,7 @@ model CatchValidation {
   catch       Catch    @relation(fields: [catchId], references: [id], onDelete: Cascade)
   validatorId String   @map("validator_id")
   validator   User     @relation(fields: [validatorId], references: [id])
-  status      String   // 'approved' or 'rejected'
+  status      String // 'approved' or 'rejected'
   reason      String?  @db.Text
   validatedAt DateTime @default(now()) @map("validated_at")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -412,12 +505,12 @@ model FavoriteSpot {
   longitude        Float
   fishSpecies      String?  @map("fish_species") // Target fish species
   bottomType       String?  @map("bottom_type") // Bottom conditions
-  depth            Float?   // Depth in meters
+  depth            Float? // Depth in meters
   parkingLatitude  Float?   @map("parking_latitude") // Parking location latitude
   parkingLongitude Float?   @map("parking_longitude") // Parking location longitude
   privacy          String   @default("private") // 'public', 'groups', 'friends', 'private'
   notes            String?  @db.Text // Private notes about the spot
-  rating           Int?     // 1-5 stars
+  rating           Int? // 1-5 stars
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -467,20 +560,20 @@ model TripParticipant {
 
 // Gear Management
 model Gear {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String   // 'rod', 'reel', 'lure', 'line', 'hook', 'other'
-  brand       String?
-  model       String?
-  name        String
-  description String?  @db.Text
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         String // 'rod', 'reel', 'lure', 'line', 'hook', 'other'
+  brand        String?
+  model        String?
+  name         String
+  description  String?   @db.Text
   purchaseDate DateTime? @map("purchase_date")
-  price       Float?
-  imageUrl    String?  @map("image_url")
-  notes       String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  price        Float?
+  imageUrl     String?   @map("image_url")
+  notes        String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   @@index([userId])
   @@index([type])
@@ -489,35 +582,67 @@ model Gear {
 
 // Species Database
 model Species {
-  id              String   @id @default(cuid())
-  name            String   @unique
-  scientificName  String?  @map("scientific_name")
-  description     String?  @db.Text
-  minLegalSize    Float?   @map("min_legal_size") // cm
-  closedSeasons   String?  @db.Text @map("closed_seasons") // JSON array
-  bestBait        String?  @db.Text @map("best_bait")
-  bestTechniques  String?  @db.Text @map("best_techniques")
-  habitat         String?  @db.Text
-  imageUrl        String?  @map("image_url")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id                String              @id @default(cuid())
+  name              String              @unique
+  scientificName    String?             @map("scientific_name")
+  description       String?             @db.Text
+  minLegalSize      Float?              @map("min_legal_size") // cm
+  closedSeasons     String?             @map("closed_seasons") @db.Text // JSON array
+  bestBait          String?             @map("best_bait") @db.Text
+  bestTechniques    String?             @map("best_techniques") @db.Text
+  habitat           String?             @db.Text
+  imageUrl          String?             @map("image_url")
+  behaviorPatterns  String?             @map("behavior_patterns") @db.Text // JSON: Seasonal behavior, feeding times
+  rarity            String?             @default("common") // 'common', 'uncommon', 'rare', 'very_rare', 'legendary'
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  // Strava-like features
+  regulations       FishingRegulation[]
+  baitEffectiveness BaitEffectiveness[]
+  fiskedexEntries   FiskeDexEntry[]
 
   @@map("species")
 }
 
+// FiskeDex Entry - Track which species each user has unlocked
+model FiskeDexEntry {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  speciesId       String   @map("species_id")
+  species         Species  @relation(fields: [speciesId], references: [id])
+
+  // Photo from the catch that unlocked this species
+  unlockPhotoUrl  String?  @map("unlock_photo_url")
+
+  // Stats
+  firstCaughtAt   DateTime @map("first_caught_at")
+  catchCount      Int      @default(1)
+  largestLengthCm Float?   @map("largest_length_cm")
+  heaviestWeightKg Float?  @map("heaviest_weight_kg")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, speciesId])
+  @@index([userId])
+  @@index([speciesId])
+  @@map("fiskedex_entries")
+}
+
 // Fishing Licenses
 model FishingLicense {
-  id          String    @id @default(cuid())
-  userId      String    @map("user_id")
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String    // 'annual', 'daily', 'weekly', etc.
-  region      String
-  issueDate   DateTime  @map("issue_date")
-  expiryDate  DateTime  @map("expiry_date")
-  licenseNumber String? @map("license_number")
-  notes       String?   @db.Text
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String // 'annual', 'daily', 'weekly', etc.
+  region        String
+  issueDate     DateTime @map("issue_date")
+  expiryDate    DateTime @map("expiry_date")
+  licenseNumber String?  @map("license_number")
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@index([userId])
   @@index([expiryDate])
@@ -532,8 +657,8 @@ model Challenge {
   groupId      String?                @map("group_id")
   title        String
   description  String?                @db.Text
-  type         String                 // 'most_catches', 'biggest_fish', 'total_weight', 'most_species'
-  species      String?                // Filter by species
+  type         String // 'most_catches', 'biggest_fish', 'total_weight', 'most_species'
+  species      String? // Filter by species
   startDate    DateTime               @map("start_date")
   endDate      DateTime               @map("end_date")
   isPublic     Boolean                @default(false) @map("is_public")
@@ -566,15 +691,15 @@ model ChallengeParticipant {
 
 // Streaks & Gamification
 model Streak {
-  id            String   @id @default(cuid())
-  userId        String   @map("user_id")
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type          String   // 'daily_catch', 'weekly_active'
-  currentStreak Int      @default(0) @map("current_streak")
-  longestStreak Int      @default(0) @map("longest_streak")
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           String // 'daily_catch', 'weekly_active'
+  currentStreak  Int      @default(0) @map("current_streak")
+  longestStreak  Int      @default(0) @map("longest_streak")
   lastActiveDate DateTime @map("last_active_date")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@unique([userId, type])
   @@index([userId])
@@ -586,7 +711,7 @@ model Notification {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String   // 'weather_alert', 'spot_reminder', 'challenge_update', 'badge_earned', etc.
+  type      String // 'weather_alert', 'spot_reminder', 'challenge_update', 'badge_earned', etc.
   title     String
   message   String   @db.Text
   data      String?  @db.Text // JSON data
@@ -596,6 +721,21 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// Push Notification Tokens
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation("UserPushTokens", fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique // Expo push token
+  device    String? // Device type/model
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([token])
+  @@map("push_tokens")
 }
 
 // Challenge Comments (Chat)
@@ -631,15 +771,59 @@ model Message {
   @@map("messages")
 }
 
+// Group DMs (Conversations)
+model Conversation {
+  id           String                    @id @default(cuid())
+  name         String? // Optional name for the conversation
+  createdBy    String                    @map("created_by")
+  createdAt    DateTime                  @default(now()) @map("created_at")
+  updatedAt    DateTime                  @updatedAt @map("updated_at")
+  participants ConversationParticipant[]
+  messages     ConversationMessage[]
+
+  @@index([createdBy])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String       @map("user_id")
+  user           User         @relation("ConversationMember", fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime     @default(now()) @map("joined_at")
+  lastReadAt     DateTime?    @map("last_read_at")
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model ConversationMessage {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @map("sender_id")
+  sender         User         @relation("ConversationMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  text           String       @db.Text
+  imageUrl       String?      @map("image_url")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("conversation_messages")
+}
+
 // Personal Bests Tracking
 model PersonalBest {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   species   String
-  category  String   // 'length', 'weight'
-  value     Float    // The record value
-  unit      String   // 'cm', 'kg'
+  category  String // 'length', 'weight'
+  value     Float // The record value
+  unit      String // 'cm', 'kg'
   date      DateTime // When the record was set
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -652,18 +836,18 @@ model PersonalBest {
 
 // Weather Data for Catches
 model WeatherData {
-  id          String   @id @default(cuid())
-  catchId     String   @unique @map("catch_id")
-  catch       Catch    @relation(fields: [catchId], references: [id], onDelete: Cascade)
-  temperature Float?   // Celsius
-  windSpeed   Float?   // km/h
+  id            String   @id @default(cuid())
+  catchId       String   @unique @map("catch_id")
+  catch         Catch    @relation(fields: [catchId], references: [id], onDelete: Cascade)
+  temperature   Float? // Celsius
+  windSpeed     Float? // km/h
   windDirection String? // N, NE, E, SE, S, SW, W, NW
-  pressure    Float?   // hPa
-  humidity    Float?   // %
-  conditions  String?  // 'clear', 'cloudy', 'rainy', etc.
-  moonPhase   String?  // 'new', 'waxing_crescent', 'first_quarter', 'waxing_gibbous', 'full', 'waning_gibbous', 'last_quarter', 'waning_crescent'
-  tideState   String?  // 'high', 'low', 'rising', 'falling'
-  createdAt   DateTime @default(now()) @map("created_at")
+  pressure      Float? // hPa
+  humidity      Float? // %
+  conditions    String? // 'clear', 'cloudy', 'rainy', etc.
+  moonPhase     String? // 'new', 'waxing_crescent', 'first_quarter', 'waxing_gibbous', 'full', 'waning_gibbous', 'last_quarter', 'waning_crescent'
+  tideState     String? // 'high', 'low', 'rising', 'falling'
+  createdAt     DateTime @default(now()) @map("created_at")
 
   @@index([catchId])
   @@map("weather_data")
@@ -674,12 +858,640 @@ model ChallengeTemplate {
   id          String   @id @default(cuid())
   name        String
   description String?  @db.Text
-  type        String   // 'most_catches', 'biggest_fish', 'total_weight', 'most_species'
-  duration    Int      // Duration in days
+  type        String // 'most_catches', 'biggest_fish', 'total_weight', 'most_species'
+  duration    Int // Duration in days
   isPublic    Boolean  @default(true) @map("is_public")
-  icon        String?  // Icon identifier
+  icon        String? // Icon identifier
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("challenge_templates")
+}
+
+// Photo Albums
+model Album {
+  id            String       @id @default(cuid())
+  userId        String       @map("user_id")
+  user          User         @relation("userAlbums", fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?      @db.Text
+  coverPhotoUrl String?      @map("cover_photo_url")
+  isPublic      Boolean      @default(false) @map("is_public")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  photos        AlbumPhoto[]
+
+  @@index([userId])
+  @@map("albums")
+}
+
+model AlbumPhoto {
+  id         String   @id @default(cuid())
+  albumId    String   @map("album_id")
+  album      Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  photoUrl   String   @map("photo_url")
+  caption    String?  @db.Text
+  catchId    String?  @map("catch_id") // Optional link to a catch
+  orderIndex Int      @default(0) @map("order_index") // For custom ordering
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([albumId])
+  @@index([catchId])
+  @@map("album_photos")
+}
+
+// ==================== STRAVA-INSPIRED FEATURES ====================
+
+// Fishing Sessions - Track entire fishing outings
+model FishingSession {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Session details
+  title       String?
+  description String? @db.Text
+  sessionType String // 'shore', 'boat', 'kayak', 'ice', 'wade'
+
+  // Time tracking
+  startTime DateTime  @map("start_time")
+  endTime   DateTime? @map("end_time")
+  duration  Int? // minutes
+
+  // GPS tracking
+  route         String? @db.Text // JSON Array of {lat, lng, timestamp, speed?, altitude?}
+  totalDistance Float?  @map("total_distance") // kilometers
+  maxSpeed      Float?  @map("max_speed") // km/h
+  avgSpeed      Float?  @map("avg_speed") // km/h
+
+  // Stats
+  totalCatches Int    @default(0) @map("total_catches")
+  totalWeight  Float? @map("total_weight") // kg
+  speciesCount Int    @default(0) @map("species_count")
+
+  // Weather snapshot
+  weatherData String? @map("weather_data") @db.Text // JSON
+
+  // Privacy & sharing
+  visibility String @default("friends") // 'private', 'friends', 'public'
+
+  // Relations
+  catches        Catch[]
+  kudos          SessionKudos[]
+  comments       SessionComment[]
+  segmentEfforts SegmentEffort[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([startTime])
+  @@index([sessionType])
+  @@map("fishing_sessions")
+}
+
+// Segments - Popular fishing spots with leaderboards
+model Segment {
+  id        String @id @default(cuid())
+  createdBy String @map("created_by")
+  creator   User   @relation(fields: [createdBy], references: [id])
+
+  // Segment details
+  name        String
+  description String? @db.Text
+  segmentType String  @map("segment_type") // 'spot', 'route', 'zone'
+
+  // Geographic bounds
+  centerLat Float   @map("center_lat")
+  centerLng Float   @map("center_lng")
+  radius    Float? // meters (for spot segments)
+  bounds    String? @db.Text // GeoJSON polygon for route/zone segments
+
+  // Stats
+  activityCount Int @default(0) @map("activity_count")
+  totalCatches  Int @default(0) @map("total_catches")
+  uniqueAnglers Int @default(0) @map("unique_anglers")
+
+  // Metadata
+  difficulty String? // 'beginner', 'intermediate', 'advanced', 'expert'
+  tags       String[] // ['shore-accessible', 'boat-required', 'deep-water']
+
+  // Relations
+  efforts     SegmentEffort[]
+  legends     LocalLegend[]
+  leaderboard SegmentLeaderboard[]
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([centerLat, centerLng])
+  @@index([createdBy])
+  @@map("segments")
+}
+
+// Segment Efforts - Individual fishing efforts at segments
+model SegmentEffort {
+  id        String          @id @default(cuid())
+  segmentId String          @map("segment_id")
+  segment   Segment         @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  userId    String          @map("user_id")
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String?         @map("session_id")
+  session   FishingSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  catchId   String?         @map("catch_id")
+  catch     Catch?          @relation(fields: [catchId], references: [id], onDelete: Cascade)
+
+  // Effort stats
+  effortScore      Float  @map("effort_score") // Calculated score based on catches, size, conditions
+  catchCount       Int    @default(0) @map("catch_count")
+  totalWeight      Float? @map("total_weight")
+  biggestFish      Float? @map("biggest_fish") // kg
+  speciesDiversity Int    @default(0) @map("species_diversity")
+
+  // Conditions
+  weatherDifficulty Float? @map("weather_difficulty") // 0-10 score
+
+  // PR tracking
+  isPR Boolean @default(false) @map("is_pr")
+
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  @@index([segmentId, effortScore])
+  @@index([userId, segmentId])
+  @@index([completedAt])
+  @@map("segment_efforts")
+}
+
+// Local Legends - Segment ownership gamification
+model LocalLegend {
+  id        String  @id @default(cuid())
+  segmentId String  @map("segment_id")
+  segment   Segment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  userId    String  @map("user_id")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Legend status
+  status      String @default("active") // 'active', 'dethroned', 'retired'
+  effortCount Int    @map("effort_count") // Number of efforts in past 90 days
+
+  // Timeline
+  achievedAt  DateTime  @default(now()) @map("achieved_at")
+  dethronedAt DateTime? @map("dethroned_at")
+
+  // Stats during legend period
+  totalCatches Int @default(0) @map("total_catches")
+  totalDays    Int @default(0) @map("total_days")
+
+  @@unique([segmentId, userId, achievedAt])
+  @@index([segmentId, status])
+  @@index([userId])
+  @@map("local_legends")
+}
+
+// Segment Leaderboards - Segment rankings by category
+model SegmentLeaderboard {
+  id        String  @id @default(cuid())
+  segmentId String  @map("segment_id")
+  segment   Segment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  userId    String  @map("user_id")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Leaderboard type
+  category  String // 'most_catches', 'biggest_fish', 'total_weight', 'species_diversity'
+  timeframe String // 'all_time', 'year', 'month', 'week'
+
+  // Stats
+  value   Float // The score for this category
+  rank    Int
+  efforts Int // Number of efforts
+
+  // Metadata
+  lastEffortAt DateTime @map("last_effort_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([segmentId, userId, category, timeframe])
+  @@index([segmentId, category, timeframe, rank])
+  @@map("segment_leaderboards")
+}
+
+// Session Kudos - Quick appreciation for sessions
+model SessionKudos {
+  id        String         @id @default(cuid())
+  sessionId String         @map("session_id")
+  session   FishingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String         @map("user_id")
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([userId])
+  @@map("session_kudos")
+}
+
+// Catch Kudos - Quick appreciation for catches
+model CatchKudos {
+  id      String @id @default(cuid())
+  catchId String @map("catch_id")
+  catch   Catch  @relation(fields: [catchId], references: [id], onDelete: Cascade)
+  userId  String @map("user_id")
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([catchId, userId])
+  @@index([catchId])
+  @@index([userId])
+  @@map("catch_kudos")
+}
+
+// Session Comments - Comments on fishing sessions
+model SessionComment {
+  id        String         @id @default(cuid())
+  sessionId String         @map("session_id")
+  session   FishingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String         @map("user_id")
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([sessionId])
+  @@index([userId])
+  @@map("session_comments")
+}
+
+// User Goals - Fishing goals and challenges
+model UserGoal {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Goal details
+  type        String // 'catch_count', 'species_diversity', 'total_weight', 'technique_mastery', 'location_exploration'
+  title       String
+  description String? @db.Text
+
+  // Target
+  targetValue  Float @map("target_value")
+  currentValue Float @default(0) @map("current_value")
+
+  // Constraints
+  speciesId String? @map("species_id") // For species-specific goals
+  technique String? // For technique goals
+  timeframe String // 'weekly', 'monthly', 'yearly', 'all_time'
+
+  // Timeline
+  startDate   DateTime  @default(now()) @map("start_date")
+  endDate     DateTime? @map("end_date")
+  completedAt DateTime? @map("completed_at")
+
+  // Status
+  status String @default("active") // 'active', 'completed', 'failed', 'abandoned'
+
+  @@index([userId, status])
+  @@index([endDate])
+  @@map("user_goals")
+}
+
+// Tide Data - Tide information for fishing spots
+model TideData {
+  id String @id @default(cuid())
+
+  // Location (grid-based for caching)
+  lat       Float
+  lng       Float
+  stationId String? @map("station_id") // External tide station ID
+
+  // Tide information
+  date     DateTime
+  tideType String   @map("tide_type") // 'high', 'low'
+  height   Float // meters
+  time     DateTime
+
+  // Metadata
+  source String // 'noaa', 'dmi', 'manual'
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([lat, lng, date, time])
+  @@index([lat, lng, date])
+  @@index([stationId, date])
+  @@map("tide_data")
+}
+
+// Water Temperature - Water temperature data for map overlays
+model WaterTemperature {
+  id String @id @default(cuid())
+
+  // Location
+  lat   Float
+  lng   Float
+  depth Float? // meters
+
+  // Temperature data
+  temperature Float // Celsius
+  measuredAt  DateTime @map("measured_at")
+
+  // Source
+  source   String // 'satellite', 'buoy', 'manual'
+  sourceId String? @map("source_id")
+
+  // Quality
+  confidence Float? // 0-1
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([lat, lng, measuredAt])
+  @@index([measuredAt])
+  @@map("water_temperatures")
+}
+
+// Fishing Regulations - Legal requirements by region/species
+model FishingRegulation {
+  id String @id @default(cuid())
+
+  // Geographic area
+  region String // 'Denmark', 'Zealand', 'Specific Lake'
+  bounds String? @db.Text // GeoJSON polygon
+
+  // Species-specific rules
+  speciesId String?  @map("species_id")
+  species   Species? @relation(fields: [speciesId], references: [id])
+
+  // Regulations
+  minSize           Float?    @map("min_size") // cm
+  maxSize           Float?    @map("max_size") // cm
+  dailyLimit        Int?      @map("daily_limit") // Number of fish per day
+  closedSeasonStart DateTime? @map("closed_season_start")
+  closedSeasonEnd   DateTime? @map("closed_season_end")
+
+  // Additional rules
+  allowedGear     String[] @map("allowed_gear") // ['rod', 'net', 'trap']
+  catchAndRelease Boolean  @default(false) @map("catch_and_release")
+
+  // Metadata
+  regulationType String  @map("regulation_type") // 'size_limit', 'bag_limit', 'season', 'gear_restriction'
+  description    String? @db.Text
+  authority      String? // 'national', 'regional', 'local'
+
+  effectiveFrom  DateTime  @map("effective_from")
+  effectiveUntil DateTime? @map("effective_until")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  @@index([region])
+  @@index([speciesId])
+  @@index([effectiveFrom, effectiveUntil])
+  @@map("fishing_regulations")
+}
+
+// Bait Effectiveness - Community-driven bait recommendations
+model BaitEffectiveness {
+  id String @id @default(cuid())
+
+  // Bait details
+  baitType     String @map("bait_type") // 'worm', 'minnow', 'lure', specific lure name
+  baitCategory String @map("bait_category") // 'live', 'artificial', 'cut'
+
+  // Location
+  lat    Float
+  lng    Float
+  radius Float @default(1000) // meters
+
+  // Species
+  speciesId String?  @map("species_id")
+  species   Species? @relation(fields: [speciesId], references: [id])
+
+  // Effectiveness metrics
+  successRate   Float  @map("success_rate") // 0-1 (catches / attempts)
+  totalAttempts Int    @default(0) @map("total_attempts")
+  totalCatches  Int    @default(0) @map("total_catches")
+  avgCatchSize  Float? @map("avg_catch_size") // kg
+
+  // Seasonal
+  season String? // 'spring', 'summer', 'fall', 'winter'
+  month  Int? // 1-12
+
+  // Conditions
+  avgTemp  Float? @map("avg_temp")
+  avgDepth Float? @map("avg_depth")
+
+  lastUpdated DateTime @updatedAt @map("last_updated")
+
+  @@index([lat, lng])
+  @@index([speciesId, baitType])
+  @@index([season])
+  @@map("bait_effectiveness")
+}
+
+// Conservation Score - Track catch & release behavior
+model ConservationScore {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Score components
+  totalReleased Int   @default(0) @map("total_released")
+  totalKept     Int   @default(0) @map("total_kept")
+  releaseRate   Float @default(0) @map("release_rate") // Percentage
+
+  // Conservation actions
+  reportedViolations Int @default(0) @map("reported_violations")
+  educationalShares  Int @default(0) @map("educational_shares")
+  habitatCleanups    Int @default(0) @map("habitat_cleanups")
+
+  // Overall score (0-100)
+  score Float  @default(50)
+  rank  String @default("bronze") // 'bronze', 'silver', 'gold', 'platinum', 'champion'
+
+  // Achievements
+  achievements String[] // ['50-releases', 'habitat-hero', 'size-conscious']
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([score])
+  @@map("conservation_scores")
+}
+
+// Premium Subscription - Subscription management
+model PremiumSubscription {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Subscription details
+  tier   String // 'free', 'premium', 'pro'
+  status String // 'active', 'canceled', 'expired', 'trial'
+
+  // Billing
+  stripeCustomerId     String? @map("stripe_customer_id")
+  stripeSubscriptionId String? @map("stripe_subscription_id")
+
+  // Timeline
+  startDate        DateTime  @default(now()) @map("start_date")
+  currentPeriodEnd DateTime? @map("current_period_end")
+  cancelAt         DateTime? @map("cancel_at")
+
+  // Trial
+  trialEnd DateTime? @map("trial_end")
+
+  // Features enabled
+  features String[] // ['advanced_analytics', 'live_tracking', 'export', 'ad_free']
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("premium_subscriptions")
+}
+
+// ===== NATIVE ADVERTISING SYSTEM =====
+
+enum AdType {
+  FEED_NATIVE
+  SPONSORED_SPOT
+  AI_PRODUCT
+  CHALLENGE_SPONSOR
+  BANNER
+}
+
+enum AdStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  REJECTED
+}
+
+// Native Ad - Main advertisement model
+model NativeAd {
+  id          String   @id @default(cuid())
+  type        AdType
+  status      AdStatus @default(DRAFT)
+  title       String
+  description String?  @db.Text
+  imageUrl    String?  @map("image_url")
+  callToAction String  @map("call_to_action")
+  targetUrl   String   @map("target_url")
+  
+  // Sponsor info
+  sponsorName String  @map("sponsor_name")
+  sponsorLogo String? @map("sponsor_logo")
+  
+  // Targeting
+  targetAudience String[] @map("target_audience") // ['sportsfisher', 'beginner', 'premium_user']
+  targetSpecies  String[] @map("target_species")  // ['Gedde', 'Aborre']
+  targetRegions  String[] @map("target_regions")  // ['Denmark', 'Copenhagen']
+  minAge         Int?     @map("min_age")
+  maxAge         Int?     @map("max_age")
+  
+  // Budget & Pricing
+  budget    Decimal? @db.Decimal(10, 2)
+  spent     Decimal  @default(0) @db.Decimal(10, 2)
+  cpmPrice  Decimal? @map("cpm_price") @db.Decimal(10, 2) // Cost per 1000 impressions
+  cpcPrice  Decimal? @map("cpc_price") @db.Decimal(10, 2) // Cost per click
+  cpaPrice  Decimal? @map("cpa_price") @db.Decimal(10, 2) // Cost per action
+  
+  // Campaign dates
+  startDate DateTime  @map("start_date")
+  endDate   DateTime? @map("end_date")
+  
+  // Performance metrics
+  impressions Int @default(0)
+  clicks      Int @default(0)
+  conversions Int @default(0)
+  engagement  Int @default(0) // likes, comments, shares
+  
+  // Metadata
+  priority              Int  @default(0) // Higher = shown more
+  frequency             Int  @default(5) // Show every N posts
+  maxImpressionsPerUser Int? @default(3) @map("max_impressions_per_user") // Daily limit per user
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  
+  // Relations
+  adImpressions AdImpression[]
+  adClicks      AdClick[]
+  adConversions AdConversion[]
+  sponsoredSpots SponsoredSpot[]
+  
+  @@index([status, startDate, endDate])
+  @@index([type, status])
+  @@map("native_ads")
+}
+
+// Ad Impression tracking (for frequency capping)
+model AdImpression {
+  id        String   @id @default(cuid())
+  adId      String   @map("ad_id")
+  ad        NativeAd @relation(fields: [adId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp DateTime @default(now())
+  platform  String?  // 'ios', 'android', 'web'
+  screenType String? @map("screen_type") // 'feed', 'map', 'statistics'
+  
+  @@index([adId, userId, timestamp])
+  @@index([userId, timestamp])
+  @@map("ad_impressions")
+}
+
+// Ad Click tracking
+model AdClick {
+  id        String   @id @default(cuid())
+  adId      String   @map("ad_id")
+  ad        NativeAd @relation(fields: [adId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp DateTime @default(now())
+  platform  String?
+  screenType String? @map("screen_type")
+  
+  @@index([adId])
+  @@index([userId])
+  @@map("ad_clicks")
+}
+
+// Ad Conversion tracking (purchases, signups, etc)
+model AdConversion {
+  id             String   @id @default(cuid())
+  adId           String   @map("ad_id")
+  ad             NativeAd @relation(fields: [adId], references: [id], onDelete: Cascade)
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversionType String   @map("conversion_type") // 'purchase', 'signup', 'download'
+  value          Decimal? @db.Decimal(10, 2) // Revenue from conversion
+  timestamp      DateTime @default(now())
+  
+  @@index([adId])
+  @@map("ad_conversions")
+}
+
+// Sponsored Fishing Spots
+model SponsoredSpot {
+  id          String   @id @default(cuid())
+  adId        String   @map("ad_id")
+  ad          NativeAd @relation(fields: [adId], references: [id], onDelete: Cascade)
+  latitude    Float
+  longitude   Float
+  radius      Float    @default(1000) // meters
+  spotName    String   @map("spot_name")
+  description String?  @db.Text
+  priority    Int      @default(0)
+  active      Boolean  @default(true)
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@index([latitude, longitude])
+  @@map("sponsored_spots")
 }
