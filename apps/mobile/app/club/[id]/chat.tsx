@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TextInput,
   TouchableOpacity,
@@ -15,8 +14,277 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { StyleSheet } from 'react-native';
 
 const API_URL = 'https://hook-production.up.railway.app';
+
+const useStyles = () => {
+  const { colors } = useTheme();
+  return StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundLight,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.backgroundLight,
+  },
+  messageList: {
+    padding: 16,
+    paddingBottom: 8,
+  },
+  messageContainer: {
+    marginBottom: 16,
+  },
+  ownMessage: {
+    alignItems: 'flex-end' as const,
+  },
+  otherMessage: {
+    alignItems: 'flex-start' as const,
+  },
+  senderInfo: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 4,
+  },
+  avatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  avatarText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: 'bold' as const,
+  },
+  senderName: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '500' as const,
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    borderRadius: 16,
+    padding: 12,
+  },
+  ownBubble: {
+    backgroundColor: colors.primary,
+  },
+  otherBubble: {
+    backgroundColor: colors.surface,
+  },
+  messageText: {
+    fontSize: 16,
+  },
+  ownMessageText: {
+    color: colors.white,
+  },
+  otherMessageText: {
+    color: colors.textPrimary,
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  catchCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    padding: 8,
+    marginTop: 8,
+  },
+  catchImage: {
+    width: '100%' as const,
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  catchInfo: {
+    gap: 4,
+  },
+  catchSpecies: {
+    fontSize: 16,
+    fontWeight: 'bold' as const,
+    color: colors.white,
+  },
+  catchDetail: {
+    fontSize: 14,
+    color: colors.white,
+  },
+  timestamp: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 4,
+    alignSelf: 'flex-end' as const,
+  },
+  emptyContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.textTertiary,
+  },
+  selectedCatchPreview: {
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    padding: 12,
+  },
+  previewLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  previewContent: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+  },
+  previewImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 4,
+  },
+  previewText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  removeButton: {
+    fontSize: 20,
+    color: colors.error,
+    padding: 4,
+  },
+  inputContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    padding: 12,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 8,
+  },
+  attachButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.backgroundLight,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  attachButtonText: {
+    fontSize: 20,
+  },
+  input: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 100,
+    backgroundColor: colors.backgroundLight,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  sendButtonDisabled: {
+    opacity: 0.5,
+  },
+  sendButtonText: {
+    color: colors.white,
+    fontSize: 20,
+    fontWeight: 'bold' as const,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end' as const,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold' as const,
+    color: colors.textPrimary,
+  },
+  modalClose: {
+    fontSize: 24,
+    color: colors.textSecondary,
+  },
+  catchItem: {
+    flexDirection: 'row' as const,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.backgroundLight,
+    alignItems: 'center' as const,
+  },
+  catchThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  catchItemInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  catchItemSpecies: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
+  },
+  catchItemDetail: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  emptyModal: {
+    padding: 40,
+    alignItems: 'center' as const,
+  },
+  emptyModalText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  });
+};
 
 interface User {
   id: string;
@@ -58,6 +326,7 @@ export default function ClubChatScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
+  const styles = useStyles();
 
   const [club, setClub] = useState<Club | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -494,264 +763,3 @@ export default function ClubChatScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-  },
-  messageList: {
-    padding: 16,
-    paddingBottom: 8,
-  },
-  messageContainer: {
-    marginBottom: 16,
-  },
-  ownMessage: {
-    alignItems: 'flex-end',
-  },
-  otherMessage: {
-    alignItems: 'flex-start',
-  },
-  senderInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginRight: 8,
-  },
-  avatarPlaceholder: {
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  senderName: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  messageBubble: {
-    maxWidth: '80%',
-    borderRadius: 16,
-    padding: 12,
-  },
-  ownBubble: {
-    backgroundColor: '#007AFF',
-  },
-  otherBubble: {
-    backgroundColor: '#fff',
-  },
-  messageText: {
-    fontSize: 16,
-  },
-  ownMessageText: {
-    color: '#fff',
-  },
-  otherMessageText: {
-    color: '#000',
-  },
-  messageImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  catchCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
-    padding: 8,
-    marginTop: 8,
-  },
-  catchImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  catchInfo: {
-    gap: 4,
-  },
-  catchSpecies: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  catchDetail: {
-    fontSize: 14,
-    color: '#fff',
-  },
-  timestamp: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginTop: 4,
-    alignSelf: 'flex-end',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#999',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#bbb',
-  },
-  selectedCatchPreview: {
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    padding: 12,
-  },
-  previewLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  previewContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  previewImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
-  },
-  previewText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  removeButton: {
-    fontSize: 20,
-    color: '#ff3b30',
-    padding: 4,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    gap: 8,
-  },
-  attachButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  attachButtonText: {
-    fontSize: 20,
-  },
-  input: {
-    flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  sendButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    paddingBottom: 40,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  modalClose: {
-    fontSize: 24,
-    color: '#666',
-  },
-  catchItem: {
-    flexDirection: 'row',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    alignItems: 'center',
-  },
-  catchThumb: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  catchItemInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  catchItemSpecies: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  catchItemDetail: {
-    fontSize: 14,
-    color: '#666',
-  },
-  emptyModal: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyModalText: {
-    fontSize: 16,
-    color: '#999',
-  },
-});

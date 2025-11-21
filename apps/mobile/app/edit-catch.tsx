@@ -5,10 +5,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { useTheme } from '../contexts/ThemeContext';
 import MapPicker from '../components/MapPicker';
 
-const API_URL = 'https://fishlog-production.up.railway.app';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
 // Liste over danske fisk
 const DANISH_FISH_SPECIES = [
@@ -106,7 +107,144 @@ const BAIT_TYPES = [
   { label: 'Sluk', value: 'Sluk' },
 ];
 
+const useStyles = () => {
+  const { colors } = useTheme();
+  return StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      padding: SPACING.lg,
+      backgroundColor: colors.background,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      padding: SPACING.lg,
+    },
+    loadingText: {
+      fontSize: 18,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 50,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      marginTop: SPACING.lg,
+      marginBottom: SPACING.lg,
+      textAlign: 'center',
+      color: colors.text,
+    },
+    form: {
+      width: '100%',
+      maxWidth: 600,
+      alignSelf: 'center',
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: SPACING.sm,
+      marginTop: SPACING.md,
+    },
+    input: {
+      width: '100%',
+      padding: SPACING.lg,
+      borderRadius: RADIUS.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      fontSize: 16,
+    },
+    textArea: {
+      height: 100,
+      textAlignVertical: 'top',
+    },
+    button: {
+      width: '100%',
+      padding: SPACING.lg,
+      borderRadius: RADIUS.md,
+      marginTop: SPACING.lg,
+      ...SHADOWS.sm,
+    },
+    buttonContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SPACING.sm,
+    },
+    submitButton: {
+      backgroundColor: colors.primary,
+    },
+    cancelButton: {
+      backgroundColor: colors.textSecondary,
+    },
+    buttonDisabled: {
+      backgroundColor: colors.gray400,
+    },
+    buttonText: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    uploadButton: {
+      backgroundColor: colors.textSecondary,
+      marginTop: SPACING.sm,
+    },
+    previewImage: {
+      width: '100%',
+      height: 200,
+      borderRadius: RADIUS.md,
+      marginBottom: SPACING.md,
+    },
+    coordinatesContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      marginTop: SPACING.sm,
+      padding: SPACING.md,
+      backgroundColor: colors.successLight,
+      borderRadius: RADIUS.md,
+      justifyContent: 'center',
+    },
+    coordinatesText: {
+      fontSize: 13,
+      color: colors.text,
+    },
+    visibilityContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: SPACING.sm,
+    },
+    visibilityOption: {
+      flex: 1,
+      padding: SPACING.md,
+      borderRadius: RADIUS.md,
+      backgroundColor: colors.surface,
+      borderWidth: 2,
+      borderColor: colors.border,
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: SPACING.xs,
+    },
+    visibilityOptionSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primaryLight,
+    },
+    visibilityText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    visibilityTextSelected: {
+      color: colors.primary,
+    },
+  });
+};
+
 export default function EditCatchScreen() {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   const params = useLocalSearchParams();
   const catchId = params.id as string;
@@ -277,14 +415,14 @@ export default function EditCatchScreen() {
 
   if (loadingData) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
         <Text style={styles.loadingText}>Indlæser...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Rediger Fangst</Text>
 
@@ -298,11 +436,11 @@ export default function EditCatchScreen() {
               width: '100%',
               padding: 16,
               borderRadius: 8,
-              backgroundColor: 'white',
+              backgroundColor: colors.surface,
               borderWidth: 1,
-              borderColor: '#ddd',
+              borderColor: colors.border,
               fontSize: 16,
-              border: '1px solid #ddd',
+              border: `1px solid ${colors.border}`,
             }}
             disabled={loading}
           >
@@ -351,11 +489,11 @@ export default function EditCatchScreen() {
               width: '100%',
               padding: 16,
               borderRadius: 8,
-              backgroundColor: 'white',
+              backgroundColor: colors.surface,
               borderWidth: 1,
-              borderColor: '#ddd',
+              borderColor: colors.border,
               fontSize: 16,
-              border: '1px solid #ddd',
+              border: `1px solid ${colors.border}`,
             }}
             disabled={loading}
           >
@@ -405,7 +543,7 @@ export default function EditCatchScreen() {
           disabled={loading}
         >
           <View style={styles.buttonContent}>
-            <Ionicons name="camera" size={20} color="white" />
+            <Ionicons name="camera" size={20} color={colors.white} />
             <Text style={styles.buttonText}>
               {selectedImage ? 'Skift Billede' : 'Vælg Billede'}
             </Text>
@@ -432,11 +570,11 @@ export default function EditCatchScreen() {
               width: '100%',
               padding: 16,
               borderRadius: 8,
-              backgroundColor: 'white',
+              backgroundColor: colors.surface,
               borderWidth: 1,
-              borderColor: '#ddd',
+              borderColor: colors.border,
               fontSize: 16,
-              border: '1px solid #ddd',
+              border: `1px solid ${colors.border}`,
             }}
             disabled={loading}
           >
@@ -454,7 +592,7 @@ export default function EditCatchScreen() {
               <Ionicons
                 name="lock-closed"
                 size={18}
-                color={visibility === 'private' ? COLORS.primary : COLORS.textSecondary}
+                color={visibility === 'private' ? colors.primary : colors.textSecondary}
               />
               <Text style={[styles.visibilityText, visibility === 'private' && styles.visibilityTextSelected]}>
                 Privat
@@ -468,7 +606,7 @@ export default function EditCatchScreen() {
               <Ionicons
                 name="people"
                 size={18}
-                color={visibility === 'friends' ? COLORS.primary : COLORS.textSecondary}
+                color={visibility === 'friends' ? colors.primary : colors.textSecondary}
               />
               <Text style={[styles.visibilityText, visibility === 'friends' && styles.visibilityTextSelected]}>
                 Venner
@@ -482,7 +620,7 @@ export default function EditCatchScreen() {
               <Ionicons
                 name="globe"
                 size={18}
-                color={visibility === 'public' ? COLORS.primary : COLORS.textSecondary}
+                color={visibility === 'public' ? colors.primary : colors.textSecondary}
               />
               <Text style={[styles.visibilityText, visibility === 'public' && styles.visibilityTextSelected]}>
                 Offentlig
@@ -502,7 +640,7 @@ export default function EditCatchScreen() {
         />
         {latitude && longitude && (
           <View style={styles.coordinatesContainer}>
-            <Ionicons name="location" size={16} color={COLORS.success} />
+            <Ionicons name="location" size={16} color={colors.success} />
             <Text style={styles.coordinatesText}>
               Valgt position: {latitude.toFixed(5)}, {longitude.toFixed(5)}
             </Text>
@@ -531,135 +669,3 @@ export default function EditCatchScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: SPACING.lg,
-    backgroundColor: COLORS.background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: SPACING.lg,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: 50,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.lg,
-    textAlign: 'center',
-    color: COLORS.text,
-  },
-  form: {
-    width: '100%',
-    maxWidth: 600,
-    alignSelf: 'center',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: SPACING.sm,
-    marginTop: SPACING.md,
-  },
-  input: {
-    width: '100%',
-    padding: SPACING.lg,
-    borderRadius: RADIUS.md,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    fontSize: 16,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  button: {
-    width: '100%',
-    padding: SPACING.lg,
-    borderRadius: RADIUS.md,
-    marginTop: SPACING.lg,
-    ...SHADOWS.sm,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-  },
-  submitButton: {
-    backgroundColor: COLORS.primary,
-  },
-  cancelButton: {
-    backgroundColor: COLORS.textSecondary,
-  },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  uploadButton: {
-    backgroundColor: COLORS.textSecondary,
-    marginTop: SPACING.sm,
-  },
-  previewImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.md,
-  },
-  coordinatesContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginTop: SPACING.sm,
-    padding: SPACING.md,
-    backgroundColor: '#e8f5e9',
-    borderRadius: RADIUS.md,
-    justifyContent: 'center',
-  },
-  coordinatesText: {
-    fontSize: 13,
-    color: COLORS.text,
-  },
-  visibilityContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: SPACING.sm,
-  },
-  visibilityOption: {
-    flex: 1,
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#ddd',
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-  },
-  visibilityOptionSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#e3f2fd',
-  },
-  visibilityText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  visibilityTextSelected: {
-    color: COLORS.primary,
-  },
-});

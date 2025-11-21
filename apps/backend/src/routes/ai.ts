@@ -345,6 +345,107 @@ Vær meget konkret og specifik. Basér dine anbefalinger på biologisk korrekt i
     }
   );
 
+  // Identify fish species from image using AI vision
+  fastify.post(
+    '/ai/identify-species',
+    {
+      preHandler: authenticate,
+      schema: {
+        body: {
+          type: 'object',
+          required: ['imageUrl'],
+          properties: {
+            imageUrl: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { imageUrl } = request.body as { imageUrl: string };
+
+        fastify.log.info('Identifying fish species from image');
+
+        // Get user's Groq API key from profile
+        const user = await prisma.user.findUnique({
+          where: { id: request.user?.userId || '' },
+          select: { groqApiKey: true },
+        });
+
+        const userApiKey = user?.groqApiKey || undefined;
+
+        const groq = getGroqClient(userApiKey);
+
+        // Build vision prompt for species identification
+        const visionPrompt = `Analyser dette billede af en fisk og identificer arten.
+
+VIGTIGE INSTRUKTIONER:
+1. Identificer fiskens art baseret på:
+   - Kropsform og proportioner
+   - Finneplacement og størrelse
+   - Farvemønster og markeringer
+   - Skæltype
+   - Hovedets form
+   - Mundens placering
+
+2. Almindelige danske fiskearter:
+   Gedde, Aborre, Sandart, Ørred, Karpe, Brasen, Helt, Havørred, Torsk, Makrel, Flynder, Skrubbe
+
+3. Svar KUN med det danske artsnavn (f.eks. "Gedde")
+4. Hvis usikker, tilføj "?" efter navnet
+5. Hvis ikke en fisk eller dårlig kvalitet, svar: "Kunne ikke identificere"
+
+Artsnavn:`;
+
+        // Use Groq's model
+        const completion = await groq.chat.completions.create({
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: visionPrompt,
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: imageUrl,
+                  },
+                },
+              ],
+            },
+          ],
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          temperature: 0.2,
+          max_tokens: 30,
+        });
+
+        const identifiedSpecies = completion.choices[0]?.message?.content?.trim() || 'Kunne ikke identificere';
+
+        // Clean up the response - remove quotes, extra whitespace
+        const cleanedSpecies = identifiedSpecies
+          .replace(/["""]/g, '')
+          .replace(/^(Artsnavn:|Art:)\s*/i, '')
+          .trim();
+
+        return {
+          species: cleanedSpecies,
+          confidence: cleanedSpecies.includes('?') ? 'low' : 'high',
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        };
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return {
+          error: 'Failed to identify species',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          species: null,
+        };
+      }
+    }
+  );
+
   // Health check for Groq service
   fastify.get(
     '/ai/health',

@@ -15,7 +15,7 @@ export async function spotsRoutes(fastify: FastifyInstance) {
       }
 
       const { species, season, gridSize = '0.01' } = request.query as {
-        species?: string;
+        species?: string | string[];
         season?: 'spring' | 'summer' | 'fall' | 'winter';
         gridSize?: string;
       };
@@ -26,9 +26,13 @@ export async function spotsRoutes(fastify: FastifyInstance) {
       let paramIndex = 1;
 
       if (species) {
-        conditions.push(`species = $${paramIndex}`);
-        params.push(species);
-        paramIndex++;
+        // Handle multiple species filter
+        const speciesArray = Array.isArray(species) ? species : [species];
+        if (speciesArray.length > 0) {
+          conditions.push(`species = ANY($${paramIndex}::text[])`);
+          params.push(speciesArray);
+          paramIndex++;
+        }
       }
 
       if (season) {
@@ -121,7 +125,7 @@ export async function spotsRoutes(fastify: FastifyInstance) {
       }
 
       const { species, limit = '10' } = request.query as {
-        species?: string;
+        species?: string | string[];
         limit?: string;
       };
 
@@ -130,9 +134,13 @@ export async function spotsRoutes(fastify: FastifyInstance) {
       let paramIndex = 1;
 
       if (species) {
-        conditions.push(`species = $${paramIndex}`);
-        params.push(species);
-        paramIndex++;
+        // Handle multiple species filter
+        const speciesArray = Array.isArray(species) ? species : [species];
+        if (speciesArray.length > 0) {
+          conditions.push(`species = ANY($${paramIndex}::text[])`);
+          params.push(speciesArray);
+          paramIndex++;
+        }
       }
 
       const whereClause = conditions.join(' AND ');

@@ -4,10 +4,10 @@
  */
 
 import { TextStyle, ViewStyle } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from './branding';
+import { COLORS, DARK_COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from './branding';
 
 // Re-export branding constants
-export { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS };
+export { COLORS, DARK_COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS };
 
 /**
  * Common Card Style - Used across all screens
@@ -279,4 +279,31 @@ export const paddings = {
     paddingBottom: SPACING[size]
   }),
   all: (size: keyof typeof SPACING) => ({ padding: SPACING[size] }),
+};
+
+/**
+ * Floating Action Button (FAB) Constants
+ * Consistent positioning across all screens
+ */
+export const FAB = {
+  // Bottom navigation bar is 60px, so 100px above = 160px from bottom
+  BOTTOM_POSITION: 160,
+  SIZE: 56,
+  ICON_SIZE: 28,
+};
+
+/**
+ * FAB Style - Floating Action Button
+ */
+export const FAB_STYLE: ViewStyle = {
+  position: 'absolute',
+  bottom: FAB.BOTTOM_POSITION,
+  right: SPACING.lg,
+  width: FAB.SIZE,
+  height: FAB.SIZE,
+  borderRadius: FAB.SIZE / 2,
+  justifyContent: 'center',
+  alignItems: 'center',
+  ...SHADOWS.lg,
+  elevation: 8,
 };

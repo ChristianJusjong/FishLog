@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 import { badgeService } from '../services/badgeService.js';
+import { awardCatchXP } from '../services/xp-service.js';
 import { startCatchSchema, updateCatchSchema, safeValidate } from '../utils/validation';
 
 const prisma = new PrismaClient();
@@ -320,9 +321,80 @@ export async function catchesRoutes(fastify: FastifyInstance) {
       // Check and award badges for completed catch
       const newBadges = await badgeService.checkAndAwardBadges(request.user!.userId, completedCatch);
 
+      // Award XP for the catch
+      const xpResult = await awardCatchXP(request.user!.userId, {
+        species: completedCatch.species,
+        weightKg: completedCatch.weightKg,
+        released: completedCatch.isReleased || false,
+      });
+
+      // Update or create FiskeDex entry
+      let fiskedexUnlock = null;
+      if (completedCatch.species) {
+        try {
+          // Find the species in the database
+          const speciesRecord = await prisma.species.findUnique({
+            where: { name: completedCatch.species }
+          });
+
+          if (speciesRecord) {
+            // Check if user already has this species
+            const existingEntry = await prisma.fiskeDexEntry.findUnique({
+              where: {
+                userId_speciesId: {
+                  userId: request.user!.userId,
+                  speciesId: speciesRecord.id
+                }
+              }
+            });
+
+            if (!existingEntry) {
+              // First time catching this species - unlock it!
+              fiskedexUnlock = await prisma.fiskeDexEntry.create({
+                data: {
+                  userId: request.user!.userId,
+                  speciesId: speciesRecord.id,
+                  unlockPhotoUrl: completedCatch.photoUrl,
+                  firstCaughtAt: completedCatch.createdAt,
+                  catchCount: 1,
+                  largestLengthCm: completedCatch.lengthCm,
+                  heaviestWeightKg: completedCatch.weightKg,
+                },
+                include: {
+                  species: true
+                }
+              });
+            } else {
+              // Update existing entry with new stats
+              await prisma.fiskeDexEntry.update({
+                where: { id: existingEntry.id },
+                data: {
+                  catchCount: { increment: 1 },
+                  largestLengthCm: completedCatch.lengthCm && (!existingEntry.largestLengthCm || completedCatch.lengthCm > existingEntry.largestLengthCm)
+                    ? completedCatch.lengthCm
+                    : existingEntry.largestLengthCm,
+                  heaviestWeightKg: completedCatch.weightKg && (!existingEntry.heaviestWeightKg || completedCatch.weightKg > existingEntry.heaviestWeightKg)
+                    ? completedCatch.weightKg
+                    : existingEntry.heaviestWeightKg,
+                }
+              });
+            }
+          }
+        } catch (error) {
+          fastify.log.error('Failed to update FiskeDex:', error);
+          // Don't fail the whole request if FiskeDex update fails
+        }
+      }
+
       return reply.send({
         catch: completedCatch,
-        badges: newBadges.length > 0 ? newBadges : undefined
+        badges: newBadges.length > 0 ? newBadges : undefined,
+        xp: xpResult,
+        fiskedexUnlock: fiskedexUnlock ? {
+          species: fiskedexUnlock.species.name,
+          rarity: fiskedexUnlock.species.rarity,
+          description: fiskedexUnlock.species.description,
+        } : undefined,
       });
     } catch (error) {
       fastify.log.error(error);
@@ -616,6 +688,109 @@ export async function catchesRoutes(fastify: FastifyInstance) {
     } catch (error) {
       fastify.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch metadata' });
+    }
+  });
+
+  // Get FiskeDex - user's species collection
+  fastify.get('/catches/fiskedex', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const userId = request.user!.userId;
+
+      // Get all species from the database
+      const allSpecies = await prisma.species.findMany({
+        select: {
+          id: true,
+          name: true,
+          scientificName: true,
+          description: true,
+          rarity: true,
+          habitat: true,
+          minLegalSize: true,
+          imageUrl: true,
+        },
+        orderBy: {
+          name: 'asc'
+        }
+      });
+
+      // Get user's FiskeDex entries
+      const userEntries = await prisma.fiskeDexEntry.findMany({
+        where: {
+          userId
+        },
+        include: {
+          species: true
+        }
+      });
+
+      // Create a map of speciesId to entry for quick lookup
+      const entriesMap = new Map();
+      userEntries.forEach(entry => {
+        entriesMap.set(entry.speciesId, entry);
+      });
+
+      // Build the FiskeDex response
+      const fiskedex = allSpecies.map(species => {
+        const entry = entriesMap.get(species.id);
+
+        return {
+          id: species.id,
+          name: species.name,
+          scientificName: species.scientificName,
+          description: species.description,
+          rarity: species.rarity || 'common',
+          habitat: species.habitat,
+          minLegalSize: species.minLegalSize,
+          imageUrl: species.imageUrl,
+          caught: !!entry,
+          // User-specific stats (only if caught)
+          count: entry?.catchCount || 0,
+          firstCaught: entry?.firstCaughtAt || null,
+          largestLength: entry?.largestLengthCm || null,
+          heaviestWeight: entry?.heaviestWeightKg || null,
+          photo: entry?.unlockPhotoUrl || null,
+        };
+      });
+
+      // Calculate overall stats
+      const totalSpecies = allSpecies.length;
+      const caughtSpecies = fiskedex.filter(s => s.caught).length;
+      const completionRate = totalSpecies > 0 ? (caughtSpecies / totalSpecies) * 100 : 0;
+
+      // Count by rarity
+      const rarityStats = {
+        common: { total: 0, caught: 0 },
+        uncommon: { total: 0, caught: 0 },
+        rare: { total: 0, caught: 0 },
+        very_rare: { total: 0, caught: 0 },
+        legendary: { total: 0, caught: 0 },
+      };
+
+      fiskedex.forEach(species => {
+        const rarity = species.rarity as keyof typeof rarityStats;
+        if (rarityStats[rarity]) {
+          rarityStats[rarity].total++;
+          if (species.caught) {
+            rarityStats[rarity].caught++;
+          }
+        }
+      });
+
+      return {
+        species: fiskedex,
+        stats: {
+          totalSpecies,
+          caughtSpecies,
+          completionRate: Math.round(completionRate),
+          totalCatches: userEntries.reduce((sum, entry) => sum + entry.catchCount, 0),
+          byRarity: rarityStats,
+        }
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to fetch FiskeDex' });
     }
   });
 }

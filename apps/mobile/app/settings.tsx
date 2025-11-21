@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Platform, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Platform, Linking, Switch } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, BUTTON_STYLES, CARD_STYLE } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
+import PageLayout from '../components/PageLayout';
+import WeatherLocationCard from '../components/WeatherLocationCard';
 import i18n from '../i18n';
 
-const API_URL = 'https://fishlog-production.up.railway.app';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { theme, toggleTheme, colors, isDark } = useTheme();
+  const styles = useStyles();
   const [groqApiKey, setGroqApiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [savedKey, setSavedKey] = useState('');
+  const [profileVisibility, setProfileVisibility] = useState('public');
 
   useEffect(() => {
     loadSavedApiKey();
@@ -32,6 +39,9 @@ export default function SettingsScreen() {
         if (userData.groqApiKey) {
           setSavedKey(userData.groqApiKey);
           setGroqApiKey(userData.groqApiKey);
+        }
+        if (userData.profileVisibility) {
+          setProfileVisibility(userData.profileVisibility);
         }
       }
     } catch (error) {
@@ -124,22 +134,48 @@ export default function SettingsScreen() {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{i18n.t('settings.title')}</Text>
-        <View style={{ width: 24 }} />
-      </View>
+  const handleProfileVisibilityChange = async (newVisibility: string) => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/users/me`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          profileVisibility: newVisibility,
+        }),
+      });
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      if (response.ok) {
+        setProfileVisibility(newVisibility);
+        if (Platform.OS === 'web') {
+          alert('Privatlivsindstillinger opdateret');
+        } else {
+          Alert.alert('Succes', 'Privatlivsindstillinger opdateret');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update privacy:', error);
+      if (Platform.OS === 'web') {
+        alert('Kunne ikke opdatere privatlivsindstillinger');
+      } else {
+        Alert.alert('Fejl', 'Kunne ikke opdatere privatlivsindstillinger');
+      }
+    }
+  };
+
+  return (
+    <PageLayout>
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <View style={styles.container}>
+          <WeatherLocationCard />
+          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Groq API Key Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="key" size={24} color={COLORS.primary} style={styles.sectionIcon} />
+            <Ionicons name="key" size={24} color={colors.primary} style={styles.sectionIcon} />
             <Text style={styles.sectionTitle}>{i18n.t('settings.groqApiKey')}</Text>
           </View>
 
@@ -148,13 +184,13 @@ export default function SettingsScreen() {
           </Text>
 
           <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+            <Ionicons name="lock-closed" size={20} color={colors.textSecondary} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               value={groqApiKey}
               onChangeText={setGroqApiKey}
               placeholder={i18n.t('settings.groqApiKeyPlaceholder')}
-              placeholderTextColor={COLORS.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               secureTextEntry={true}
               autoCapitalize="none"
               autoCorrect={false}
@@ -163,7 +199,7 @@ export default function SettingsScreen() {
 
           {savedKey && (
             <View style={styles.savedKeyIndicator}>
-              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} style={{ marginRight: 6 }} />
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} style={{ marginRight: 6 }} />
               <Text style={styles.savedKeyText}>API key gemt</Text>
             </View>
           )}
@@ -173,7 +209,7 @@ export default function SettingsScreen() {
             onPress={handleSaveApiKey}
             disabled={loading}
           >
-            <Ionicons name="save" size={20} color={COLORS.white} style={styles.buttonIcon} />
+            <Ionicons name="save" size={20} color={colors.white} style={styles.buttonIcon} />
             <Text style={styles.saveButtonText}>
               {loading ? 'Gemmer...' : i18n.t('settings.saveApiKey')}
             </Text>
@@ -183,9 +219,9 @@ export default function SettingsScreen() {
         {/* Info Section */}
         <TouchableOpacity style={styles.infoCard} onPress={openGroqConsole} activeOpacity={0.7}>
           <View style={styles.infoHeader}>
-            <Ionicons name="information-circle" size={24} color={COLORS.accent} style={{ marginRight: 8 }} />
+            <Ionicons name="information-circle" size={24} color={colors.accent} style={{ marginRight: 8 }} />
             <Text style={styles.infoTitle}>Sådan får du en Groq API key</Text>
-            <Ionicons name="open-outline" size={20} color={COLORS.accent} style={{ marginLeft: 'auto' }} />
+            <Ionicons name="open-outline" size={20} color={colors.accent} style={{ marginLeft: 'auto' }} />
           </View>
           <Text style={styles.infoText}>
             1. Gå til https://console.groq.com{'\n'}
@@ -195,67 +231,180 @@ export default function SettingsScreen() {
             5. Kopier nøglen og indsæt den her
           </Text>
           <View style={styles.clickHintContainer}>
-            <Ionicons name="hand-left" size={16} color={COLORS.accent} style={{ marginRight: 6 }} />
+            <Ionicons name="hand-left" size={16} color={colors.accent} style={{ marginRight: 6 }} />
             <Text style={styles.clickHintText}>Tryk her for at åbne Groq Console</Text>
           </View>
         </TouchableOpacity>
 
-        {/* Theme Section (placeholder for future) */}
+        {/* Privacy Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="color-palette" size={24} color={COLORS.primary} style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>{i18n.t('settings.theme')}</Text>
+            <Ionicons name="eye" size={24} color={colors.primary} style={styles.sectionIcon} />
+            <Text style={styles.sectionTitle}>Privatliv</Text>
           </View>
-          <Text style={styles.comingSoonText}>Kommer snart...</Text>
+
+          <Text style={styles.sectionDescription}>
+            Vælg hvem der kan se din profil, fangster og FiskeDex.
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.visibilityOption, profileVisibility === 'public' && styles.visibilityOptionActive]}
+            onPress={() => handleProfileVisibilityChange('public')}
+          >
+            <View style={styles.visibilityContent}>
+              <Ionicons
+                name="globe-outline"
+                size={24}
+                color={profileVisibility === 'public' ? colors.primary : colors.textSecondary}
+                style={{ marginRight: SPACING.sm }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.visibilityTitle, profileVisibility === 'public' && styles.visibilityTitleActive]}>
+                  Offentlig
+                </Text>
+                <Text style={styles.visibilityDescription}>
+                  Alle kan se din profil og fangster
+                </Text>
+              </View>
+              {profileVisibility === 'public' && (
+                <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.visibilityOption, profileVisibility === 'friends' && styles.visibilityOptionActive]}
+            onPress={() => handleProfileVisibilityChange('friends')}
+          >
+            <View style={styles.visibilityContent}>
+              <Ionicons
+                name="people-outline"
+                size={24}
+                color={profileVisibility === 'friends' ? colors.primary : colors.textSecondary}
+                style={{ marginRight: SPACING.sm }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.visibilityTitle, profileVisibility === 'friends' && styles.visibilityTitleActive]}>
+                  Kun venner
+                </Text>
+                <Text style={styles.visibilityDescription}>
+                  Kun dine venner kan se din profil
+                </Text>
+              </View>
+              {profileVisibility === 'friends' && (
+                <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.visibilityOption, profileVisibility === 'private' && styles.visibilityOptionActive]}
+            onPress={() => handleProfileVisibilityChange('private')}
+          >
+            <View style={styles.visibilityContent}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={24}
+                color={profileVisibility === 'private' ? colors.primary : colors.textSecondary}
+                style={{ marginRight: SPACING.sm }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.visibilityTitle, profileVisibility === 'private' && styles.visibilityTitleActive]}>
+                  Privat
+                </Text>
+                <Text style={styles.visibilityDescription}>
+                  Kun du kan se din profil
+                </Text>
+              </View>
+              {profileVisibility === 'private' && (
+                <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Theme Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name={isDark ? "moon" : "sunny"} size={24} color={colors.primary} style={styles.sectionIcon} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{i18n.t('settings.theme')}</Text>
+          </View>
+          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+            {isDark ? 'Mørk tilstand aktiveret - skånsomt for øjnene om natten' : 'Lys tilstand aktiveret - optimal læsbarhed om dagen'}
+          </Text>
+          <View style={styles.themeToggleContainer}>
+            <View style={styles.themeOption}>
+              <Ionicons name="sunny" size={20} color={!isDark ? colors.accent : colors.textSecondary} style={{ marginRight: 8 }} />
+              <Text style={[styles.themeOptionText, { color: !isDark ? colors.textPrimary : colors.textSecondary }]}>Lys tilstand</Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: colors.accent }}
+              thumbColor={Platform.OS === 'android' ? colors.white : undefined}
+              ios_backgroundColor={colors.border}
+            />
+            <View style={styles.themeOption}>
+              <Ionicons name="moon" size={20} color={isDark ? colors.accent : colors.textSecondary} style={{ marginRight: 8 }} />
+              <Text style={[styles.themeOptionText, { color: isDark ? colors.textPrimary : colors.textSecondary }]}>Mørk tilstand</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Privacy & Safety Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="shield-checkmark" size={24} color={colors.primary} style={styles.sectionIcon} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Privatliv & Sikkerhed</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.menuItem, { backgroundColor: colors.surface }]}
+            onPress={() => router.push('/blocked-muted-users')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="ban" size={20} color={colors.accent} style={{ marginRight: 12 }} />
+              <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>Blokerede & Lydløse Brugere</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         {/* Language Section (placeholder for future) */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="language" size={24} color={COLORS.primary} style={styles.sectionIcon} />
+            <Ionicons name="language" size={24} color={colors.primary} style={styles.sectionIcon} />
             <Text style={styles.sectionTitle}>{i18n.t('settings.language')}</Text>
           </View>
           <Text style={styles.comingSoonText}>Dansk (standard)</Text>
         </View>
-      </ScrollView>
-    </View>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    </PageLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundLight,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    paddingTop: SPACING.xl,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: {
-    padding: SPACING.xs,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.styles.h1,
-    fontSize: TYPOGRAPHY.fontSize.xl,
-    color: COLORS.textPrimary,
-  },
+const useStyles = () => {
+  const { colors } = useTheme();
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.backgroundLight,
+    },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: SPACING.lg,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   section: {
-    ...CARD_STYLE,
+    backgroundColor: colors.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
     marginBottom: SPACING.lg,
+    ...SHADOWS.md,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -267,21 +416,21 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...TYPOGRAPHY.styles.h2,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   sectionDescription: {
     ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: SPACING.md,
     lineHeight: 22,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: SPACING.md,
     marginBottom: SPACING.md,
   },
@@ -291,7 +440,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...TYPOGRAPHY.styles.body,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     paddingVertical: SPACING.md,
   },
   savedKeyIndicator: {
@@ -301,11 +450,14 @@ const styles = StyleSheet.create({
   },
   savedKeyText: {
     ...TYPOGRAPHY.styles.small,
-    color: COLORS.success,
+    color: colors.success,
     fontWeight: TYPOGRAPHY.fontWeight.medium,
   },
   saveButton: {
-    ...BUTTON_STYLES.accent.container,
+    backgroundColor: colors.accent,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    ...SHADOWS.sm,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -315,15 +467,18 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: {
-    ...BUTTON_STYLES.accent.text,
+    ...TYPOGRAPHY.styles.button,
+    color: colors.white,
   },
   buttonIcon: {
     marginRight: SPACING.xs,
   },
   infoCard: {
-    ...CARD_STYLE,
-    backgroundColor: COLORS.accent + '10',
-    borderColor: COLORS.accent + '30',
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    ...SHADOWS.md,
+    backgroundColor: colors.accent + '10',
+    borderColor: colors.accent + '30',
     borderWidth: 1,
     marginBottom: SPACING.lg,
   },
@@ -334,12 +489,12 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     ...TYPOGRAPHY.styles.h3,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     flex: 1,
   },
   infoText: {
     ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 22,
     marginBottom: SPACING.sm,
   },
@@ -349,16 +504,76 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: SPACING.sm,
     borderTopWidth: 1,
-    borderTopColor: COLORS.accent + '20',
+    borderTopColor: colors.accent + '20',
   },
   clickHintText: {
     ...TYPOGRAPHY.styles.small,
-    color: COLORS.accent,
+    color: colors.accent,
     fontWeight: TYPOGRAPHY.fontWeight.semibold,
   },
   comingSoonText: {
     ...TYPOGRAPHY.styles.body,
-    color: COLORS.textTertiary,
+    color: colors.textTertiary,
     fontStyle: 'italic',
   },
-});
+  themeToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+  },
+  themeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  themeOptionText: {
+    ...TYPOGRAPHY.styles.body,
+    fontWeight: TYPOGRAPHY.fontWeight.medium,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    marginTop: SPACING.sm,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  menuItemText: {
+    ...TYPOGRAPHY.styles.body,
+    fontWeight: TYPOGRAPHY.fontWeight.medium,
+  },
+  visibilityOption: {
+    backgroundColor: colors.backgroundLight,
+    borderRadius: RADIUS.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  visibilityOptionActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
+  },
+  visibilityContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  visibilityTitle: {
+    ...TYPOGRAPHY.styles.h4,
+    color: colors.textPrimary,
+    marginBottom: SPACING.xs,
+  },
+  visibilityTitleActive: {
+    color: colors.primary,
+  },
+  visibilityDescription: {
+    ...TYPOGRAPHY.styles.small,
+    color: colors.textSecondary,
+  },
+  });
+};

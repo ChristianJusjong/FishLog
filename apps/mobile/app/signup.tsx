@@ -4,9 +4,126 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { api } from '../lib/api';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
-import { BUTTON_STYLES, INPUT_STYLE, LABEL_STYLE } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { INPUT_STYLE, LABEL_STYLE } from '@/constants/theme';
+
+const useStyles = () => {
+  const { colors } = useTheme();
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+    },
+    content: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SPACING.xl,
+    },
+    headerSection: {
+      alignItems: 'center',
+      marginBottom: SPACING['2xl'],
+      width: '100%',
+    },
+    backButton: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      padding: SPACING.sm,
+      zIndex: 1,
+    },
+    logoContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: RADIUS.xl,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: SPACING.md,
+    },
+    title: {
+      ...TYPOGRAPHY.styles.h1,
+      fontSize: TYPOGRAPHY.fontSize['3xl'],
+      marginBottom: SPACING.xs,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.styles.body,
+    },
+    formContainer: {
+      width: '100%',
+      maxWidth: 400,
+      marginBottom: SPACING.lg,
+    },
+    inputGroup: {
+      marginBottom: SPACING.md,
+    },
+    label: {
+      ...LABEL_STYLE,
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      ...INPUT_STYLE,
+      paddingLeft: SPACING.md,
+    },
+    inputIcon: {
+      marginRight: SPACING.sm,
+    },
+    input: {
+      flex: 1,
+      fontSize: TYPOGRAPHY.fontSize.base,
+      paddingVertical: SPACING.xs,
+    },
+    eyeIcon: {
+      padding: SPACING.xs,
+    },
+    primaryButton: {
+      backgroundColor: colors.accent,
+      borderRadius: RADIUS.md,
+      padding: SPACING.md,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      ...SHADOWS.sm,
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      marginTop: SPACING.md,
+      minHeight: 52,
+    },
+    primaryButtonText: {
+      ...TYPOGRAPHY.styles.button,
+      color: colors.white,
+    },
+    secondaryButton: {
+      backgroundColor: 'transparent',
+      borderRadius: RADIUS.md,
+      padding: SPACING.md,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      marginTop: SPACING.md,
+      minHeight: 52,
+    },
+    secondaryButtonText: {
+      ...TYPOGRAPHY.styles.button,
+      color: colors.primary,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    info: {
+      ...TYPOGRAPHY.styles.small,
+      textAlign: 'center',
+      paddingHorizontal: SPACING.lg,
+      marginTop: SPACING.lg,
+    },
+  });
+};
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
@@ -17,6 +134,8 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { login } = useAuth();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const router = useRouter();
 
   const handleSignup = async () => {
@@ -50,7 +169,7 @@ export default function SignupScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -67,24 +186,24 @@ export default function SignupScreen() {
                 onPress={() => router.back()}
                 disabled={loading}
               >
-                <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+                <Ionicons name="arrow-back" size={24} color={colors.primary} />
               </TouchableOpacity>
-              <View style={styles.logoContainer}>
-                <Ionicons name="fish" size={48} color={COLORS.primary} />
+              <View style={[styles.logoContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                <Ionicons name="fish" size={48} color={colors.primary} />
               </View>
-              <Text style={styles.title}>Opret konto</Text>
-              <Text style={styles.subtitle}>Kom i gang med Hook</Text>
+              <Text style={[styles.title, { color: colors.primary }]}>Opret konto</Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Kom i gang med Hook</Text>
             </View>
 
             <View style={styles.formContainer}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Fulde navn</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons name="person-outline" size={20} color={COLORS.iconDefault} style={styles.inputIcon} />
+                  <Ionicons name="person-outline" size={20} color={colors.iconDefault} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.text }]}
                     placeholder="Dit fulde navn"
-                    placeholderTextColor={COLORS.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     value={name}
                     onChangeText={setName}
                     autoCapitalize="words"
@@ -96,11 +215,11 @@ export default function SignupScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Email</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons name="mail-outline" size={20} color={COLORS.iconDefault} style={styles.inputIcon} />
+                  <Ionicons name="mail-outline" size={20} color={colors.iconDefault} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.text }]}
                     placeholder="din@email.dk"
-                    placeholderTextColor={COLORS.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
@@ -113,11 +232,11 @@ export default function SignupScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Adgangskode</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons name="lock-closed-outline" size={20} color={COLORS.iconDefault} style={styles.inputIcon} />
+                  <Ionicons name="lock-closed-outline" size={20} color={colors.iconDefault} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.text }]}
                     placeholder="Min. 8 tegn"
-                    placeholderTextColor={COLORS.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
@@ -128,7 +247,7 @@ export default function SignupScreen() {
                     <Ionicons
                       name={showPassword ? "eye-off-outline" : "eye-outline"}
                       size={20}
-                      color={COLORS.iconDefault}
+                      color={colors.iconDefault}
                     />
                   </TouchableOpacity>
                 </View>
@@ -137,11 +256,11 @@ export default function SignupScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Bekræft adgangskode</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons name="lock-closed-outline" size={20} color={COLORS.iconDefault} style={styles.inputIcon} />
+                  <Ionicons name="lock-closed-outline" size={20} color={colors.iconDefault} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.text }]}
                     placeholder="Gentag adgangskode"
-                    placeholderTextColor={COLORS.textTertiary}
+                    placeholderTextColor={colors.textTertiary}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showConfirmPassword}
@@ -152,7 +271,7 @@ export default function SignupScreen() {
                     <Ionicons
                       name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
                       size={20}
-                      color={COLORS.iconDefault}
+                      color={colors.iconDefault}
                     />
                   </TouchableOpacity>
                 </View>
@@ -165,11 +284,11 @@ export default function SignupScreen() {
                 activeOpacity={0.8}
               >
                 {loading ? (
-                  <ActivityIndicator color={COLORS.white} />
+                  <ActivityIndicator color={colors.white} />
                 ) : (
                   <>
                     <Text style={styles.primaryButtonText}>Opret konto</Text>
-                    <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
+                    <Ionicons name="arrow-forward" size={20} color={colors.white} />
                   </>
                 )}
               </TouchableOpacity>
@@ -184,7 +303,7 @@ export default function SignupScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.info}>
+            <Text style={[styles.info, { color: colors.textTertiary }]}>
               Ved at oprette en konto accepterer du vores vilkår og betingelser
             </Text>
           </View>
@@ -193,113 +312,3 @@ export default function SignupScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xl,
-  },
-  headerSection: {
-    alignItems: 'center',
-    marginBottom: SPACING['2xl'],
-    width: '100%',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    padding: SPACING.sm,
-    zIndex: 1,
-  },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: RADIUS.xl,
-    backgroundColor: COLORS.primaryLight + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
-  },
-  title: {
-    ...TYPOGRAPHY.styles.h1,
-    fontSize: TYPOGRAPHY.fontSize['3xl'],
-    color: COLORS.primary,
-    marginBottom: SPACING.xs,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
-  },
-  formContainer: {
-    width: '100%',
-    maxWidth: 400,
-    marginBottom: SPACING.lg,
-  },
-  inputGroup: {
-    marginBottom: SPACING.md,
-  },
-  label: {
-    ...LABEL_STYLE,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    ...INPUT_STYLE,
-    paddingLeft: SPACING.md,
-  },
-  inputIcon: {
-    marginRight: SPACING.sm,
-  },
-  input: {
-    flex: 1,
-    fontSize: TYPOGRAPHY.fontSize.base,
-    color: COLORS.text,
-    paddingVertical: SPACING.xs,
-  },
-  eyeIcon: {
-    padding: SPACING.xs,
-  },
-  primaryButton: {
-    ...BUTTON_STYLES.accent.container,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginTop: SPACING.md,
-    minHeight: 52,
-    ...SHADOWS.md,
-  },
-  primaryButtonText: {
-    ...BUTTON_STYLES.accent.text,
-  },
-  secondaryButton: {
-    ...BUTTON_STYLES.ghost.container,
-    marginTop: SPACING.md,
-    minHeight: 52,
-  },
-  secondaryButtonText: {
-    ...BUTTON_STYLES.ghost.text,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  info: {
-    ...TYPOGRAPHY.styles.small,
-    color: COLORS.textTertiary,
-    textAlign: 'center',
-    paddingHorizontal: SPACING.lg,
-    marginTop: SPACING.lg,
-  },
-});

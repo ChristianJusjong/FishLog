@@ -13,12 +13,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS, FAB } from '@/constants/branding';
-import BottomNavigation from '../components/BottomNavigation';
+import { SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import PageLayout from '../components/PageLayout';
+import WeatherLocationCard from '../components/WeatherLocationCard';
 import { API_URL } from '../config/api';
 import { logger } from '../utils/logger';
-import { authStorage } from '../utils/secureStorage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Group = {
   id: string;
@@ -31,9 +33,296 @@ type Group = {
   role?: 'ADMIN' | 'MEMBER';
 };
 
+const useStyles = () => {
+  const { colors } = useTheme();
+
+  return StyleSheet.create({
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    container: {
+      flexGrow: 1,
+      padding: SPACING.lg,
+      paddingBottom: 100,
+    },
+    section: {
+      marginBottom: SPACING['2xl'],
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      marginBottom: SPACING.md,
+    },
+    sectionTitle: {
+      fontSize: 22,
+      fontWeight: '800',
+      letterSpacing: -0.5,
+    },
+    emptyCard: {
+      padding: SPACING['2xl'],
+      borderRadius: RADIUS.xl,
+      alignItems: 'center',
+      ...SHADOWS.lg,
+    },
+    emptyIconContainer: {
+      width: 64,
+      height: 64,
+      borderRadius: RADIUS.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: SPACING.md,
+    },
+    emptyText: {
+      fontSize: 16,
+      fontWeight: '600',
+      textAlign: 'center',
+      marginBottom: SPACING.xs,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      textAlign: 'center',
+    },
+    groupCard: {
+      borderRadius: RADIUS.xl,
+      marginBottom: SPACING.md,
+      overflow: 'hidden',
+      ...SHADOWS.lg,
+    },
+    groupAccent: {
+      height: 4,
+      width: '100%',
+    },
+    groupContent: {
+      padding: SPACING.md,
+    },
+    groupHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.md,
+    },
+    groupIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    groupTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+      marginBottom: SPACING.xs,
+      flexWrap: 'wrap',
+    },
+    groupName: {
+      fontSize: 17,
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    groupDescription: {
+      fontSize: 13,
+      lineHeight: 18,
+      marginBottom: SPACING.xs,
+    },
+    groupStats: {
+      flexDirection: 'row',
+      gap: SPACING.md,
+    },
+    statItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    statText: {
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    adminBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 3,
+      borderRadius: RADIUS.full,
+    },
+    adminBadgeText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.white,
+    },
+    privateBadge: {
+      width: 20,
+      height: 20,
+      borderRadius: RADIUS.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    groupFooter: {
+      marginTop: SPACING.md,
+      paddingTop: SPACING.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.backgroundLight,
+    },
+    joinButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SPACING.xs,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: RADIUS.full,
+      ...SHADOWS.sm,
+    },
+    joinButtonText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.white,
+    },
+    pendingButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SPACING.xs,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      borderRadius: RADIUS.full,
+    },
+    pendingButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      borderTopLeftRadius: RADIUS.xl,
+      borderTopRightRadius: RADIUS.xl,
+      maxHeight: '80%',
+      backgroundColor: colors.surface,
+      opacity: 1,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: SPACING.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    closeButton: {
+      fontSize: 24,
+      fontWeight: '400',
+    },
+    modalBody: {
+      padding: SPACING.lg,
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: SPACING.sm,
+      color: colors.text,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: RADIUS.md,
+      padding: SPACING.md,
+      fontSize: 16,
+      marginBottom: SPACING.md,
+      backgroundColor: colors.surface,
+      color: colors.text,
+    },
+    textArea: {
+      minHeight: 100,
+      textAlignVertical: 'top',
+    },
+    checkboxContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: SPACING.lg,
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderWidth: 2,
+      borderRadius: 6,
+      marginRight: SPACING.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkboxCheck: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    checkboxLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 4,
+      color: colors.text,
+    },
+    checkboxDescription: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    modalFooter: {
+      flexDirection: 'row',
+      padding: SPACING.lg,
+      gap: SPACING.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    cancelButton: {
+      flex: 1,
+      paddingVertical: SPACING.md,
+      borderRadius: RADIUS.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 52,
+      backgroundColor: colors.backgroundLight,
+    },
+    cancelButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      lineHeight: 22,
+      minHeight: 22,
+      color: colors.textSecondary,
+    },
+    createButton: {
+      flex: 1,
+      paddingVertical: SPACING.md,
+      borderRadius: RADIUS.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 52,
+      backgroundColor: colors.primary,
+    },
+    createButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      lineHeight: 22,
+      minHeight: 22,
+      color: colors.white,
+    },
+  });
+};
+
 export default function GroupsScreen() {
-  const { theme } = useTheme();
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const [loading, setLoading] = useState(true);
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
@@ -49,7 +338,7 @@ export default function GroupsScreen() {
 
   const fetchGroups = async () => {
     try {
-      const accessToken = await authStorage.getToken();
+      const accessToken = await AsyncStorage.getItem('accessToken');
 
       // Fetch my groups
       const myGroupsResponse = await fetch(`${API_URL}/groups/my-groups`, {
@@ -89,7 +378,7 @@ export default function GroupsScreen() {
 
     setCreating(true);
     try {
-      const accessToken = await authStorage.getToken();
+      const accessToken = await AsyncStorage.getItem('accessToken');
 
       const response = await fetch(`${API_URL}/groups`, {
         method: 'POST',
@@ -126,7 +415,7 @@ export default function GroupsScreen() {
 
   const requestMembership = async (groupId: string) => {
     try {
-      const accessToken = await authStorage.getToken();
+      const accessToken = await AsyncStorage.getItem('accessToken');
 
       const response = await fetch(`${API_URL}/groups/${groupId}/request`, {
         method: 'POST',
@@ -150,7 +439,7 @@ export default function GroupsScreen() {
 
   const joinGroup = async (groupId: string) => {
     try {
-      const accessToken = await authStorage.getToken();
+      const accessToken = await AsyncStorage.getItem('accessToken');
 
       const response = await fetch(`${API_URL}/groups/${groupId}/join`, {
         method: 'POST',
@@ -174,130 +463,167 @@ export default function GroupsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.backgroundLight }]}>
-        <ActivityIndicator size="large" color={theme.primary} />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundLight }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.backgroundLight }}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: theme.primary }]}>‹ Tilbage</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Grupper</Text>
-        <View style={styles.backButton} />
-      </SafeAreaView>
+    <PageLayout>
+      <View style={{ flex: 1, backgroundColor: colors.backgroundLight }}>
+        <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.backgroundLight }}>
+          {/* Weather Location Card */}
+          <WeatherLocationCard />
 
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={true}
-      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={true}
+        >
         {/* My Groups Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Mine Grupper</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="people" size={24} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Mine Grupper</Text>
+          </View>
           {myGroups.length === 0 ? (
-            <View style={[styles.emptyCard, { backgroundColor: theme.surface }]}>
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            <View style={[styles.emptyCard, { backgroundColor: colors.white }]}>
+              <View style={[styles.emptyIconContainer, { backgroundColor: colors.primary + '10' }]}>
+                <Ionicons name="people-outline" size={32} color={colors.primary} />
+              </View>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 Du er ikke medlem af nogen grupper endnu
+              </Text>
+              <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>
+                Opret eller tilslut dig en gruppe for at komme i gang
               </Text>
             </View>
           ) : (
             myGroups.map((group) => (
-              <View key={group.id} style={[styles.groupCard, { backgroundColor: theme.surface }]}>
-                <View style={styles.groupHeader}>
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.groupTitleRow}>
-                      <Text style={[styles.groupName, { color: theme.text }]}>{group.name}</Text>
-                      {group.role === 'ADMIN' && (
-                        <View style={[styles.adminBadge, { backgroundColor: theme.accent + '20' }]}>
-                          <Text style={[styles.adminBadgeText, { color: theme.accent }]}>⭐ Admin</Text>
-                        </View>
+              <TouchableOpacity
+                key={group.id}
+                style={[styles.groupCard, { backgroundColor: colors.white }]}
+                onPress={() => router.push(`/group/${group.id}`)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.groupAccent, { backgroundColor: colors.primary }]} />
+                <View style={styles.groupContent}>
+                  <View style={styles.groupHeader}>
+                    <View style={[styles.groupIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                      <Ionicons name="people" size={24} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.groupTitleRow}>
+                        <Text style={[styles.groupName, { color: colors.text }]}>{group.name}</Text>
+                        {group.role === 'ADMIN' && (
+                          <View style={[styles.adminBadge, { backgroundColor: colors.accent }]}>
+                            <Ionicons name="star" size={10} color={colors.white} />
+                            <Text style={styles.adminBadgeText}>Admin</Text>
+                          </View>
+                        )}
+                        {group.isPrivate && (
+                          <View style={[styles.privateBadge, { backgroundColor: colors.warning + '20' }]}>
+                            <Ionicons name="lock-closed" size={10} color={colors.warning} />
+                          </View>
+                        )}
+                      </View>
+                      {group.description && (
+                        <Text style={[styles.groupDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                          {group.description}
+                        </Text>
                       )}
+                      <View style={styles.groupStats}>
+                        <View style={styles.statItem}>
+                          <Ionicons name="people-outline" size={14} color={colors.textTertiary} />
+                          <Text style={[styles.statText, { color: colors.textTertiary }]}>
+                            {group.memberCount} medlemmer
+                          </Text>
+                        </View>
+                      </View>
                     </View>
-                    {group.description && (
-                      <Text style={[styles.groupDescription, { color: theme.textSecondary }]} numberOfLines={2}>
-                        {group.description}
-                      </Text>
-                    )}
+                    <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                   </View>
-                  {group.isPrivate && (
-                    <View style={[styles.privateBadge, { backgroundColor: theme.warning + '20' }]}>
-                      <Text style={[styles.privateBadgeText, { color: theme.warning }]}>🔒 Privat</Text>
-                    </View>
-                  )}
                 </View>
-                <View style={styles.groupFooter}>
-                  <Text style={[styles.memberCount, { color: theme.textSecondary }]}>
-                    👥 {group.memberCount} medlemmer
-                  </Text>
-                </View>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </View>
 
         {/* Available Groups Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Tilgængelige Grupper</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="compass" size={24} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Tilgængelige Grupper</Text>
+          </View>
           {availableGroups.length === 0 ? (
-            <View style={[styles.emptyCard, { backgroundColor: theme.surface }]}>
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            <View style={[styles.emptyCard, { backgroundColor: colors.white }]}>
+              <View style={[styles.emptyIconContainer, { backgroundColor: colors.primary + '10' }]}>
+                <Ionicons name="compass-outline" size={32} color={colors.primary} />
+              </View>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 Ingen tilgængelige grupper
               </Text>
             </View>
           ) : (
             availableGroups.map((group) => (
-              <View key={group.id} style={[styles.groupCard, { backgroundColor: theme.surface }]}>
-                <View style={styles.groupHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.groupName, { color: theme.text }]}>{group.name}</Text>
-                    {group.description && (
-                      <Text style={[styles.groupDescription, { color: theme.textSecondary }]} numberOfLines={2}>
-                        {group.description}
-                      </Text>
+              <View key={group.id} style={[styles.groupCard, { backgroundColor: colors.white }]}>
+                <View style={[styles.groupAccent, { backgroundColor: colors.textTertiary }]} />
+                <View style={styles.groupContent}>
+                  <View style={styles.groupHeader}>
+                    <View style={[styles.groupIconContainer, { backgroundColor: colors.textTertiary + '15' }]}>
+                      <Ionicons name="people-outline" size={24} color={colors.textSecondary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.groupTitleRow}>
+                        <Text style={[styles.groupName, { color: colors.text }]}>{group.name}</Text>
+                        {group.isPrivate && (
+                          <View style={[styles.privateBadge, { backgroundColor: colors.warning + '20' }]}>
+                            <Ionicons name="lock-closed" size={10} color={colors.warning} />
+                          </View>
+                        )}
+                      </View>
+                      {group.description && (
+                        <Text style={[styles.groupDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                          {group.description}
+                        </Text>
+                      )}
+                      <View style={styles.groupStats}>
+                        <View style={styles.statItem}>
+                          <Ionicons name="people-outline" size={14} color={colors.textTertiary} />
+                          <Text style={[styles.statText, { color: colors.textTertiary }]}>
+                            {group.memberCount} medlemmer
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.groupFooter}>
+                    {group.isPending ? (
+                      <View style={[styles.pendingButton, { backgroundColor: colors.textSecondary + '15' }]}>
+                        <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.pendingButtonText, { color: colors.textSecondary }]}>
+                          Afventer godkendelse
+                        </Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.joinButton, { backgroundColor: colors.primary }]}
+                        onPress={() => group.isPrivate ? requestMembership(group.id) : joinGroup(group.id)}
+                      >
+                        <Ionicons name={group.isPrivate ? "mail-outline" : "add-circle-outline"} size={16} color={colors.white} />
+                        <Text style={styles.joinButtonText}>
+                          {group.isPrivate ? 'Anmod om medlemskab' : 'Deltag i gruppe'}
+                        </Text>
+                      </TouchableOpacity>
                     )}
                   </View>
-                  {group.isPrivate && (
-                    <View style={[styles.privateBadge, { backgroundColor: theme.warning + '20' }]}>
-                      <Text style={[styles.privateBadgeText, { color: theme.warning }]}>🔒 Privat</Text>
-                    </View>
-                  )}
-                </View>
-                <View style={styles.groupFooter}>
-                  <Text style={[styles.memberCount, { color: theme.textSecondary }]}>
-                    👥 {group.memberCount} medlemmer
-                  </Text>
-                  {group.isPending ? (
-                    <View style={[styles.pendingButton, { backgroundColor: theme.textSecondary + '20' }]}>
-                      <Text style={[styles.pendingButtonText, { color: theme.textSecondary }]}>Afventer godkendelse</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.joinButton, { backgroundColor: theme.primary }]}
-                      onPress={() => group.isPrivate ? requestMembership(group.id) : joinGroup(group.id)}
-                    >
-                      <Text style={[styles.joinButtonText, { color: theme.textInverse }]}>
-                        {group.isPrivate ? 'Anmod om medlemskab' : 'Deltag'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
               </View>
             ))
           )}
         </View>
-      </ScrollView>
-
-      {/* Floating Create Button */}
-      <TouchableOpacity
-        style={[styles.floatingButton, { backgroundColor: theme.accent }]}
-        onPress={() => setShowCreateModal(true)}
-      >
-        <Text style={styles.floatingButtonText}>+</Text>
-      </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
 
       {/* Create Group Modal */}
       <Modal
@@ -307,31 +633,31 @@ export default function GroupsScreen() {
         onRequestClose={() => setShowCreateModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Opret Gruppe</Text>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Opret Gruppe</Text>
               <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                <Text style={[styles.closeButton, { color: theme.textSecondary }]}>✕</Text>
+                <Text style={[styles.closeButton, { color: colors.textSecondary }]}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
-              <Text style={[styles.label, { color: theme.text }]}>Gruppenavn *</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Gruppenavn *</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: theme.backgroundLight, color: theme.text, borderColor: theme.border }]}
+                style={[styles.input, { backgroundColor: colors.backgroundLight, color: colors.text, borderColor: colors.border }]}
                 value={groupName}
                 onChangeText={setGroupName}
                 placeholder="F.eks. Aalborg Fiskeklub"
-                placeholderTextColor={theme.textTertiary}
+                placeholderTextColor={colors.textTertiary}
               />
 
-              <Text style={[styles.label, { color: theme.text }]}>Beskrivelse</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Beskrivelse</Text>
               <TextInput
-                style={[styles.input, styles.textArea, { backgroundColor: theme.backgroundLight, color: theme.text, borderColor: theme.border }]}
+                style={[styles.input, styles.textArea, { backgroundColor: colors.backgroundLight, color: colors.text, borderColor: colors.border }]}
                 value={groupDescription}
                 onChangeText={setGroupDescription}
                 placeholder="Fortæl om gruppen..."
-                placeholderTextColor={theme.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 multiline
                 numberOfLines={4}
               />
@@ -340,12 +666,12 @@ export default function GroupsScreen() {
                 style={styles.checkboxContainer}
                 onPress={() => setIsPrivate(!isPrivate)}
               >
-                <View style={[styles.checkbox, { borderColor: theme.border }, isPrivate && { backgroundColor: theme.primary }]}>
+                <View style={[styles.checkbox, { borderColor: colors.border }, isPrivate && { backgroundColor: colors.primary }]}>
                   {isPrivate && <Text style={styles.checkboxCheck}>✓</Text>}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.checkboxLabel, { color: theme.text }]}>Privat gruppe</Text>
-                  <Text style={[styles.checkboxDescription, { color: theme.textSecondary }]}>
+                  <Text style={[styles.checkboxLabel, { color: colors.text }]}>Privat gruppe</Text>
+                  <Text style={[styles.checkboxDescription, { color: colors.textSecondary }]}>
                     Kræver godkendelse for at blive medlem
                   </Text>
                 </View>
@@ -354,274 +680,27 @@ export default function GroupsScreen() {
 
             <View style={styles.modalFooter}>
               <TouchableOpacity
-                style={[styles.cancelButton, { backgroundColor: theme.backgroundLight }]}
+                style={[styles.cancelButton, { backgroundColor: colors.backgroundLight }]}
                 onPress={() => setShowCreateModal(false)}
               >
-                <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Annuller</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Annuller</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.createButton, { backgroundColor: theme.primary }]}
+                style={[styles.createButton, { backgroundColor: colors.primary }]}
                 onPress={createGroup}
                 disabled={creating}
               >
                 {creating ? (
-                  <ActivityIndicator size="small" color={theme.textInverse} />
+                  <ActivityIndicator size="small" color={colors.textInverse} />
                 ) : (
-                  <Text style={[styles.createButtonText, { color: theme.textInverse }]}>Opret Gruppe</Text>
+                  <Text style={[styles.createButtonText, { color: colors.textInverse }]}>Opret Gruppe</Text>
                 )}
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-
-      {/* Bottom Navigation */}
-      <BottomNavigation />
-    </View>
+      </View>
+    </PageLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    minWidth: 60,
-  },
-  backButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  container: {
-    flexGrow: 1,
-    padding: SPACING.lg,
-    paddingBottom: 100,
-  },
-  section: {
-    marginBottom: SPACING.xl,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: SPACING.md,
-  },
-  emptyCard: {
-    padding: SPACING.xl,
-    borderRadius: RADIUS.xl,
-    alignItems: 'center',
-    ...SHADOWS.sm,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  groupCard: {
-    padding: SPACING.md,
-    borderRadius: RADIUS.xl,
-    marginBottom: SPACING.md,
-    ...SHADOWS.md,
-  },
-  groupHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.sm,
-  },
-  groupTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
-  groupName: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  groupDescription: {
-    fontSize: 14,
-  },
-  adminBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: RADIUS.full,
-  },
-  adminBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  privateBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
-    marginLeft: SPACING.sm,
-  },
-  privateBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  groupFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  memberCount: {
-    fontSize: 13,
-  },
-  joinButton: {
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.full,
-  },
-  joinButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  pendingButton: {
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.full,
-  },
-  pendingButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  floatingButton: {
-    position: 'absolute',
-    right: FAB.right,
-    bottom: FAB.bottom,
-    width: FAB.size,
-    height: FAB.size,
-    borderRadius: FAB.radius,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.lg,
-    elevation: 8,
-    zIndex: 10,
-  },
-  floatingButtonText: {
-    fontSize: 32,
-    fontWeight: '300',
-    lineHeight: 32,
-    color: '#FFFFFF',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  closeButton: {
-    fontSize: 24,
-    fontWeight: '400',
-  },
-  modalBody: {
-    padding: SPACING.lg,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: SPACING.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    fontSize: 16,
-    marginBottom: SPACING.md,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.lg,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 2,
-    borderRadius: 6,
-    marginRight: SPACING.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxCheck: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  checkboxDescription: {
-    fontSize: 14,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    padding: SPACING.lg,
-    gap: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: 'transparent',
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    lineHeight: 22,
-    minHeight: 22,
-  },
-  createButton: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
-  },
-  createButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    lineHeight: 22,
-    minHeight: 22,
-  },
-});

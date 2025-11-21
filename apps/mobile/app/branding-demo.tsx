@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Stack } from 'expo-router';
 import { Logo, LogoIcon } from '../components/Logo';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   BRANDING,
   COLORS,
@@ -12,7 +13,151 @@ import {
   BUTTON_VARIANTS,
 } from '../constants/branding';
 
+const useStyles = () => {
+  const { colors } = useTheme();
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: SPACING.lg,
+    },
+    section: {
+      marginBottom: SPACING['2xl'],
+    },
+    sectionTitle: {
+      fontSize: TYPOGRAPHY.fontSize['2xl'],
+      fontWeight: TYPOGRAPHY.fontWeight.bold,
+      color: colors.primary,
+      marginBottom: SPACING.md,
+    },
+    subsectionTitle: {
+      fontSize: TYPOGRAPHY.fontSize.lg,
+      fontWeight: TYPOGRAPHY.fontWeight.semibold,
+      color: colors.textSecondary,
+      marginTop: SPACING.md,
+      marginBottom: SPACING.sm,
+    },
+    logoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      padding: SPACING.lg,
+      borderRadius: RADIUS.lg,
+      backgroundColor: colors.surface,
+      marginBottom: SPACING.sm,
+    },
+    logoContainer: {
+      alignItems: 'center',
+    },
+    caption: {
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      color: colors.textSecondary,
+      marginTop: SPACING.xs,
+    },
+    colorRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: SPACING.md,
+    },
+    colorBox: {
+      flex: 1,
+      alignItems: 'center',
+      marginHorizontal: SPACING.xs,
+    },
+    colorSwatch: {
+      width: 60,
+      height: 60,
+      borderRadius: RADIUS.md,
+      marginBottom: SPACING.xs,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    colorLabel: {
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      fontWeight: TYPOGRAPHY.fontWeight.semibold,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    colorValue: {
+      fontSize: TYPOGRAPHY.fontSize.xs,
+      color: colors.textSecondary,
+    },
+    typographyExample: {
+      fontWeight: TYPOGRAPHY.fontWeight.semibold,
+      color: colors.text,
+      marginBottom: SPACING.xs,
+    },
+    button: {
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: RADIUS.md,
+      marginBottom: SPACING.sm,
+      alignItems: 'center',
+    },
+    buttonText: {
+      fontSize: TYPOGRAPHY.fontSize.base,
+      fontWeight: TYPOGRAPHY.fontWeight.semibold,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.lg,
+      padding: SPACING.md,
+      marginBottom: SPACING.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    cardTitle: {
+      fontSize: TYPOGRAPHY.fontSize.lg,
+      fontWeight: TYPOGRAPHY.fontWeight.bold,
+      color: colors.primary,
+      marginBottom: SPACING.xs,
+    },
+    cardBody: {
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      color: colors.textSecondary,
+    },
+    spacingContainer: {
+      flexDirection: 'column',
+      gap: SPACING.sm,
+    },
+    spacingBox: {
+      backgroundColor: colors.accent,
+      height: 40,
+      borderRadius: RADIUS.sm,
+      justifyContent: 'center',
+      paddingLeft: SPACING.sm,
+    },
+    spacingLabel: {
+      fontSize: TYPOGRAPHY.fontSize.xs,
+      fontWeight: TYPOGRAPHY.fontWeight.bold,
+      color: colors.white,
+    },
+    infoCard: {
+      backgroundColor: colors.surface,
+      padding: SPACING.md,
+      borderRadius: RADIUS.md,
+      marginBottom: SPACING.sm,
+    },
+    infoLabel: {
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      fontWeight: TYPOGRAPHY.fontWeight.semibold,
+      color: colors.textSecondary,
+      marginBottom: SPACING.xs,
+    },
+    infoValue: {
+      fontSize: TYPOGRAPHY.fontSize.base,
+      color: colors.text,
+    },
+  });
+};
+
 export default function BrandingDemoScreen() {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: 'FishLog Branding Demo' }} />
@@ -37,17 +182,17 @@ export default function BrandingDemoScreen() {
             </View>
           </View>
 
-          <View style={[styles.logoRow, { backgroundColor: COLORS.primary }]}>
+          <View style={[styles.logoRow, { backgroundColor: colors.primary }]}>
             <View style={styles.logoContainer}>
               <Logo size={64} variant="light" showText={true} />
-              <Text style={[styles.caption, { color: COLORS.white }]}>
+              <Text style={[styles.caption, { color: colors.white }]}>
                 Light (White)
               </Text>
             </View>
 
             <View style={styles.logoContainer}>
               <LogoIcon size={48} variant="color" />
-              <Text style={[styles.caption, { color: COLORS.white }]}>
+              <Text style={[styles.caption, { color: colors.white }]}>
                 Icon Only
               </Text>
             </View>
@@ -275,142 +420,3 @@ export default function BrandingDemoScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SPACING.lg,
-  },
-  section: {
-    marginBottom: SPACING['2xl'],
-  },
-  sectionTitle: {
-    fontSize: TYPOGRAPHY.fontSize['2xl'],
-    fontWeight: TYPOGRAPHY.fontWeight.bold,
-    color: COLORS.primary,
-    marginBottom: SPACING.md,
-  },
-  subsectionTitle: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: TYPOGRAPHY.fontWeight.semibold,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  logoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: SPACING.lg,
-    borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.gray100,
-    marginBottom: SPACING.sm,
-  },
-  logoContainer: {
-    alignItems: 'center',
-  },
-  caption: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-  },
-  colorRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.md,
-  },
-  colorBox: {
-    flex: 1,
-    alignItems: 'center',
-    marginHorizontal: SPACING.xs,
-  },
-  colorSwatch: {
-    width: 60,
-    height: 60,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.xs,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  colorLabel: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    fontWeight: TYPOGRAPHY.fontWeight.semibold,
-    color: COLORS.text,
-    marginBottom: 2,
-  },
-  colorValue: {
-    fontSize: TYPOGRAPHY.fontSize.xs,
-    color: COLORS.textTertiary,
-  },
-  typographyExample: {
-    fontWeight: TYPOGRAPHY.fontWeight.semibold,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  button: {
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.sm,
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: TYPOGRAPHY.fontSize.base,
-    fontWeight: TYPOGRAPHY.fontWeight.semibold,
-  },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  cardTitle: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: TYPOGRAPHY.fontWeight.bold,
-    color: COLORS.primary,
-    marginBottom: SPACING.xs,
-  },
-  cardBody: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.textSecondary,
-  },
-  spacingContainer: {
-    flexDirection: 'column',
-    gap: SPACING.sm,
-  },
-  spacingBox: {
-    backgroundColor: COLORS.accent,
-    height: 40,
-    borderRadius: RADIUS.sm,
-    justifyContent: 'center',
-    paddingLeft: SPACING.sm,
-  },
-  spacingLabel: {
-    fontSize: TYPOGRAPHY.fontSize.xs,
-    fontWeight: TYPOGRAPHY.fontWeight.bold,
-    color: COLORS.white,
-  },
-  infoCard: {
-    backgroundColor: COLORS.surfaceVariant,
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.sm,
-  },
-  infoLabel: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    fontWeight: TYPOGRAPHY.fontWeight.semibold,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
-  },
-  infoValue: {
-    fontSize: TYPOGRAPHY.fontSize.base,
-    color: COLORS.text,
-  },
-});

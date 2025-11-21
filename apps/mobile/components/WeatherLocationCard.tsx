@@ -1,142 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/branding';
-
-interface WeatherData {
-  temperature: number;
-  windSpeed: number;
-  description: string;
-  icon: string;
-}
+import { useRouter } from 'expo-router';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '@/constants/branding';
+import { useWeatherLocation } from '../contexts/WeatherLocationContext';
 
 interface WeatherLocationCardProps {
   showLocation?: boolean;
   showWeather?: boolean;
+  showNotifications?: boolean;
 }
 
 export default function WeatherLocationCard({
   showLocation = true,
-  showWeather = true
+  showWeather = true,
+  showNotifications = true
 }: WeatherLocationCardProps) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [location, setLocation] = useState<string>('Henter placering...');
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getCurrentLocationAndWeather();
-  }, []);
-
-  const getCurrentLocationAndWeather = async () => {
-    try {
-      // Request location permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocation('Placering ikke tilgængelig');
-        setLoading(false);
-        return;
-      }
-
-      // Get current position
-      const position = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = position.coords;
-
-      // Get location name using reverse geocoding
-      const geocode = await Location.reverseGeocodeAsync({
-        latitude,
-        longitude,
-      });
-
-      if (geocode.length > 0) {
-        const address = geocode[0];
-        const city = address.city || address.subregion || address.region;
-        setLocation(city || 'Ukendt placering');
-      }
-
-      // Fetch weather data from Open-Meteo (free, no API key required)
-      try {
-        const weatherResponse = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,wind_speed_10m,weather_code&timezone=auto`
-        );
-
-        if (weatherResponse.ok) {
-          const weatherData = await weatherResponse.json();
-
-          console.log('Open-Meteo API response:', {
-            temp: weatherData.current.temperature_2m,
-            wind: weatherData.current.wind_speed_10m,
-            code: weatherData.current.weather_code,
-          });
-
-          // Map WMO weather codes to icon names
-          const getWeatherIcon = (code: number): string => {
-            if (code === 0) return 'Clear';
-            if (code <= 3) return 'Clouds';
-            if (code >= 51 && code <= 67) return 'Rain';
-            if (code >= 71 && code <= 77) return 'Snow';
-            if (code >= 80 && code <= 82) return 'Rain';
-            if (code >= 95) return 'Thunderstorm';
-            return 'Clouds';
-          };
-
-          // Map WMO weather codes to Danish descriptions
-          const getWeatherDescription = (code: number): string => {
-            if (code === 0) return 'Klart vejr';
-            if (code === 1) return 'Hovedsageligt klart';
-            if (code === 2) return 'Delvist skyet';
-            if (code === 3) return 'Overskyet';
-            if (code >= 51 && code <= 55) return 'Støvregn';
-            if (code >= 61 && code <= 65) return 'Regn';
-            if (code >= 71 && code <= 75) return 'Sne';
-            if (code >= 80 && code <= 82) return 'Regnbyger';
-            if (code >= 95) return 'Tordenvejr';
-            return 'Skyet';
-          };
-
-          const weatherCode = weatherData.current.weather_code;
-          const temp = Math.round(weatherData.current.temperature_2m);
-          // Convert wind speed from km/h to m/s (divide by 3.6)
-          const wind = Math.round(weatherData.current.wind_speed_10m / 3.6);
-          const description = getWeatherDescription(weatherCode);
-          const icon = getWeatherIcon(weatherCode);
-
-          console.log('Processed weather:', { temp, wind, description, icon });
-
-          setWeather({
-            temperature: temp,
-            windSpeed: wind,
-            description: description,
-            icon: icon,
-          });
-        } else {
-          throw new Error('Weather API request failed');
-        }
-      } catch (weatherError) {
-        console.error('Failed to fetch weather data:', weatherError);
-        // Fallback to placeholder data
-        setWeather({
-          temperature: 15,
-          windSpeed: 3,
-          description: 'Vejrdata ikke tilgængelig',
-          icon: 'Clouds',
-        });
-      }
-    } catch (error) {
-      console.error('Error getting location/weather:', error);
-      setLocation('København'); // Fallback
-      setWeather({
-        temperature: 18,
-        windSpeed: 5,
-        description: 'Delvist skyet',
-        icon: 'Clouds',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { location, weather, unreadCount, loading } = useWeatherLocation();
 
   const getWeatherIcon = (iconName: string): keyof typeof Ionicons.glyphMap => {
     switch (iconName) {
@@ -158,14 +41,14 @@ export default function WeatherLocationCard({
 
   if (loading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top + SPACING.md }]}>
+      <View style={[styles.container, { paddingTop: insets.top + SPACING.sm }]}>
         <ActivityIndicator size="small" color="#FFFFFF" />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + SPACING.md }]}>
+    <View style={[styles.container, { paddingTop: insets.top + SPACING.sm }]}>
       {/* Weather Section (Left) */}
       {showWeather && weather && (
         <View style={styles.weatherSection}>
@@ -196,6 +79,26 @@ export default function WeatherLocationCard({
         </View>
       )}
 
+      {/* Center Section - Notifications */}
+      {showNotifications && (
+        <TouchableOpacity
+          style={styles.notificationButton}
+          onPress={() => router.push('/notifications')}
+          accessible={true}
+          accessibilityLabel={`Notifikationer. ${unreadCount} ulæste`}
+          accessibilityRole="button"
+        >
+          <Ionicons name="notifications" size={24} color="#FFFFFF" />
+          {unreadCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      )}
+
       {/* Location Section (Right) */}
       {showLocation && (
         <View style={styles.locationSection}>
@@ -224,7 +127,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
   weatherSection: {
     flex: 1,
@@ -277,5 +180,29 @@ const styles = StyleSheet.create({
     fontSize: 14, // Open Sans Regular, 14px
     fontWeight: '400',
     color: '#FFFFFF',
+  },
+  notificationButton: {
+    position: 'relative',
+    padding: SPACING.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.md,
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

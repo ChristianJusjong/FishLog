@@ -15,14 +15,106 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/branding';
+import { TYPOGRAPHY, SPACING, RADIUS } from '@/constants/branding';
 import { useTheme } from '../contexts/ThemeContext';
 import { API_URL } from '../config/api';
 import { logger } from '../utils/logger';
 
+const useStyles = () => {
+  const { colors } = useTheme();
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    content: {
+      flex: 1,
+      padding: SPACING.lg,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    title: {
+      ...TYPOGRAPHY.styles.h1,
+      marginBottom: SPACING.lg,
+      textAlign: 'center',
+      lineHeight: 32,
+    },
+    description: {
+      ...TYPOGRAPHY.styles.body,
+      textAlign: 'center',
+      marginBottom: SPACING.xl,
+      paddingHorizontal: SPACING.md,
+      lineHeight: 24,
+    },
+    cameraButton: {
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl * 2,
+      borderRadius: RADIUS.full,
+      marginBottom: SPACING.md,
+      minWidth: 200,
+    },
+    cameraButtonText: {
+      fontSize: 20,
+      fontWeight: '700',
+      textAlign: 'center',
+      lineHeight: 28,
+    },
+    cancelButton: {
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.xl,
+    },
+    cancelButtonText: {
+      fontSize: 16,
+      fontWeight: '400',
+      lineHeight: 22,
+    },
+    infoBox: {
+      marginTop: SPACING.xl * 2,
+      padding: SPACING.md,
+      borderRadius: RADIUS.lg,
+      borderLeftWidth: 4,
+    },
+    infoTitle: {
+      ...TYPOGRAPHY.styles.h3,
+      marginBottom: SPACING.sm,
+      lineHeight: 24,
+    },
+    infoText: {
+      ...TYPOGRAPHY.styles.small,
+      lineHeight: 22,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SPACING.xl,
+    },
+    previewImage: {
+      width: '100%',
+      height: 300,
+      borderRadius: RADIUS.lg,
+      marginBottom: SPACING.xl,
+    },
+    spinner: {
+      marginBottom: SPACING.md,
+    },
+    statusText: {
+      ...TYPOGRAPHY.styles.h2,
+      marginBottom: SPACING.md,
+      textAlign: 'center',
+      lineHeight: 28,
+    },
+    subtext: {
+      ...TYPOGRAPHY.styles.body,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+  });
+};
+
 export default function CameraCaptureScreen() {
   const router = useRouter();
-  const { theme } = useTheme();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('Klar til at tage billede');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -182,38 +274,38 @@ export default function CameraCaptureScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
           {capturedImage && (
             <Image source={{ uri: capturedImage }} style={styles.previewImage} />
           )}
-          <ActivityIndicator size="large" color={theme.primary} style={styles.spinner} />
-          <Text style={[styles.statusText, { color: theme.text }]}>{status}</Text>
-          <Text style={[styles.subtext, { color: theme.textSecondary }]}>Vent venligst...</Text>
+          <ActivityIndicator size="large" color={colors.primary} style={styles.spinner} />
+          <Text style={[styles.statusText, { color: colors.text }]}>{status}</Text>
+          <Text style={[styles.subtext, { color: colors.textSecondary }]}>Vent venligst...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.backgroundLight }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
-        <Text style={[styles.title, { color: theme.text }]}>📸 Tag billede af fangst</Text>
-        <Text style={[styles.description, { color: theme.textSecondary }]}>
+        <Text style={[styles.title, { color: colors.text }]}>📸 Tag billede af fangst</Text>
+        <Text style={[styles.description, { color: colors.textSecondary }]}>
           For at logge en fangst skal du først tage et billede. Billedet og GPS-koordinater bliver låst efter upload.
         </Text>
 
-        <TouchableOpacity style={[styles.cameraButton, { backgroundColor: theme.primary }]} onPress={openCamera}>
-          <Text style={[styles.cameraButtonText, { color: theme.textInverse }]}>🎣 Åbn kamera</Text>
+        <TouchableOpacity style={[styles.cameraButton, { backgroundColor: colors.primary }]} onPress={openCamera}>
+          <Text style={[styles.cameraButtonText, { color: colors.white }]}>🎣 Åbn kamera</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
-          <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Annuller</Text>
+          <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Annuller</Text>
         </TouchableOpacity>
 
-        <View style={[styles.infoBox, { backgroundColor: theme.surface, borderLeftColor: theme.accent }]}>
-          <Text style={[styles.infoTitle, { color: theme.text }]}>📍 Vigtigt:</Text>
-          <Text style={[styles.infoText, { color: theme.textSecondary }]}>
+        <View style={[styles.infoBox, { backgroundColor: colors.surface, borderLeftColor: colors.accent }]}>
+          <Text style={[styles.infoTitle, { color: colors.text }]}>📍 Vigtigt:</Text>
+          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
             • Billede og GPS-koordinater kan ikke ændres efter upload{'\n'}
             • Du kan udfylde fangstdata bagefter{'\n'}
             • Gem som kladde hvis du ikke er færdig
@@ -223,91 +315,3 @@ export default function CameraCaptureScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: SPACING.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    ...TYPOGRAPHY.styles.h1,
-    marginBottom: SPACING.lg,
-    textAlign: 'center',
-    lineHeight: 32,
-  },
-  description: {
-    ...TYPOGRAPHY.styles.body,
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
-    paddingHorizontal: SPACING.md,
-    lineHeight: 24,
-  },
-  cameraButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl * 2,
-    borderRadius: RADIUS.full,
-    marginBottom: SPACING.md,
-    minWidth: 200,
-  },
-  cameraButtonText: {
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
-    lineHeight: 28,
-  },
-  cancelButton: {
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.xl,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '400',
-    lineHeight: 22,
-  },
-  infoBox: {
-    marginTop: SPACING.xl * 2,
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
-    borderLeftWidth: 4,
-  },
-  infoTitle: {
-    ...TYPOGRAPHY.styles.h3,
-    marginBottom: SPACING.sm,
-    lineHeight: 24,
-  },
-  infoText: {
-    ...TYPOGRAPHY.styles.small,
-    lineHeight: 22,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xl,
-  },
-  previewImage: {
-    width: '100%',
-    height: 300,
-    borderRadius: RADIUS.lg,
-    marginBottom: SPACING.xl,
-  },
-  spinner: {
-    marginBottom: SPACING.md,
-  },
-  statusText: {
-    ...TYPOGRAPHY.styles.h2,
-    marginBottom: SPACING.md,
-    textAlign: 'center',
-    lineHeight: 28,
-  },
-  subtext: {
-    ...TYPOGRAPHY.styles.body,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-});

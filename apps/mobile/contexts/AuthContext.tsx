@@ -37,9 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Token from storage:', token ? 'exists' : 'none');
 
       if (token) {
-        // Race between API call and 5 second timeout
+        // Race between API call and 10 second timeout (allow time for token refresh)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Auth check timeout')), 5000)
+          setTimeout(() => reject(new Error('Auth check timeout')), 10000)
         );
 
         const apiPromise = authService.getProfile();

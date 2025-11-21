@@ -16,7 +16,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cjusjong.hook"
+      "bundleIdentifier": "com.cjusjong.hook",
+      "associatedDomains": [
+        "applinks:fishlog-production.up.railway.app"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -31,6 +34,25 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "fishlog-production.up.railway.app"
+            },
+            {
+              "scheme": "hook"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {
@@ -42,6 +64,16 @@
         "projectId": "8ce0ad2d-4480-47d3-a79c-01c04a080c42"
       }
     },
-    "owner": "cjusjong"
+    "owner": "cjusjong",
+    "plugins": [
+      "expo-router",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ]
+    ]
   }
 }

@@ -84,6 +84,78 @@ export const COLORS = {
 } as const;
 
 /**
+ * Dark Mode Color Palette - Dark Green Theme
+ * Carefully selected dark green nuances for optimal readability in dark environments
+ */
+export const DARK_COLORS = {
+  // Primary Colors - Brighter for visibility on dark
+  primary: '#3D7A66',        // Lighter forest green for dark mode
+  primaryLight: '#4A9177',   // Even lighter
+  primaryDark: '#2C5F4F',    // Original primary as dark variant
+
+  // Accent Colors - Same brightness works well on dark
+  accent: '#F49563',         // Slightly brighter orange
+  accentLight: '#FFA876',    // Lighter warm orange
+  accentDark: '#E8773D',     // Original accent
+
+  // Background Colors - Dark green natural tones
+  background: '#0A1410',     // Very dark green (almost black)
+  backgroundLight: '#0F1F18', // Slightly lighter dark green
+  backgroundDark: '#050A08', // Nearly black green for deeper sections
+
+  // Surface Colors - Elevated dark green surfaces
+  surface: '#152820',        // Dark green surface
+  surfaceVariant: '#1A3028', // Lighter dark green variant
+
+  // Text Colors - Light colors for dark backgrounds
+  text: '#E8F0ED',           // Off-white with slight green tint
+  textPrimary: '#E8F0ED',    // Primary text
+  textSecondary: '#A8C1B8',  // Light green-gray
+  textTertiary: '#7B9488',   // Dimmer green-gray
+  textInverse: '#1A1A1A',    // Dark text for light backgrounds
+
+  // Icon Colors
+  iconDefault: '#7B9488',    // Muted green-gray for inactive icons
+  iconActive: '#F49563',     // Bright orange for active icons
+
+  // Neutral Colors - Dark green tinted grays
+  white: '#FFFFFF',
+  black: '#000000',
+  gray100: '#1A2820',        // Darkest with green tint
+  gray200: '#223830',
+  gray300: '#2A4838',
+  gray400: '#3D5F50',
+  gray500: '#5A7968',
+  gray600: '#8FA89E',
+  gray700: '#B8CFC5',
+  gray800: '#D4E3DC',
+  gray900: '#E8F0ED',        // Lightest with green tint
+
+  // Secondary Colors - Adjusted for dark mode
+  secondary: '#7DB4C2',      // Brighter water blue
+  secondaryLight: '#96C7D3',
+  secondaryDark: '#5B9AAA',
+
+  // Nature Colors - Adjusted brightness
+  forest: '#3D7A66',         // Brighter forest green
+  sand: '#D4C4AC',           // Softer sand
+  water: '#7DB4C2',          // Brighter water
+  moss: '#8FAA88',           // Lighter moss
+  sky: '#B8DDE8',            // Lighter sky
+  earth: '#A08970',          // Lighter earth
+
+  // Semantic Colors - Adjusted for dark backgrounds
+  success: '#66BB6A',        // Brighter green
+  warning: '#FFB74D',        // Brighter amber
+  error: '#EF5350',          // Keep same (works well)
+  info: '#7DB4C2',           // Brighter blue
+
+  // Border Colors - Dark green tinted borders
+  border: '#2A4838',         // Dark green border
+  borderDark: '#3D5F50',     // Slightly lighter dark green border
+} as const;
+
+/**
  * Typography
  *
  * Font Familie: Open Sans (eller Roboto som fallback)

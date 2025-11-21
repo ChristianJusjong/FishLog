@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { useTheme } from '../../contexts/ThemeContext';
 
-const API_URL = 'https://fishlog-production.up.railway.app';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
 type Contest = {
   id: string;
@@ -62,7 +64,194 @@ type Leaderboard = {
   leaderboard: LeaderboardEntry[];
 };
 
+const useStyles = () => {
+  const { colors } = useTheme();
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.backgroundLight,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    header: {
+      backgroundColor: colors.surface,
+      padding: 20,
+      paddingTop: 60,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    headerTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 12,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.text,
+      flex: 1,
+    },
+    statusBadge: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 6,
+      marginLeft: 12,
+    },
+    statusText: {
+      color: colors.white,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    description: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      lineHeight: 24,
+      marginBottom: 16,
+    },
+    infoSection: {
+      gap: 8,
+    },
+    infoText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    section: {
+      backgroundColor: colors.surface,
+      padding: 20,
+      marginTop: 12,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    contestCard: {
+      backgroundColor: colors.backgroundLight,
+      padding: 12,
+      borderRadius: 8,
+      marginBottom: 8,
+    },
+    contestRule: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    contestFilter: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    leaderboardSection: {
+      marginBottom: 20,
+    },
+    leaderboardTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    leaderboardEntry: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 12,
+      backgroundColor: colors.backgroundLight,
+      borderRadius: 8,
+      marginBottom: 8,
+    },
+    leaderboardLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    rank: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.primary,
+      width: 40,
+    },
+    userName: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    leaderboardRight: {
+      alignItems: 'flex-end',
+    },
+    score: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.success,
+    },
+    catchCount: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    participantCard: {
+      padding: 12,
+      backgroundColor: colors.backgroundLight,
+      borderRadius: 8,
+      marginBottom: 8,
+    },
+    participantName: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: colors.text,
+    },
+    emptyText: {
+      fontSize: 14,
+      color: colors.textTertiary,
+      textAlign: 'center',
+      padding: 20,
+    },
+    footer: {
+      flexDirection: 'row',
+      padding: 16,
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: 12,
+    },
+    joinButton: {
+      flex: 1,
+      backgroundColor: colors.success,
+      padding: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    leaveButton: {
+      backgroundColor: colors.error,
+    },
+    disabledButton: {
+      opacity: 0.6,
+    },
+    joinButtonText: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    leaderboardButton: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      padding: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    leaderboardButtonText: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
+};
+
 export default function EventDetailsScreen() {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [event, setEvent] = useState<Event | null>(null);
@@ -185,15 +374,15 @@ export default function EventDetailsScreen() {
     const start = new Date(startAt);
     const end = new Date(endAt);
 
-    if (now < start) return { label: 'Kommende', color: '#007AFF' };
-    if (now >= start && now <= end) return { label: 'I gang', color: '#28a745' };
-    return { label: 'Afsluttet', color: '#6c757d' };
+    if (now < start) return { label: 'Kommende', color: colors.primary };
+    if (now >= start && now <= end) return { label: 'I gang', color: colors.success };
+    return { label: 'Afsluttet', color: colors.gray600 };
   };
 
   if (loading || !event) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -325,184 +514,3 @@ export default function EventDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    backgroundColor: 'white',
-    padding: 20,
-    paddingTop: 60,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginLeft: 12,
-  },
-  statusText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  description: {
-    fontSize: 16,
-    color: '#666',
-    lineHeight: 24,
-    marginBottom: 16,
-  },
-  infoSection: {
-    gap: 8,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#555',
-  },
-  section: {
-    backgroundColor: 'white',
-    padding: 20,
-    marginTop: 12,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  contestCard: {
-    backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  contestRule: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  contestFilter: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  leaderboardSection: {
-    marginBottom: 20,
-  },
-  leaderboardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  leaderboardEntry: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  leaderboardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  rank: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    width: 40,
-  },
-  userName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
-  leaderboardRight: {
-    alignItems: 'flex-end',
-  },
-  score: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#28a745',
-  },
-  catchCount: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  participantCard: {
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  participantName: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#333',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    padding: 20,
-  },
-  footer: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    gap: 12,
-  },
-  joinButton: {
-    flex: 1,
-    backgroundColor: '#28a745',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  leaveButton: {
-    backgroundColor: '#dc3545',
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  joinButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  leaderboardButton: {
-    flex: 1,
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  leaderboardButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

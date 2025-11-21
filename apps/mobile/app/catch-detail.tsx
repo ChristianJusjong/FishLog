@@ -3,10 +3,272 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Pla
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { useTheme } from '../contexts/ThemeContext';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import MapPicker from '../components/MapPicker';
+import { shareCatchToSocial, shareViaDialog } from '@/lib/socialShare';
 
-const API_URL = 'https://fishlog-production.up.railway.app';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+
+const useStyles = () => {
+  const { colors } = useTheme();
+
+  return StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      backgroundColor: colors.backgroundLight,
+    },
+    backButton: {
+      alignSelf: 'flex-start',
+      margin: SPACING.md,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.md,
+    },
+    backButtonText: {
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    loadingText: {
+      fontSize: TYPOGRAPHY.fontSize.lg,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: SPACING['2xl'],
+    },
+    errorText: {
+      fontSize: TYPOGRAPHY.fontSize.lg,
+      color: colors.error,
+      textAlign: 'center',
+      marginTop: SPACING['2xl'],
+    },
+    userHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: SPACING.md,
+      backgroundColor: colors.surface,
+    },
+    userInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    userAvatar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      marginRight: SPACING.md,
+    },
+    userName: {
+      fontSize: TYPOGRAPHY.fontSize.lg,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    catchDate: {
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    visibilityBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundLight,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.xs,
+      borderRadius: RADIUS.lg,
+    },
+    visibilityText: {
+      fontSize: TYPOGRAPHY.fontSize.xs,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    catchImageLarge: {
+      width: '100%',
+      height: 400,
+      maxHeight: Dimensions.get('window').height * 0.5,
+      backgroundColor: colors.backgroundLight,
+    },
+    catchContent: {
+      backgroundColor: colors.surface,
+      padding: SPACING.lg,
+      marginTop: 1,
+    },
+    catchSpecies: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: SPACING.md,
+    },
+    catchDetailsRow: {
+      flexDirection: 'row',
+      marginBottom: 20,
+      gap: 12,
+    },
+    statBox: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      padding: 16,
+      borderRadius: RADIUS.lg,
+      alignItems: 'center',
+      ...SHADOWS.sm,
+    },
+    statLabel: {
+      fontSize: TYPOGRAPHY.fontSize.xs,
+      color: colors.textSecondary,
+      marginBottom: SPACING.xs,
+      textTransform: 'uppercase',
+      fontWeight: '600',
+    },
+    statValue: {
+      fontSize: TYPOGRAPHY.fontSize.lg,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: SPACING.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    infoLabel: {
+      fontSize: TYPOGRAPHY.fontSize.base,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      width: 100,
+    },
+    infoValue: {
+      fontSize: TYPOGRAPHY.fontSize.base,
+      color: colors.text,
+      flex: 1,
+    },
+    notesContainer: {
+      marginTop: SPACING.lg,
+      padding: SPACING.md,
+      backgroundColor: colors.backgroundLight,
+      borderRadius: RADIUS.lg,
+    },
+    notesLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    notesText: {
+      fontSize: TYPOGRAPHY.fontSize.base,
+      color: colors.text,
+      lineHeight: 24,
+    },
+    mapContainer: {
+      marginTop: SPACING.lg,
+    },
+    mapLabel: {
+      fontSize: TYPOGRAPHY.fontSize.base,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: SPACING.md,
+    },
+    map: {
+      width: '100%',
+      height: 300,
+      borderRadius: RADIUS.lg,
+    },
+    mapPlaceholder: {
+      width: '100%',
+      height: 200,
+      backgroundColor: colors.backgroundLight,
+      borderRadius: RADIUS.lg,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SPACING.lg,
+    },
+    mapPlaceholderText: {
+      fontSize: TYPOGRAPHY.fontSize.base,
+      color: colors.textSecondary,
+      marginBottom: SPACING.sm,
+    },
+    coordinatesText: {
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      color: colors.text,
+    },
+    debugText: {
+      fontSize: TYPOGRAPHY.fontSize.xs,
+      color: colors.textTertiary,
+      marginBottom: SPACING.sm,
+      fontFamily: 'monospace',
+    },
+    actionButtons: {
+      flexDirection: 'row',
+      padding: 20,
+      gap: 12,
+    },
+    button: {
+      flex: 1,
+      flexDirection: 'row',
+      padding: 16,
+      borderRadius: RADIUS.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOWS.sm,
+    },
+    editButton: {
+      backgroundColor: colors.primary,
+    },
+    shareButton: {
+      backgroundColor: colors.accent,
+    },
+    deleteButton: {
+      backgroundColor: colors.error,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    buttonText: {
+      ...TYPOGRAPHY.styles.button,
+    },
+    weatherContainer: {
+      marginTop: 20,
+      padding: 16,
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.lg,
+      ...SHADOWS.sm,
+    },
+    weatherTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    weatherGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    weatherItem: {
+      width: '48%',
+      backgroundColor: colors.backgroundLight,
+      padding: 12,
+      borderRadius: RADIUS.md,
+      alignItems: 'center',
+    },
+    weatherLabel: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginTop: 4,
+      marginBottom: 2,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+    },
+    weatherValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      textAlign: 'center',
+    },
+  });
+};
 
 interface User {
   id: string;
@@ -20,6 +282,18 @@ interface Comment {
   text: string;
   createdAt: string;
   user: User;
+}
+
+interface WeatherData {
+  id: string;
+  temperature?: number;
+  windSpeed?: number;
+  windDirection?: string;
+  pressure?: number;
+  humidity?: number;
+  conditions?: string;
+  moonPhase?: string;
+  tideState?: string;
 }
 
 interface Catch {
@@ -45,16 +319,22 @@ interface Catch {
 
 export default function CatchDetailScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const params = useLocalSearchParams();
   const catchId = params.id as string;
 
   const [catchData, setCatchData] = useState<Catch | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [loadingWeather, setLoadingWeather] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     fetchCatchDetail();
     fetchCurrentUser();
+    fetchWeatherData();
   }, [catchId]);
 
   const fetchCurrentUser = async () => {
@@ -115,6 +395,48 @@ export default function CatchDetailScreen() {
     }
   };
 
+  const fetchWeatherData = async () => {
+    setLoadingWeather(true);
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/weather/${catchId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setWeatherData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch weather data:', error);
+    } finally {
+      setLoadingWeather(false);
+    }
+  };
+
+  const handleShareCatch = async () => {
+    if (!catchData) return;
+
+    setSharing(true);
+    try {
+      await shareViaDialog(catchData.id, {
+        species: catchData.species,
+        lengthCm: catchData.lengthCm,
+        weightKg: catchData.weightKg,
+        photoUrl: catchData.photoUrl,
+        date: new Date(catchData.createdAt).toLocaleDateString('da-DK'),
+        userName: catchData.user.name,
+      });
+    } catch (error) {
+      console.error('Share error:', error);
+      Alert.alert('Fejl', 'Kunne ikke dele fangst');
+    } finally {
+      setSharing(false);
+    }
+  };
+
   const deleteCatch = async () => {
     const confirmed = Platform.OS === 'web'
       ? window.confirm('Er du sikker på, at du vil slette denne fangst?')
@@ -169,7 +491,7 @@ export default function CatchDetailScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Indlæser fangst...</Text>
       </View>
     );
@@ -218,7 +540,7 @@ export default function CatchDetailScreen() {
                 'globe'
               }
               size={14}
-              color={COLORS.textSecondary}
+              color={colors.textSecondary}
               style={{ marginRight: 4 }}
             />
             <Text style={styles.visibilityText}>
@@ -246,37 +568,93 @@ export default function CatchDetailScreen() {
         <View style={styles.catchDetailsRow}>
           {catchData.lengthCm && (
             <View style={styles.statBox}>
-              <Ionicons name="resize" size={20} color={COLORS.primary} />
+              <Ionicons name="resize" size={20} color={colors.primary} />
               <Text style={styles.statLabel}>Længde</Text>
               <Text style={styles.statValue}>{catchData.lengthCm} cm</Text>
             </View>
           )}
           {catchData.weightKg && (
             <View style={styles.statBox}>
-              <Ionicons name="scale-outline" size={20} color={COLORS.primary} />
+              <Ionicons name="scale-outline" size={20} color={colors.primary} />
               <Text style={styles.statLabel}>Vægt</Text>
               <Text style={styles.statValue}>{Math.round(catchData.weightKg * 1000)} g</Text>
             </View>
           )}
         </View>
 
+        {/* Weather Information */}
+        {weatherData && (
+          <View style={styles.weatherContainer}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Ionicons name="partly-sunny" size={20} color={colors.primary} style={{ marginRight: 6 }} />
+              <Text style={styles.weatherTitle}>Vejrforhold</Text>
+            </View>
+            <View style={styles.weatherGrid}>
+              {weatherData.temperature !== undefined && (
+                <View style={styles.weatherItem}>
+                  <Ionicons name="thermometer" size={20} color="#F59E0B" />
+                  <Text style={styles.weatherLabel}>Temperatur</Text>
+                  <Text style={styles.weatherValue}>{Math.round(weatherData.temperature)}°C</Text>
+                </View>
+              )}
+              {weatherData.windSpeed !== undefined && (
+                <View style={styles.weatherItem}>
+                  <Ionicons name="flag" size={20} color="#3B82F6" />
+                  <Text style={styles.weatherLabel}>Vind</Text>
+                  <Text style={styles.weatherValue}>
+                    {Math.round(weatherData.windSpeed)} m/s {weatherData.windDirection}
+                  </Text>
+                </View>
+              )}
+              {weatherData.humidity !== undefined && (
+                <View style={styles.weatherItem}>
+                  <Ionicons name="water" size={20} color="#06B6D4" />
+                  <Text style={styles.weatherLabel}>Fugtighed</Text>
+                  <Text style={styles.weatherValue}>{weatherData.humidity}%</Text>
+                </View>
+              )}
+              {weatherData.pressure !== undefined && (
+                <View style={styles.weatherItem}>
+                  <Ionicons name="speedometer" size={20} color="#8B5CF6" />
+                  <Text style={styles.weatherLabel}>Tryk</Text>
+                  <Text style={styles.weatherValue}>{weatherData.pressure} hPa</Text>
+                </View>
+              )}
+              {weatherData.moonPhase && (
+                <View style={styles.weatherItem}>
+                  <Ionicons name="moon" size={20} color="#A855F7" />
+                  <Text style={styles.weatherLabel}>Månefase</Text>
+                  <Text style={styles.weatherValue}>{weatherData.moonPhase}</Text>
+                </View>
+              )}
+              {weatherData.conditions && (
+                <View style={styles.weatherItem}>
+                  <Ionicons name="cloud" size={20} color="#9CA3AF" />
+                  <Text style={styles.weatherLabel}>Forhold</Text>
+                  <Text style={styles.weatherValue}>{weatherData.conditions}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         {catchData.bait && (
           <View style={styles.infoRow}>
-            <Ionicons name="bug" size={18} color={COLORS.textSecondary} style={{ marginRight: 8 }} />
+            <Ionicons name="bug" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
             <Text style={styles.infoLabel}>Agn:</Text>
             <Text style={styles.infoValue}>{catchData.bait}</Text>
           </View>
         )}
         {catchData.rig && (
           <View style={styles.infoRow}>
-            <Ionicons name="fish-outline" size={18} color={COLORS.textSecondary} style={{ marginRight: 8 }} />
+            <Ionicons name="fish-outline" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
             <Text style={styles.infoLabel}>Forfang:</Text>
             <Text style={styles.infoValue}>{catchData.rig}</Text>
           </View>
         )}
         {catchData.technique && (
           <View style={styles.infoRow}>
-            <Ionicons name="flag" size={18} color={COLORS.textSecondary} style={{ marginRight: 8 }} />
+            <Ionicons name="flag" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
             <Text style={styles.infoLabel}>Teknik:</Text>
             <Text style={styles.infoValue}>{catchData.technique}</Text>
           </View>
@@ -285,7 +663,7 @@ export default function CatchDetailScreen() {
         {catchData.notes && (
           <View style={styles.notesContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <Ionicons name="document-text" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
+              <Ionicons name="document-text" size={18} color={colors.primary} style={{ marginRight: 6 }} />
               <Text style={styles.notesLabel}>Noter</Text>
             </View>
             <Text style={styles.notesText}>{catchData.notes}</Text>
@@ -296,7 +674,7 @@ export default function CatchDetailScreen() {
         {catchData.latitude && catchData.longitude ? (
           <View style={styles.mapContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <Ionicons name="location" size={20} color={COLORS.primary} style={{ marginRight: 6 }} />
+              <Ionicons name="location" size={20} color={colors.primary} style={{ marginRight: 6 }} />
               <Text style={styles.mapLabel}>Fangststed</Text>
             </View>
             <Text style={styles.debugText}>
@@ -312,7 +690,7 @@ export default function CatchDetailScreen() {
         ) : (
           <View style={styles.mapContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <Ionicons name="location" size={20} color={COLORS.textSecondary} style={{ marginRight: 6 }} />
+              <Ionicons name="location" size={20} color={colors.textSecondary} style={{ marginRight: 6 }} />
               <Text style={styles.mapLabel}>Fangststed</Text>
             </View>
             <Text style={styles.debugText}>Ingen koordinater tilgængelige</Text>
@@ -324,10 +702,19 @@ export default function CatchDetailScreen() {
       {isOwnCatch && (
         <View style={styles.actionButtons}>
           <TouchableOpacity
+            style={[styles.button, styles.shareButton]}
+            onPress={handleShareCatch}
+            disabled={sharing}
+          >
+            <Ionicons name="share-social" size={20} color={colors.white} style={{ marginRight: 6 }} />
+            <Text style={styles.buttonText}>{sharing ? 'Deler...' : 'Del'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.button, styles.editButton]}
             onPress={() => router.push(`/edit-catch?id=${catchId}`)}
           >
-            <Ionicons name="create" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
+            <Ionicons name="create" size={20} color={colors.white} style={{ marginRight: 6 }} />
             <Text style={styles.buttonText}>Rediger</Text>
           </TouchableOpacity>
 
@@ -335,7 +722,7 @@ export default function CatchDetailScreen() {
             style={[styles.button, styles.deleteButton]}
             onPress={deleteCatch}
           >
-            <Ionicons name="trash" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
+            <Ionicons name="trash" size={20} color={colors.white} style={{ marginRight: 6 }} />
             <Text style={styles.buttonText}>Slet</Text>
           </TouchableOpacity>
         </View>
@@ -343,220 +730,3 @@ export default function CatchDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    margin: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-  },
-  backButtonText: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 50,
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#dc3545',
-    textAlign: 'center',
-    marginTop: 50,
-  },
-  userHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  catchDate: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-  visibilityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  visibilityText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '600',
-  },
-  catchImageLarge: {
-    width: '100%',
-    height: 400,
-    maxHeight: Dimensions.get('window').height * 0.5,
-    backgroundColor: '#f0f0f0',
-  },
-  catchContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    marginTop: 1,
-  },
-  catchSpecies: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  catchDetailsRow: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    gap: 12,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    padding: 16,
-    borderRadius: RADIUS.lg,
-    alignItems: 'center',
-    ...SHADOWS.sm,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    fontWeight: '600',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  infoLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-    width: 100,
-  },
-  infoValue: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
-  },
-  notesContainer: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-  },
-  notesLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  notesText: {
-    fontSize: 16,
-    color: '#333',
-    lineHeight: 24,
-  },
-  mapContainer: {
-    marginTop: 20,
-  },
-  mapLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  map: {
-    width: '100%',
-    height: 300,
-    borderRadius: 12,
-  },
-  mapPlaceholder: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  mapPlaceholderText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 8,
-  },
-  coordinatesText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 8,
-    fontFamily: 'monospace',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    padding: 20,
-    gap: 12,
-  },
-  button: {
-    flex: 1,
-    flexDirection: 'row',
-    padding: 16,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.sm,
-  },
-  editButton: {
-    backgroundColor: COLORS.primary,
-  },
-  deleteButton: {
-    backgroundColor: COLORS.error,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

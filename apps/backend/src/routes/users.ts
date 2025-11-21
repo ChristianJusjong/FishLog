@@ -23,6 +23,7 @@ export async function userRoutes(fastify: FastifyInstance) {
           avatar: true,
           provider: true,
           groqApiKey: true,
+          profileVisibility: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -48,10 +49,11 @@ export async function userRoutes(fastify: FastifyInstance) {
         return reply.code(401).send({ error: 'Unauthorized' });
       }
 
-      const { name, avatar, groqApiKey } = request.body as {
+      const { name, avatar, groqApiKey, profileVisibility } = request.body as {
         name?: string;
         avatar?: string;
         groqApiKey?: string;
+        profileVisibility?: string;
       };
 
       fastify.log.info({
@@ -59,10 +61,11 @@ export async function userRoutes(fastify: FastifyInstance) {
         name,
         avatar: avatar ? 'present' : 'not present',
         groqApiKey: groqApiKey ? 'present' : 'not present',
+        profileVisibility,
       }, 'Update profile request');
 
       // Build update data object
-      const updateData: { name?: string; avatar?: string | null; groqApiKey?: string | null } = {};
+      const updateData: { name?: string; avatar?: string | null; groqApiKey?: string | null; profileVisibility?: string } = {};
 
       if (name !== undefined) {
         updateData.name = name;
@@ -78,6 +81,14 @@ export async function userRoutes(fastify: FastifyInstance) {
         updateData.groqApiKey = groqApiKey || null;
       }
 
+      if (profileVisibility !== undefined) {
+        // Validate profile visibility
+        if (!['public', 'friends', 'private'].includes(profileVisibility)) {
+          return reply.code(400).send({ error: 'Invalid profile visibility value' });
+        }
+        updateData.profileVisibility = profileVisibility;
+      }
+
       const user = await prisma.user.update({
         where: { id: request.user.userId },
         data: updateData,
@@ -88,6 +99,7 @@ export async function userRoutes(fastify: FastifyInstance) {
           avatar: true,
           provider: true,
           groqApiKey: true,
+          profileVisibility: true,
           createdAt: true,
           updatedAt: true,
         },

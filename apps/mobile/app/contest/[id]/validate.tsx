@@ -3,18 +3,19 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   Image,
   TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
-  Modal
+  Modal,
+  StyleSheet
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface ExifData {
   timestamp?: string;
@@ -87,10 +88,297 @@ interface CatchData {
   };
 }
 
+const useStyles = () => {
+  const { colors } = useTheme();
+  return StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundLight,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.backgroundLight,
+  },
+  header: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  backButton: {
+    padding: SPACING.sm,
+    marginRight: SPACING.sm,
+  },
+  backButtonText: {
+    fontSize: 28,
+    color: colors.primary,
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.styles.h2,
+    color: colors.textPrimary,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  emptyState: {
+    alignItems: 'center' as const,
+    paddingVertical: SPACING.xl * 2,
+  },
+  emptyEmoji: {
+    fontSize: 64,
+    marginBottom: SPACING.md,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.styles.h3,
+    color: colors.textSecondary,
+  },
+  catchCard: {
+    backgroundColor: colors.surface,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.md,
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden' as const,
+    ...SHADOWS.md,
+  },
+  catchPhoto: {
+    width: '100%' as const,
+    height: 250,
+    backgroundColor: colors.backgroundLight,
+  },
+  userSection: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    padding: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  userAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: SPACING.sm,
+  },
+  userAvatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    marginRight: SPACING.sm,
+  },
+  userAvatarText: {
+    ...TYPOGRAPHY.styles.body,
+    color: colors.white,
+    fontWeight: '600' as const,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    ...TYPOGRAPHY.styles.body,
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
+  },
+  userEmail: {
+    ...TYPOGRAPHY.styles.small,
+    color: colors.textSecondary,
+  },
+  catchInfo: {
+    padding: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  catchSpecies: {
+    ...TYPOGRAPHY.styles.h3,
+    marginBottom: SPACING.xs,
+    color: colors.textPrimary,
+  },
+  catchStats: {
+    flexDirection: 'row' as const,
+    gap: SPACING.md,
+  },
+  catchStat: {
+    ...TYPOGRAPHY.styles.body,
+    color: colors.textSecondary,
+  },
+  metadataSection: {
+    padding: SPACING.md,
+    backgroundColor: colors.backgroundLight,
+  },
+  metadataTitle: {
+    ...TYPOGRAPHY.styles.body,
+    fontWeight: '600' as const,
+    marginBottom: SPACING.sm,
+    color: colors.textPrimary,
+  },
+  metadataRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    paddingVertical: SPACING.xs,
+  },
+  metadataLabel: {
+    ...TYPOGRAPHY.styles.body,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  metadataValue: {
+    ...TYPOGRAPHY.styles.body,
+    flex: 1,
+    textAlign: 'right' as const,
+    color: colors.textPrimary,
+  },
+  metadataValueSmall: {
+    ...TYPOGRAPHY.styles.small,
+    flex: 1,
+    textAlign: 'right' as const,
+    fontFamily: 'monospace',
+    color: colors.textPrimary,
+  },
+  metadataWarning: {
+    color: colors.error,
+    fontWeight: '600' as const,
+  },
+  validationButtons: {
+    flexDirection: 'row' as const,
+    padding: SPACING.md,
+    gap: SPACING.md,
+  },
+  approveButton: {
+    flex: 1,
+    backgroundColor: colors.success,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    alignItems: 'center' as const,
+    ...SHADOWS.sm,
+  },
+  approveButtonText: {
+    ...TYPOGRAPHY.styles.body,
+    color: colors.white,
+    fontWeight: '600' as const,
+  },
+  rejectButton: {
+    flex: 1,
+    backgroundColor: colors.error,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    alignItems: 'center' as const,
+    ...SHADOWS.sm,
+  },
+  rejectButtonText: {
+    ...TYPOGRAPHY.styles.body,
+    color: colors.white,
+    fontWeight: '600' as const,
+  },
+  validationStatus: {
+    padding: SPACING.md,
+    alignItems: 'center' as const,
+  },
+  validationApproved: {
+    backgroundColor: colors.success + '20',
+  },
+  validationRejected: {
+    backgroundColor: colors.error + '20',
+  },
+  validationStatusText: {
+    ...TYPOGRAPHY.styles.body,
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
+  },
+  validationReason: {
+    ...TYPOGRAPHY.styles.small,
+    color: colors.textSecondary,
+    marginTop: SPACING.xs,
+    fontStyle: 'italic' as const,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: SPACING.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    width: '100%' as const,
+    maxWidth: 400,
+  },
+  modalTitle: {
+    ...TYPOGRAPHY.styles.h2,
+    marginBottom: SPACING.xs,
+    textAlign: 'center' as const,
+    color: colors.textPrimary,
+  },
+  modalSubtitle: {
+    ...TYPOGRAPHY.styles.body,
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
+    marginBottom: SPACING.lg,
+  },
+  modalInputContainer: {
+    marginBottom: SPACING.lg,
+  },
+  modalLabel: {
+    ...TYPOGRAPHY.styles.body,
+    fontWeight: '600' as const,
+    marginBottom: SPACING.sm,
+    color: colors.textPrimary,
+  },
+  modalInput: {
+    backgroundColor: colors.backgroundLight,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    ...TYPOGRAPHY.styles.body,
+    minHeight: 80,
+    textAlignVertical: 'top' as const,
+    color: colors.textPrimary,
+  },
+  modalButtons: {
+    flexDirection: 'row' as const,
+    gap: SPACING.md,
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: colors.backgroundLight,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    alignItems: 'center' as const,
+  },
+  modalCancelButtonText: {
+    ...TYPOGRAPHY.styles.body,
+    color: colors.textPrimary,
+    fontWeight: '600' as const,
+  },
+  modalConfirmButton: {
+    flex: 1,
+    backgroundColor: colors.success,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    alignItems: 'center' as const,
+  },
+  modalRejectButton: {
+    backgroundColor: colors.error,
+  },
+  modalConfirmButtonText: {
+    ...TYPOGRAPHY.styles.body,
+    color: colors.white,
+    fontWeight: '600' as const,
+  },
+    });
+};
+
 export default function ContestValidationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getAuthHeader } = useAuth();
   const router = useRouter();
+  const styles = useStyles();
 
   const [catches, setCatches] = useState<CatchData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -446,276 +734,3 @@ export default function ContestValidationScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundLight,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.backgroundLight,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: {
-    padding: SPACING.sm,
-    marginRight: SPACING.sm,
-  },
-  backButtonText: {
-    fontSize: 28,
-    color: COLORS.primary,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.styles.h2,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xl * 2,
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: SPACING.md,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.styles.h3,
-    color: COLORS.textSecondary,
-  },
-  catchCard: {
-    backgroundColor: COLORS.surface,
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.md,
-    borderRadius: RADIUS.lg,
-    overflow: 'hidden',
-    ...SHADOWS.md,
-  },
-  catchPhoto: {
-    width: '100%',
-    height: 250,
-    backgroundColor: COLORS.backgroundLight,
-  },
-  userSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  userAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: SPACING.sm,
-  },
-  userAvatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.sm,
-  },
-  userAvatarText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.white,
-    fontWeight: '600',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    ...TYPOGRAPHY.styles.body,
-    fontWeight: '600',
-  },
-  userEmail: {
-    ...TYPOGRAPHY.styles.small,
-    color: COLORS.textSecondary,
-  },
-  catchInfo: {
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  catchSpecies: {
-    ...TYPOGRAPHY.styles.h3,
-    marginBottom: SPACING.xs,
-  },
-  catchStats: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  catchStat: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
-  },
-  metadataSection: {
-    padding: SPACING.md,
-    backgroundColor: COLORS.backgroundLight,
-  },
-  metadataTitle: {
-    ...TYPOGRAPHY.styles.body,
-    fontWeight: '600',
-    marginBottom: SPACING.sm,
-  },
-  metadataRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.xs,
-  },
-  metadataLabel: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
-    flex: 1,
-  },
-  metadataValue: {
-    ...TYPOGRAPHY.styles.body,
-    flex: 1,
-    textAlign: 'right',
-  },
-  metadataValueSmall: {
-    ...TYPOGRAPHY.styles.small,
-    flex: 1,
-    textAlign: 'right',
-    fontFamily: 'monospace',
-  },
-  metadataWarning: {
-    color: COLORS.error,
-    fontWeight: '600',
-  },
-  validationButtons: {
-    flexDirection: 'row',
-    padding: SPACING.md,
-    gap: SPACING.md,
-  },
-  approveButton: {
-    flex: 1,
-    backgroundColor: COLORS.success,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    ...SHADOWS.sm,
-  },
-  approveButtonText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.white,
-    fontWeight: '600',
-  },
-  rejectButton: {
-    flex: 1,
-    backgroundColor: COLORS.error,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    ...SHADOWS.sm,
-  },
-  rejectButtonText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.white,
-    fontWeight: '600',
-  },
-  validationStatus: {
-    padding: SPACING.md,
-    alignItems: 'center',
-  },
-  validationApproved: {
-    backgroundColor: COLORS.success + '20',
-  },
-  validationRejected: {
-    backgroundColor: COLORS.error + '20',
-  },
-  validationStatusText: {
-    ...TYPOGRAPHY.styles.body,
-    fontWeight: '600',
-  },
-  validationReason: {
-    ...TYPOGRAPHY.styles.small,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-    fontStyle: 'italic',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.lg,
-  },
-  modalContent: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.lg,
-    width: '100%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    ...TYPOGRAPHY.styles.h2,
-    marginBottom: SPACING.xs,
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: SPACING.lg,
-  },
-  modalInputContainer: {
-    marginBottom: SPACING.lg,
-  },
-  modalLabel: {
-    ...TYPOGRAPHY.styles.body,
-    fontWeight: '600',
-    marginBottom: SPACING.sm,
-  },
-  modalInput: {
-    backgroundColor: COLORS.backgroundLight,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    ...TYPOGRAPHY.styles.body,
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  modalCancelButton: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundLight,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-  },
-  modalCancelButtonText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-  },
-  modalConfirmButton: {
-    flex: 1,
-    backgroundColor: COLORS.success,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-  },
-  modalRejectButton: {
-    backgroundColor: COLORS.error,
-  },
-  modalConfirmButtonText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.white,
-    fontWeight: '600',
-  },
-});

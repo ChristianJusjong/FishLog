@@ -2,8 +2,28 @@ import { useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
+
+const useStyles = () => {
+  const { colors } = useTheme();
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundLight,
+    },
+    text: {
+      marginTop: 20,
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+  });
+};
 
 export default function AuthCallback() {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const { accessToken, refreshToken } = useLocalSearchParams();
   const { login } = useAuth();
   const router = useRouter();
@@ -36,22 +56,8 @@ export default function AuthCallback() {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#007AFF" />
+      <ActivityIndicator size="large" color={colors.primary} />
       <Text style={styles.text}>Logging in...</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-  },
-  text: {
-    marginTop: 20,
-    fontSize: 16,
-    color: '#666',
-  },
-});

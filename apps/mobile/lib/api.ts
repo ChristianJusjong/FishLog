@@ -1,8 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Always use Railway production backend
-const API_URL = 'https://fishlog-production.up.railway.app';
+// Use environment variable for API URL (falls back to production if not set)
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
 export const api = axios.create({
   baseURL: API_URL,

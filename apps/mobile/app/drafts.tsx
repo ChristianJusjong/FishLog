@@ -12,11 +12,110 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { useTheme } from '../contexts/ThemeContext';
+import PageLayout from '../components/PageLayout';
+import WeatherLocationCard from '../components/WeatherLocationCard';
 
-const API_URL = 'https://fishlog-production.up.railway.app';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+
+const useStyles = () => {
+  const { colors } = useTheme();
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.backgroundLight,
+    },
+    list: {
+      padding: SPACING.md,
+      paddingBottom: 120,
+    },
+    draftCard: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.lg,
+      marginBottom: SPACING.md,
+      overflow: 'hidden',
+      ...SHADOWS.md,
+    },
+    thumbnail: {
+      width: 100,
+      height: 100,
+      backgroundColor: colors.border,
+    },
+    draftContent: {
+      flex: 1,
+      padding: SPACING.sm,
+    },
+    draftHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.xs,
+    },
+    badge: {
+      backgroundColor: colors.accent,
+      paddingHorizontal: SPACING.xs,
+      paddingVertical: 2,
+      borderRadius: RADIUS.sm,
+    },
+    badgeText: {
+      ...TYPOGRAPHY.styles.small,
+      fontSize: 10,
+      color: colors.white,
+      fontWeight: '600',
+    },
+    date: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.textSecondary,
+    },
+    species: {
+      ...TYPOGRAPHY.styles.body,
+      fontWeight: '600',
+      marginBottom: SPACING.xs,
+    },
+    gps: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.textSecondary,
+    },
+    deleteButton: {
+      padding: SPACING.sm,
+      justifyContent: 'center',
+    },
+    deleteText: {
+      fontSize: 24,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SPACING.xl,
+    },
+    emptyEmoji: {
+      fontSize: 64,
+      marginBottom: SPACING.md,
+    },
+    emptyTitle: {
+      ...TYPOGRAPHY.styles.h2,
+      marginBottom: SPACING.sm,
+    },
+    emptyText: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+  });
+};
 
 export default function DraftsScreen() {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   const [drafts, setDrafts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,146 +217,42 @@ export default function DraftsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-      </SafeAreaView>
+      <PageLayout>
+        <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+          <View style={styles.container}>
+            <WeatherLocationCard />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          </View>
+        </SafeAreaView>
+      </PageLayout>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backButton}>← Tilbage</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>💾 Kladder</Text>
-        <View style={{ width: 80 }} />
-      </View>
-
-      {drafts.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyEmoji}>📝</Text>
-          <Text style={styles.emptyTitle}>Ingen kladder</Text>
-          <Text style={styles.emptyText}>
-            Dine ufuldstændige fangster vil vises her
-          </Text>
+    <PageLayout>
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <View style={styles.container}>
+          <WeatherLocationCard />
+          {drafts.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>📝</Text>
+              <Text style={styles.emptyTitle}>Ingen kladder</Text>
+              <Text style={styles.emptyText}>
+                Dine ufuldstændige fangster vil vises her
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={drafts}
+              renderItem={renderDraft}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.list}
+            />
+          )}
         </View>
-      ) : (
-        <FlatList
-          data={drafts}
-          renderItem={renderDraft}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-        />
-      )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </PageLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundLight,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.md,
-    backgroundColor: COLORS.surface,
-    ...SHADOWS.sm,
-  },
-  backButton: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.primary,
-    width: 80,
-  },
-  title: {
-    ...TYPOGRAPHY.styles.h2,
-    textAlign: 'center',
-  },
-  list: {
-    padding: SPACING.md,
-  },
-  draftCard: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-    marginBottom: SPACING.md,
-    overflow: 'hidden',
-    ...SHADOWS.md,
-  },
-  thumbnail: {
-    width: 100,
-    height: 100,
-    backgroundColor: COLORS.border,
-  },
-  draftContent: {
-    flex: 1,
-    padding: SPACING.sm,
-  },
-  draftHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  badge: {
-    backgroundColor: COLORS.accent,
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: 2,
-    borderRadius: RADIUS.sm,
-  },
-  badgeText: {
-    ...TYPOGRAPHY.styles.small,
-    fontSize: 10,
-    color: COLORS.white,
-    fontWeight: '600',
-  },
-  date: {
-    ...TYPOGRAPHY.styles.small,
-    color: COLORS.textSecondary,
-  },
-  species: {
-    ...TYPOGRAPHY.styles.body,
-    fontWeight: '600',
-    marginBottom: SPACING.xs,
-  },
-  gps: {
-    ...TYPOGRAPHY.styles.small,
-    color: COLORS.textSecondary,
-  },
-  deleteButton: {
-    padding: SPACING.sm,
-    justifyContent: 'center',
-  },
-  deleteText: {
-    fontSize: 24,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xl,
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: SPACING.md,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.styles.h2,
-    marginBottom: SPACING.sm,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-});

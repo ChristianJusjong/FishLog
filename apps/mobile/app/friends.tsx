@@ -4,11 +4,189 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
-import BottomNavigation from '../components/BottomNavigation';
+import { useTheme } from '../contexts/ThemeContext';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 
-const API_URL = 'https://fishlog-production.up.railway.app';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+
+const useStyles = () => {
+  const { colors } = useTheme();
+
+  return StyleSheet.create({
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.textSecondary,
+      marginTop: SPACING.md,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      padding: SPACING.lg,
+    },
+    searchSection: {
+      marginBottom: SPACING.xl,
+    },
+    section: {
+      marginBottom: SPACING.xl,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      marginBottom: SPACING.md,
+    },
+    sectionTitle: {
+      ...TYPOGRAPHY.styles.h2,
+      color: colors.text,
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+    },
+    searchInputContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.md,
+      paddingHorizontal: SPACING.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    searchIcon: {
+      marginRight: SPACING.sm,
+    },
+    searchInput: {
+      flex: 1,
+      paddingVertical: SPACING.md,
+      fontSize: TYPOGRAPHY.fontSize.base,
+      color: colors.text,
+    },
+    searchButton: {
+      backgroundColor: colors.primary,
+      borderRadius: RADIUS.md,
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SPACING.xs,
+      minWidth: 90,
+      ...SHADOWS.sm,
+    },
+    searchButtonText: {
+      ...TYPOGRAPHY.styles.button,
+      fontSize: TYPOGRAPHY.fontSize.sm,
+    },
+    resultsList: {
+      marginTop: SPACING.md,
+    },
+    userCard: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.lg,
+      padding: SPACING.md,
+      marginBottom: SPACING.md,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      ...SHADOWS.md,
+    },
+    userInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    userAvatar: {
+      width: 48,
+      height: 48,
+      borderRadius: RADIUS.full,
+      marginRight: SPACING.md,
+    },
+    avatarPlaceholder: {
+      backgroundColor: colors.backgroundLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    userName: {
+      ...TYPOGRAPHY.styles.body,
+      fontWeight: '600',
+      marginBottom: 4,
+    },
+    userEmail: {
+      ...TYPOGRAPHY.styles.small,
+    },
+    pendingBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 4,
+    },
+    pendingText: {
+      fontSize: 12,
+      color: colors.warning,
+      fontStyle: 'italic',
+    },
+    addButton: {
+      backgroundColor: colors.success,
+      borderRadius: RADIUS.md,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+    },
+    addButtonText: {
+      color: colors.white,
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      fontWeight: '600',
+    },
+    requestActions: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+    },
+    actionButton: {
+      borderRadius: RADIUS.md,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+    },
+    acceptButton: {
+      backgroundColor: colors.success,
+    },
+    rejectButton: {
+      backgroundColor: colors.error,
+    },
+    actionButtonText: {
+      color: colors.white,
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      fontWeight: '600',
+    },
+    emptyState: {
+      alignItems: 'center',
+      padding: SPACING['2xl'],
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.lg,
+      ...SHADOWS.sm,
+    },
+    emptyText: {
+      ...TYPOGRAPHY.styles.h3,
+      marginTop: SPACING.md,
+      marginBottom: SPACING.sm,
+    },
+    emptySubtext: {
+      ...TYPOGRAPHY.styles.small,
+      textAlign: 'center',
+    },
+  });
+};
 
 interface User {
   id: string;
@@ -38,6 +216,8 @@ interface FriendsData {
 
 export default function FriendsScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const [friendsData, setFriendsData] = useState<FriendsData>({
     friends: [],
     sentRequests: [],
@@ -269,9 +449,9 @@ export default function FriendsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.backgroundLight }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Indlæser...</Text>
         </View>
       </SafeAreaView>
@@ -279,20 +459,21 @@ export default function FriendsScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.backgroundLight }}>
-      <WeatherLocationCard showLocation={true} showWeather={true} />
+    <PageLayout>
+      <View style={{ flex: 1, backgroundColor: colors.backgroundLight }}>
+        <WeatherLocationCard showLocation={true} showWeather={true} />
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
       {/* Search section */}
       <View style={styles.searchSection}>
         <Text style={styles.sectionTitle}>Søg efter brugere</Text>
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
-            <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+            <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Søg på navn eller email..."
-              placeholderTextColor={COLORS.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -303,10 +484,10 @@ export default function FriendsScreen() {
             disabled={searching}
           >
             {searching ? (
-              <ActivityIndicator size="small" color={COLORS.white} />
+              <ActivityIndicator size="small" color={colors.white} />
             ) : (
               <>
-                <Ionicons name="search" size={20} color={COLORS.white} />
+                <Ionicons name="search" size={20} color={colors.white} />
                 <Text style={styles.searchButtonText}>Søg</Text>
               </>
             )}
@@ -323,7 +504,7 @@ export default function FriendsScreen() {
                     <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
                   ) : (
                     <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
-                      <Ionicons name="person" size={24} color={COLORS.textSecondary} />
+                      <Ionicons name="person" size={24} color={colors.textSecondary} />
                     </View>
                   )}
                   <View>
@@ -335,7 +516,7 @@ export default function FriendsScreen() {
                   style={styles.addButton}
                   onPress={() => sendFriendRequest(user.id)}
                 >
-                  <Ionicons name="person-add" size={18} color={COLORS.white} />
+                  <Ionicons name="person-add" size={18} color={colors.white} />
                   <Text style={styles.addButtonText}>Tilføj</Text>
                 </TouchableOpacity>
               </View>
@@ -348,7 +529,7 @@ export default function FriendsScreen() {
       {friendsData.receivedRequests.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="mail" size={20} color={COLORS.primary} />
+            <Ionicons name="mail" size={20} color={colors.primary} />
             <Text style={styles.sectionTitle}>Anmodninger ({friendsData.receivedRequests.length})</Text>
           </View>
           {friendsData.receivedRequests.map((request) => (
@@ -358,7 +539,7 @@ export default function FriendsScreen() {
                   <Image source={{ uri: request.user.avatar }} style={styles.userAvatar} />
                 ) : (
                   <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
-                    <Ionicons name="person" size={24} color={COLORS.textSecondary} />
+                    <Ionicons name="person" size={24} color={colors.textSecondary} />
                   </View>
                 )}
                 <View>
@@ -371,14 +552,14 @@ export default function FriendsScreen() {
                   style={[styles.actionButton, styles.acceptButton]}
                   onPress={() => acceptFriendRequest(request.friendshipId)}
                 >
-                  <Ionicons name="checkmark" size={18} color={COLORS.white} />
+                  <Ionicons name="checkmark" size={18} color={colors.white} />
                   <Text style={styles.actionButtonText}>Accepter</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.rejectButton]}
                   onPress={() => rejectFriendRequest(request.friendshipId)}
                 >
-                  <Ionicons name="close" size={18} color={COLORS.white} />
+                  <Ionicons name="close" size={18} color={colors.white} />
                   <Text style={styles.actionButtonText}>Afvis</Text>
                 </TouchableOpacity>
               </View>
@@ -390,24 +571,29 @@ export default function FriendsScreen() {
       {/* Friends list */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Ionicons name="people" size={20} color={COLORS.primary} />
+          <Ionicons name="people" size={20} color={colors.primary} />
           <Text style={styles.sectionTitle}>Mine venner ({friendsData.friends.length})</Text>
         </View>
         {friendsData.friends.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={64} color={COLORS.textTertiary} />
+            <Ionicons name="people-outline" size={64} color={colors.textTertiary} />
             <Text style={styles.emptyText}>Ingen venner endnu</Text>
             <Text style={styles.emptySubtext}>Søg efter brugere for at tilføje venner</Text>
           </View>
         ) : (
           friendsData.friends.map((friend) => (
-            <View key={friend.friendshipId} style={styles.userCard}>
+            <TouchableOpacity
+              key={friend.friendshipId}
+              style={styles.userCard}
+              onPress={() => router.push(`/user-profile?userId=${friend.friend.id}`)}
+              activeOpacity={0.7}
+            >
               <View style={styles.userInfo}>
                 {friend.friend.avatar ? (
                   <Image source={{ uri: friend.friend.avatar }} style={styles.userAvatar} />
                 ) : (
                   <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
-                    <Ionicons name="person" size={24} color={COLORS.textSecondary} />
+                    <Ionicons name="person" size={24} color={colors.textSecondary} />
                   </View>
                 )}
                 <View>
@@ -415,7 +601,7 @@ export default function FriendsScreen() {
                   <Text style={styles.userEmail}>{friend.friend.email}</Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </View>
@@ -424,7 +610,7 @@ export default function FriendsScreen() {
       {friendsData.sentRequests.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="send" size={20} color={COLORS.primary} />
+            <Ionicons name="send" size={20} color={colors.primary} />
             <Text style={styles.sectionTitle}>Sendte anmodninger ({friendsData.sentRequests.length})</Text>
           </View>
           {friendsData.sentRequests.map((request) => (
@@ -434,14 +620,14 @@ export default function FriendsScreen() {
                   <Image source={{ uri: request.user.avatar }} style={styles.userAvatar} />
                 ) : (
                   <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
-                    <Ionicons name="person" size={24} color={COLORS.textSecondary} />
+                    <Ionicons name="person" size={24} color={colors.textSecondary} />
                   </View>
                 )}
                 <View>
                   <Text style={styles.userName}>{request.user.name}</Text>
                   <Text style={styles.userEmail}>{request.user.email}</Text>
                   <View style={styles.pendingBadge}>
-                    <Ionicons name="time" size={12} color={COLORS.warning} />
+                    <Ionicons name="time" size={12} color={colors.warning} />
                     <Text style={styles.pendingText}>Venter på svar...</Text>
                   </View>
                 </View>
@@ -451,181 +637,7 @@ export default function FriendsScreen() {
         </View>
       )}
       </ScrollView>
-
-      <BottomNavigation />
-    </View>
+      </View>
+    </PageLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    ...TYPOGRAPHY.styles.body,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.md,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: SPACING.lg,
-  },
-  searchSection: {
-    marginBottom: SPACING.xl,
-  },
-  section: {
-    marginBottom: SPACING.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.styles.h2,
-    color: COLORS.text,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  searchIcon: {
-    marginRight: SPACING.sm,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    fontSize: TYPOGRAPHY.fontSize.base,
-    color: COLORS.text,
-  },
-  searchButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-    minWidth: 90,
-    ...SHADOWS.sm,
-  },
-  searchButtonText: {
-    ...TYPOGRAPHY.styles.button,
-    fontSize: TYPOGRAPHY.fontSize.sm,
-  },
-  resultsList: {
-    marginTop: SPACING.md,
-  },
-  userCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    ...SHADOWS.md,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  userAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: RADIUS.full,
-    marginRight: SPACING.md,
-  },
-  avatarPlaceholder: {
-    backgroundColor: COLORS.backgroundLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userName: {
-    ...TYPOGRAPHY.styles.body,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  userEmail: {
-    ...TYPOGRAPHY.styles.small,
-  },
-  pendingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-  },
-  pendingText: {
-    fontSize: 12,
-    color: COLORS.warning,
-    fontStyle: 'italic',
-  },
-  addButton: {
-    backgroundColor: COLORS.success,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  addButtonText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    fontWeight: '600',
-  },
-  requestActions: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  actionButton: {
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  acceptButton: {
-    backgroundColor: COLORS.success,
-  },
-  rejectButton: {
-    backgroundColor: COLORS.error,
-  },
-  actionButtonText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: SPACING['2xl'],
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-    ...SHADOWS.sm,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.styles.h3,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  emptySubtext: {
-    ...TYPOGRAPHY.styles.small,
-    textAlign: 'center',
-  },
-});

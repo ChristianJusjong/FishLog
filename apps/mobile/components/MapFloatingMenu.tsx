@@ -20,8 +20,9 @@ interface MapFloatingMenuProps {
 }
 
 const menuItems: MenuItem[] = [
+  { icon: 'navigate', label: 'Start Fisketrip', action: 'navigate', route: '/session-tracking', color: '#10B981' },
+  { icon: 'trophy', label: 'Segmenter', action: 'navigate', route: '/segments', color: '#F59E0B' },
   { icon: 'heart', label: 'Føj til Favoritter', action: 'save-favorite', color: '#EF4444' },
-  { icon: 'options-outline', label: 'Filter', action: 'filter', color: COLORS.accent },
   { icon: 'location', label: 'Favoritsteder', action: 'navigate', route: '/favorite-spots', color: COLORS.primary },
 ];
 
@@ -154,13 +155,15 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    zIndex: 998,
+    zIndex: 2998,
+    elevation: 13,
   },
   container: {
     position: 'absolute',
     left: 20,
     alignItems: 'flex-start',
-    zIndex: 1001,
+    zIndex: 3001,
+    elevation: 14,
   },
   menuItemContainer: {
     position: 'absolute',

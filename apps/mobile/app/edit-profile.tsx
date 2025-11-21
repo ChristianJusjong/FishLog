@@ -17,10 +17,128 @@ import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { useTheme } from '../contexts/ThemeContext';
 
-const API_URL = 'https://fishlog-production.up.railway.app';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+
+const useStyles = () => {
+  const { colors } = useTheme();
+
+  return StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      padding: SPACING.lg,
+      backgroundColor: colors.backgroundLight,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      padding: SPACING.lg,
+    },
+    title: {
+      ...TYPOGRAPHY.styles.h1,
+      fontSize: 32,
+      marginTop: SPACING['2xl'],
+      marginBottom: SPACING.lg,
+      textAlign: 'center',
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.lg,
+      padding: SPACING.lg,
+      ...SHADOWS.md,
+      marginBottom: SPACING.lg,
+    },
+    formGroup: {
+      marginBottom: SPACING.lg,
+    },
+    label: {
+      ...TYPOGRAPHY.styles.small,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: SPACING.sm,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: RADIUS.md,
+      padding: SPACING.md,
+      fontSize: TYPOGRAPHY.fontSize.base,
+      color: colors.text,
+      backgroundColor: colors.surface,
+    },
+    hint: {
+      fontSize: TYPOGRAPHY.fontSize.xs,
+      color: colors.textTertiary,
+      marginTop: SPACING.xs,
+    },
+    disabledText: {
+      fontSize: TYPOGRAPHY.fontSize.base,
+      color: colors.textSecondary,
+      padding: SPACING.md,
+      backgroundColor: colors.backgroundLight,
+      borderRadius: RADIUS.md,
+    },
+    saveButton: {
+      backgroundColor: colors.success,
+      padding: SPACING.md,
+      borderRadius: RADIUS.md,
+      marginBottom: SPACING.md,
+      ...SHADOWS.sm,
+    },
+    cancelButton: {
+      backgroundColor: colors.gray600,
+      padding: SPACING.md,
+      borderRadius: RADIUS.md,
+      marginBottom: SPACING.lg,
+      ...SHADOWS.sm,
+    },
+    disabledButton: {
+      opacity: 0.6,
+    },
+    buttonText: {
+      ...TYPOGRAPHY.styles.button,
+      textAlign: 'center',
+    },
+    avatarPreview: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      marginBottom: SPACING.md,
+      alignSelf: 'center',
+      borderWidth: 3,
+      borderColor: colors.primary,
+    },
+    uploadButton: {
+      backgroundColor: colors.primary,
+      padding: SPACING.md,
+      borderRadius: RADIUS.md,
+      marginBottom: SPACING.sm,
+    },
+    uploadButtonText: {
+      color: colors.white,
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    removeButton: {
+      backgroundColor: colors.error,
+      padding: SPACING.sm,
+      borderRadius: RADIUS.md,
+      marginTop: SPACING.sm,
+    },
+    removeButtonText: {
+      color: colors.white,
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+  });
+};
 
 export default function EditProfileScreen() {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const { user, refreshUser } = useAuth();
   const router = useRouter();
 
@@ -161,14 +279,14 @@ export default function EditProfileScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Rediger Profil</Text>
 
@@ -267,127 +385,3 @@ export default function EditProfileScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginTop: 40,
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    marginBottom: 20,
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: 'white',
-  },
-  hint: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
-  },
-  disabledText: {
-    fontSize: 16,
-    color: '#666',
-    padding: 12,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-  },
-  saveButton: {
-    backgroundColor: '#28a745',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  avatarPreview: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 16,
-    alignSelf: 'center',
-    borderWidth: 3,
-    borderColor: '#007AFF',
-  },
-  uploadButton: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  uploadButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  removeButton: {
-    backgroundColor: '#dc3545',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  removeButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-});
