@@ -11,8 +11,8 @@ COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY turbo.json ./
 
-# Install ALL dependencies (including devDependencies for build)
-RUN npm ci
+# Install ALL dependencies (using npm install instead of ci for cross-platform robustness)
+RUN npm install
 
 # Copy Prisma schema and generate client
 COPY apps/backend/prisma ./apps/backend/prisma
@@ -52,8 +52,8 @@ COPY --from=builder /app/apps/backend/docker-entrypoint.sh ./docker-entrypoint.s
 # Merge backend node_modules into main node_modules
 RUN cp -r /app/backend_modules/* /app/node_modules/ 2>/dev/null || true && rm -rf /app/backend_modules
 
-# Ensure prisma CLI is available for migrations
-RUN npm install -g prisma
+# Ensure prisma CLI is available for migrations (pinned version)
+RUN npm install -g prisma@6.18.0
 
 # Make entrypoint executable
 RUN chmod +x /app/docker-entrypoint.sh
@@ -73,7 +73,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the application
 CMD ["/app/docker-entrypoint.sh"]
