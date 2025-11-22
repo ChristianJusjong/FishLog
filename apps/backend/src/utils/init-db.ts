@@ -7,6 +7,15 @@ export async function initializeDatabase() {
   try {
     console.log('🔧 Initializing database...');
 
+    // Enable PostGIS extension
+    try {
+      await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS postgis;`;
+      console.log('✅ PostGIS extension enabled');
+    } catch (error) {
+      console.warn('⚠️  Failed to enable PostGIS extension (may require superuser):', error);
+      // Continue anyway as it might already exist
+    }
+
     // Verify database connection
     await prisma.$queryRaw`SELECT 1`;
     console.log('✅ Database connection verified');

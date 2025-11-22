@@ -52,6 +52,9 @@ COPY --from=builder /app/apps/backend/docker-entrypoint.sh ./docker-entrypoint.s
 # Merge backend node_modules into main node_modules
 RUN cp -r /app/backend_modules/* /app/node_modules/ 2>/dev/null || true && rm -rf /app/backend_modules
 
+# Ensure prisma CLI is available for migrations
+RUN npm install -g prisma
+
 # Make entrypoint executable
 RUN chmod +x /app/docker-entrypoint.sh
 

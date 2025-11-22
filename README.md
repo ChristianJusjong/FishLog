@@ -36,6 +36,7 @@ Hook/
 
 - **Frontend**: React Native med Expo
 - **Backend**: Node.js med Fastify
+- **AI**: Groq Cloud API
 - **Database**: PostgreSQL 16 med PostGIS 3.4
 - **ORM**: Prisma
 - **Monorepo**: Turborepo
