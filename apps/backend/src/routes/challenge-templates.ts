@@ -278,10 +278,14 @@ export async function seedChallengeTemplates() {
   ];
 
   for (const template of defaultTemplates) {
-    await prisma.challengeTemplate.upsert({
-      where: { name: template.name },
-      create: template,
-      update: template
+    const existing = await prisma.challengeTemplate.findFirst({
+      where: { name: template.name }
     });
+
+    if (!existing) {
+      await prisma.challengeTemplate.create({
+        data: template
+      });
+    }
   }
 }

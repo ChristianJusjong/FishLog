@@ -381,7 +381,7 @@ export async function catchesRoutes(fastify: FastifyInstance) {
             }
           }
         } catch (error) {
-          fastify.log.error('Failed to update FiskeDex:', error);
+          fastify.log.error(error);
           // Don't fail the whole request if FiskeDex update fails
         }
       }
