@@ -34,15 +34,16 @@ export async function publicProfileRoutes(fastify: FastifyInstance) {
         }
 
         // Get XP and rank data
-        const levelData = getLevelFromXP(profile.totalXP);
-        const rank = getRankForLevel(profile.level);
+        const profileData = profile as any;
+        const levelData = getLevelFromXP(profileData.totalXP);
+        const rank = getRankForLevel(profileData.level);
 
         return {
           ...profile,
           xp: {
-            totalXP: profile.totalXP,
-            level: profile.level,
-            currentLevelXP: profile.currentLevelXP,
+            totalXP: profileData.totalXP,
+            level: profileData.level,
+            currentLevelXP: profileData.currentLevelXP,
             xpForNextLevel: levelData.xpForNextLevel,
             progress: levelData.progress,
             rank,

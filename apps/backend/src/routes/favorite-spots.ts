@@ -80,7 +80,7 @@ export async function favoriteSpotRoutes(fastify: FastifyInstance) {
   // Get a single favorite spot
   fastify.get('/favorite-spots/:id', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const { id } = request.params;
@@ -136,7 +136,7 @@ export async function favoriteSpotRoutes(fastify: FastifyInstance) {
   // Create a new favorite spot
   fastify.post('/favorite-spots', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Body: CreateSpotBody }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const {
@@ -186,7 +186,7 @@ export async function favoriteSpotRoutes(fastify: FastifyInstance) {
   // Update a favorite spot
   fastify.put('/favorite-spots/:id', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string }; Body: UpdateSpotBody }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const { id } = request.params;
@@ -215,7 +215,7 @@ export async function favoriteSpotRoutes(fastify: FastifyInstance) {
   // Delete a favorite spot
   fastify.delete('/favorite-spots/:id', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const { id } = request.params;
@@ -243,7 +243,7 @@ export async function favoriteSpotRoutes(fastify: FastifyInstance) {
   // Get public favorite spots nearby (for discovery)
   fastify.get('/favorite-spots/nearby/:lat/:lng', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { lat: string; lng: string }; Querystring: { radius?: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const lat = parseFloat(request.params.lat);

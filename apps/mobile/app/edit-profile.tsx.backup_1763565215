@@ -1,0 +1,382 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  Alert,
+  Image,
+  Platform
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../lib/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { useTheme } from '../contexts/ThemeContext';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+
+export default function EditProfileScreen() {
+  const { colors } = useTheme();
+  const { user, refreshUser } = useAuth();
+  const router = useRouter();
+
+  const [name, setName] = useState(user?.name || '');
+  const [avatar, setAvatar] = useState(user?.avatar || '');
+  const [groqApiKey, setGroqApiKey] = useState(user?.groqApiKey || '');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Check if any changes have been made
+  const hasChanges = name !== (user?.name || '') || avatar !== (user?.avatar || '') || groqApiKey !== (user?.groqApiKey || '');
+
+  const handleImageUpload = async () => {
+    if (Platform.OS === 'web') {
+      try {
+        // Create a file input element
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+
+        input.onchange = async (e: any) => {
+          const file = e.target.files?.[0];
+          if (!file) {
+            console.log('No file selected');
+            return;
+          }
+
+          console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+
+          // Validate file type
+          if (!file.type.startsWith('image/')) {
+            Alert.alert('Fejl', 'Kun billedfiler er tilladt');
+            return;
+          }
+
+          // Validate file size (max 5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            Alert.alert('Fejl', 'Billedet er for stort. Max 5MB.');
+            return;
+          }
+
+          setUploadingImage(true);
+          try {
+            const accessToken = await AsyncStorage.getItem('accessToken');
+            console.log('Access token:', accessToken ? 'Found' : 'Missing');
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', file);
+
+            console.log('Uploading to:', `${API_URL}/upload/image`);
+
+            // Upload to backend
+            const response = await fetch(`${API_URL}/upload/image`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+              },
+              body: formData,
+            });
+
+            console.log('Upload response status:', response.status);
+
+            if (response.ok) {
+              const data = await response.json();
+              console.log('Upload successful:', data);
+              setAvatar(data.url);
+              Alert.alert('Succes', 'Billede uploadet!');
+            } else {
+              const errorData = await response.json().catch(() => ({}));
+              console.error('Upload failed:', response.status, errorData);
+              Alert.alert('Fejl', errorData.error || `HTTP ${response.status}: Kunne ikke uploade billede`);
+            }
+          } catch (error) {
+            console.error('Upload error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Ukendt fejl';
+            Alert.alert('Fejl', `Kunne ikke uploade billede: ${errorMessage}`);
+          } finally {
+            setUploadingImage(false);
+          }
+        };
+
+        input.click();
+      } catch (error) {
+        console.error('Image upload error:', error);
+        Alert.alert('Fejl', 'Kunne ikke uploade billede');
+      }
+    } else {
+      // Mobile: Use expo-image-picker
+      try {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Tilladelse påkrævet', 'Vi har brug for adgang til dit billedbibliotek for at uploade billeder.');
+          return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.5, // Reduced quality to 50% to keep file size smaller
+          base64: true,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+          const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+          setAvatar(base64Image);
+        }
+      } catch (error) {
+        console.error('Image picker error:', error);
+        Alert.alert('Fejl', 'Kunne ikke vælge billede');
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Alert.alert('Fejl', 'Navn er påkrævet');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('Saving profile with:', { name, avatar: avatar || 'empty', groqApiKey: groqApiKey ? 'present' : 'empty' });
+      await authService.updateProfile({ name, avatar: avatar || '', groqApiKey: groqApiKey || '' });
+      console.log('Profile update successful, refreshing user...');
+      await refreshUser();
+      Alert.alert('Succes', 'Profil opdateret!', [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      Alert.alert('Fejl', 'Kunne ikke opdatere profil. Prøv igen.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <Text style={styles.title}>Rediger Profil</Text>
+
+      <View style={styles.card}>
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Navn *</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Dit navn"
+            editable={!loading}
+          />
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Profilbillede</Text>
+
+          {avatar && (
+            <Image
+              source={{ uri: avatar }}
+              style={styles.avatarPreview}
+            />
+          )}
+
+          <TouchableOpacity
+            style={[styles.uploadButton, uploadingImage && styles.disabledButton]}
+            onPress={handleImageUpload}
+            disabled={uploadingImage || loading}
+          >
+            {uploadingImage ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.uploadButtonText}>
+                📷 {avatar ? 'Skift billede' : 'Upload billede'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {avatar && (
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => setAvatar('')}
+              disabled={loading || uploadingImage}
+            >
+              <Text style={styles.removeButtonText}>🗑️ Fjern billede</Text>
+            </TouchableOpacity>
+          )}
+
+          <Text style={styles.hint}>Valgfri: Upload et profilbillede (max 5MB)</Text>
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Email</Text>
+          <Text style={styles.disabledText}>{user.email}</Text>
+          <Text style={styles.hint}>Email kan ikke ændres</Text>
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Groq API Key</Text>
+          <TextInput
+            style={styles.input}
+            value={groqApiKey}
+            onChangeText={setGroqApiKey}
+            placeholder="gsk_..."
+            secureTextEntry
+            editable={!loading}
+          />
+          <Text style={styles.hint}>
+            Valgfri: Tilføj din egen Groq API key for AI-funktioner.{'\n'}
+            Få din gratis API key på: https://console.groq.com/keys
+          </Text>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={[styles.saveButton, (loading || !hasChanges) && styles.disabledButton]}
+        onPress={handleSave}
+        disabled={loading || !hasChanges}
+      >
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>💾 Gem Ændringer</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.cancelButton}
+        onPress={() => router.back()}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>Luk</Text>
+      </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.backgroundLight,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    padding: SPACING.lg,
+  },
+  title: {
+    ...TYPOGRAPHY.styles.h1,
+    fontSize: 32,
+    marginTop: SPACING['2xl'],
+    marginBottom: SPACING.lg,
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    ...SHADOWS.md,
+    marginBottom: SPACING.lg,
+  },
+  formGroup: {
+    marginBottom: SPACING.lg,
+  },
+  label: {
+    ...TYPOGRAPHY.styles.small,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    fontSize: TYPOGRAPHY.fontSize.base,
+    color: COLORS.text,
+    backgroundColor: COLORS.surface,
+  },
+  hint: {
+    fontSize: TYPOGRAPHY.fontSize.xs,
+    color: COLORS.textTertiary,
+    marginTop: SPACING.xs,
+  },
+  disabledText: {
+    fontSize: TYPOGRAPHY.fontSize.base,
+    color: COLORS.textSecondary,
+    padding: SPACING.md,
+    backgroundColor: COLORS.backgroundLight,
+    borderRadius: RADIUS.md,
+  },
+  saveButton: {
+    backgroundColor: COLORS.success,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.md,
+    ...SHADOWS.sm,
+  },
+  cancelButton: {
+    backgroundColor: COLORS.gray600,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.sm,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    ...TYPOGRAPHY.styles.button,
+    textAlign: 'center',
+  },
+  avatarPreview: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: SPACING.md,
+    alignSelf: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.primary,
+  },
+  uploadButton: {
+    backgroundColor: COLORS.primary,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.sm,
+  },
+  uploadButtonText: {
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.fontSize.sm,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  removeButton: {
+    backgroundColor: COLORS.error,
+    padding: SPACING.sm,
+    borderRadius: RADIUS.md,
+    marginTop: SPACING.sm,
+  },
+  removeButtonText: {
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.fontSize.sm,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+});

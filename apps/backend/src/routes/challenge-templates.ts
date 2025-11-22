@@ -113,8 +113,8 @@ export async function challengeTemplatesRoutes(fastify: FastifyInstance) {
       // Invite specified participants
       if (participantIds && participantIds.length > 0) {
         const participantsToCreate = participantIds
-          .filter(id => id !== userId)
-          .map(id => ({
+          .filter((id: string) => id !== userId)
+          .map((id: string) => ({
             challengeId: challenge.id,
             userId: id,
             score: 0

@@ -1,0 +1,23 @@
+Remaining JSX updates for feed.tsx:
+
+Line 529: color={COLORS.textSecondary} -> color={colors.textSecondary}
+Line 530: style={styles.catchInfo} -> style={[styles.catchInfo, { color: colors.textSecondary }]}
+Line 535: color={COLORS.textSecondary} -> color={colors.textSecondary}
+Line 536: style={styles.catchInfo} -> style={[styles.catchInfo, { color: colors.textSecondary }]}
+Line 544: color={COLORS.textSecondary} -> color={colors.textSecondary}
+Line 545: style={styles.catchInfo} -> style={[styles.catchInfo, { color: colors.textSecondary }]}
+
+Messages Tab Section:
+Line 638: color={COLORS.iconDefault} -> color={colors.iconDefault}
+Line 640-641: Add inline color styles
+Line 657: color={COLORS.primary} -> color={colors.primary}
+Line 662-663: Add inline color styles
+Line 699: color={COLORS.textSecondary} -> color={colors.textSecondary}
+Line 706: color={COLORS.textTertiary} -> color={colors.textTertiary}
+Line 707-708: Add inline color styles
+Line 723: color={COLORS.textSecondary} -> color={colors.textSecondary}
+Line 727: color={COLORS.textTertiary} -> color={colors.textTertiary}
+
+StyleSheet Colors to Remove (apply via inline styles only):
+- All backgroundColor, color, borderColor properties in styles
+- Keep only structural styles (spacing, sizing, positioning)

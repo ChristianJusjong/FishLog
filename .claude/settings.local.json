@@ -44,7 +44,12 @@
       "Bash(cat:*)",
       "Bash(/c/Users/christian.jusjong/AppData/Local/Android/Sdk/platform-tools/adb.exe devices)",
       "Bash(/c/Users/christian.jusjong/AppData/Local/Android/Sdk/platform-tools/adb.exe kill-server)",
-      "Bash(/c/Users/christian.jusjong/AppData/Local/Android/Sdk/platform-tools/adb.exe start-server)"
+      "Bash(/c/Users/christian.jusjong/AppData/Local/Android/Sdk/platform-tools/adb.exe start-server)",
+      "Bash(railway service link:*)",
+      "Bash(railway link:*)",
+      "Bash(railway logs:*)",
+      "Bash(railway status:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

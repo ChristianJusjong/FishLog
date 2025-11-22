@@ -65,14 +65,14 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
       // Most productive times
       const hourDistribution = new Array(24).fill(0);
       catches.forEach(c => {
-        hourDistribution[c.caughtAt.getHours()]++;
+        hourDistribution[c.createdAt.getHours()]++;
       });
       const bestHour = hourDistribution.indexOf(Math.max(...hourDistribution));
 
       // Day of week distribution
       const dayDistribution = new Array(7).fill(0);
       catches.forEach(c => {
-        dayDistribution[c.caughtAt.getDay()]++;
+        dayDistribution[c.createdAt.getDay()]++;
       });
       const bestDay = dayDistribution.indexOf(Math.max(...dayDistribution));
 
@@ -208,7 +208,7 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
       const biggestCatch = Math.max(...weights, 0);
       const personalBest = await prisma.personalBest.findFirst({
         where: { userId, species },
-        orderBy: { weightKg: 'desc' },
+        orderBy: { value: 'desc' },
       });
 
       // Location analysis
@@ -218,7 +218,7 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
           lat: c.latitude!,
           lng: c.longitude!,
           weight: c.weightKg || 0,
-          date: c.caughtAt,
+          date: c.createdAt,
         }));
 
       // Best locations (cluster analysis)
@@ -231,8 +231,8 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
       const hourDistribution = new Array(24).fill(0);
       const monthDistribution = new Array(12).fill(0);
       catches.forEach(c => {
-        hourDistribution[c.caughtAt.getHours()]++;
-        monthDistribution[c.caughtAt.getMonth()]++;
+        hourDistribution[c.createdAt.getHours()]++;
+        monthDistribution[c.createdAt.getMonth()]++;
       });
 
       const bestHours = hourDistribution
@@ -283,7 +283,7 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
         stats: {
           avgWeight: parseFloat(avgWeight.toFixed(2)),
           biggestCatch,
-          personalBest: personalBest ? personalBest.weightKg : null,
+          personalBest: personalBest ? personalBest.value : null,
         },
         patterns: {
           bestHours,
@@ -322,7 +322,7 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
 
       const where: any = {
         userId,
-        caughtAt: {
+        createdAt: {
           gte: start,
           lte: end,
         },
@@ -348,7 +348,7 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
           longitude: true,
           weightKg: true,
           species: true,
-          caughtAt: true,
+          createdAt: true,
         },
       });
 
@@ -359,7 +359,7 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
         weight: 1, // intensity
         size: c.weightKg || 0,
         species: c.species,
-        date: c.caughtAt,
+        date: c.createdAt,
       }));
 
       // Grid-based aggregation for performance
@@ -518,7 +518,7 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
         include: {
           session: true,
         },
-        orderBy: { caughtAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
         take: 500, // Last 500 catches for analysis
       });
 
@@ -539,9 +539,9 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
       const daySuccess = new Array(7).fill(0);
 
       catches.forEach(c => {
-        hourSuccess[c.caughtAt.getHours()]++;
-        monthSuccess[c.caughtAt.getMonth()]++;
-        daySuccess[c.caughtAt.getDay()]++;
+        hourSuccess[c.createdAt.getHours()]++;
+        monthSuccess[c.createdAt.getMonth()]++;
+        daySuccess[c.createdAt.getDay()]++;
       });
 
       // Normalize to probabilities
@@ -600,7 +600,7 @@ export async function premiumAnalyticsRoutes(fastify: FastifyInstance) {
           const startDate = goal.startDate || new Date(0);
           const now = new Date();
 
-          switch (goal.goalType) {
+          switch (goal.type) {
             case 'total_catches':
               currentValue = await prisma.catch.count({
                 where: {
@@ -760,7 +760,7 @@ function groupByInterval(catches: any[], interval: 'day' | 'week' | 'month' | 'y
 
   catches.forEach(c => {
     let key: string;
-    const date = new Date(c.caughtAt);
+    const date = new Date(c.createdAt);
 
     switch (interval) {
       case 'day':
