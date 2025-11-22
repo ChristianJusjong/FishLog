@@ -13,7 +13,7 @@ export async function challengeCommentsRoutes(fastify: FastifyInstance) {
   // Get comments for a challenge
   fastify.get('/challenges/:challengeId/comments', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { challengeId: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const { challengeId } = request.params;
 
@@ -43,7 +43,7 @@ export async function challengeCommentsRoutes(fastify: FastifyInstance) {
   // Create a comment on a challenge
   fastify.post('/challenges/:challengeId/comments', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { challengeId: string }, Body: { text: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const { challengeId } = request.params;
@@ -103,7 +103,7 @@ export async function challengeCommentsRoutes(fastify: FastifyInstance) {
   // Delete a comment (owner only)
   fastify.delete('/challenges/:challengeId/comments/:commentId', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { challengeId: string, commentId: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const { commentId } = request.params;

@@ -83,7 +83,7 @@ export async function challengesRoutes(fastify: FastifyInstance) {
   // Get a specific challenge with leaderboard
   fastify.get('/challenges/:id', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const { id } = request.params;
 
@@ -128,7 +128,7 @@ export async function challengesRoutes(fastify: FastifyInstance) {
   // Create a new challenge
   fastify.post('/challenges', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Body: CreateChallengeBody }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const {
@@ -236,7 +236,7 @@ export async function challengesRoutes(fastify: FastifyInstance) {
   // Join a challenge
   fastify.post('/challenges/:id/join', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const { id: challengeId } = request.params;
@@ -295,7 +295,7 @@ export async function challengesRoutes(fastify: FastifyInstance) {
   // Update challenge scores (called when a catch is created/updated)
   fastify.post('/challenges/update-scores', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Body: { catchId: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const { catchId } = request.body;
@@ -434,7 +434,7 @@ export async function challengesRoutes(fastify: FastifyInstance) {
   // Delete a challenge (owner only)
   fastify.delete('/challenges/:id', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const { id } = request.params;

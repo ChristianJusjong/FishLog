@@ -34,7 +34,7 @@ export async function challengeTemplatesRoutes(fastify: FastifyInstance) {
   // Get a specific template
   fastify.get('/challenge-templates/:id', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const { id } = request.params;
 
@@ -56,16 +56,7 @@ export async function challengeTemplatesRoutes(fastify: FastifyInstance) {
   // Create a challenge from a template
   fastify.post('/challenge-templates/:id/create', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{
-    Params: { id: string },
-    Body: {
-      title?: string,
-      species?: string,
-      groupId?: string,
-      prize?: string,
-      participantIds?: string[]
-    }
-  }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const userId = (request.user as any).userId;
       const { id: templateId } = request.params;
@@ -187,7 +178,7 @@ export async function challengeTemplatesRoutes(fastify: FastifyInstance) {
   // Create a new template (admin only - can be extended later)
   fastify.post('/challenge-templates', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Body: CreateTemplateBody }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const { name, description, type, duration, isPublic, icon } = request.body;
 
@@ -216,7 +207,7 @@ export async function challengeTemplatesRoutes(fastify: FastifyInstance) {
   // Delete a template (admin only - can be extended later)
   fastify.delete('/challenge-templates/:id', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request: any, reply: FastifyReply) => {
     try {
       const { id } = request.params;
 
