@@ -35,7 +35,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
           leaderboard = await prisma.user.findMany({
             select: {
               id: true,
-              username: true,
+              name: true,
               level: true,
               totalXP: true,
               catches: {
@@ -59,7 +59,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
             return {
               rank: index + 1,
               userId: user.id,
-              username: user.username,
+              name: user.name,
               level: user.level,
               title: `${title.emoji} ${title.name}`,
               value: totalScore,
@@ -86,7 +86,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
               user: {
                 select: {
                   id: true,
-                  username: true,
+                  name: true,
                   level: true,
                 },
               },
@@ -97,12 +97,12 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
             take: limitNum,
           });
 
-          leaderboard = topCatches.map((catch_, index) => {
+          leaderboard = topCatches.map((catch_: any, index) => {
             const title = getTitleForLevel(catch_.user.level || 1);
             return {
               rank: index + 1,
               userId: catch_.user.id,
-              username: catch_.user.username,
+              name: catch_.user.name,
               level: catch_.user.level,
               title: `${title.emoji} ${title.name}`,
               value: catch_.score,
@@ -117,7 +117,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
           const usersWithCatchCount = await prisma.user.findMany({
             select: {
               id: true,
-              username: true,
+              name: true,
               level: true,
               _count: {
                 select: {
@@ -140,12 +140,12 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
             take: limitNum,
           });
 
-          leaderboard = usersWithCatchCount.map((user, index) => {
+          leaderboard = usersWithCatchCount.map((user: any, index) => {
             const title = getTitleForLevel(user.level || 1);
             return {
               rank: index + 1,
               userId: user.id,
-              username: user.username,
+              name: user.name,
               level: user.level,
               title: `${title.emoji} ${title.name}`,
               value: user._count.catches,
@@ -171,7 +171,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
               user: {
                 select: {
                   id: true,
-                  username: true,
+                  name: true,
                   level: true,
                 },
               },
@@ -182,12 +182,12 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
             take: limitNum,
           });
 
-          leaderboard = longestCatches.map((catch_, index) => {
+          leaderboard = longestCatches.map((catch_: any, index) => {
             const title = getTitleForLevel(catch_.user.level || 1);
             return {
               rank: index + 1,
               userId: catch_.user.id,
-              username: catch_.user.username,
+              name: catch_.user.name,
               level: catch_.user.level,
               title: `${title.emoji} ${title.name}`,
               value: catch_.lengthCm,
@@ -214,7 +214,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
               user: {
                 select: {
                   id: true,
-                  username: true,
+                  name: true,
                   level: true,
                 },
               },
@@ -225,12 +225,12 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
             take: limitNum,
           });
 
-          leaderboard = heaviestCatches.map((catch_, index) => {
+          leaderboard = heaviestCatches.map((catch_: any, index) => {
             const title = getTitleForLevel(catch_.user.level || 1);
             return {
               rank: index + 1,
               userId: catch_.user.id,
-              username: catch_.user.username,
+              name: catch_.user.name,
               level: catch_.user.level,
               title: `${title.emoji} ${title.name}`,
               value: catch_.weightKg,
@@ -249,7 +249,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
         leaderboard,
       };
     } catch (error) {
-      fastify.log.error('Error fetching leaderboard:', error);
+      request.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch leaderboard' });
     }
   });
