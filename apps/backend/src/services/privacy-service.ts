@@ -256,7 +256,7 @@ export async function getUserFiskeDex(
   const species = Array.from(speciesMap.values()).sort((a, b) => b.count - a.count);
 
   // Get total species count from database
-  const totalSpecies = await prisma.fishSpecies.count();
+  const totalSpecies = await prisma.species.count();
 
   return {
     species,

@@ -1,11 +1,10 @@
 import { FastifyInstance } from 'fastify';
-import { SocketStream } from '@fastify/websocket';
 import { wsService } from '../services/websocket.js';
 
 export async function websocketRoutes(fastify: FastifyInstance) {
-  fastify.get('/ws', { websocket: true }, (socket: SocketStream, request) => {
+  fastify.get('/ws', { websocket: true }, (socket: any, request) => {
     // Extract token from query params
-    const token = request.query.token as string;
+    const token = (request.query as any).token as string;
 
     if (!token) {
       socket.socket.send(JSON.stringify({ error: 'Authentication required' }));
@@ -41,7 +40,7 @@ export async function websocketRoutes(fastify: FastifyInstance) {
         const data = JSON.parse(message.toString());
         handleClientMessage(userId, data);
       } catch (error) {
-        fastify.log.error('Failed to parse WebSocket message:', error);
+        fastify.log.error({ err: error }, 'Failed to parse WebSocket message');
       }
     });
 

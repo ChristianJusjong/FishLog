@@ -6,11 +6,12 @@ const prisma = new PrismaClient();
 
 export async function notificationsRoutes(fastify: FastifyInstance) {
   // Get all notifications for current user
-  fastify.get('/notifications', {
-    preHandler: authenticateToken
-  }, async (request: FastifyRequest<{
+  // Get all notifications for current user
+  fastify.get<{
     Querystring: { limit?: string, unreadOnly?: string }
-  }>, reply: FastifyReply) => {
+  }>('/notifications', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
       const limit = parseInt(request.query.limit || '50');
@@ -56,9 +57,10 @@ export async function notificationsRoutes(fastify: FastifyInstance) {
   });
 
   // Mark notification as read
-  fastify.patch('/notifications/:id/read', {
+  // Mark notification as read
+  fastify.patch<{ Params: { id: string } }>('/notifications/:id/read', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
       const { id } = request.params;
@@ -112,9 +114,10 @@ export async function notificationsRoutes(fastify: FastifyInstance) {
   });
 
   // Delete a notification
-  fastify.delete('/notifications/:id', {
+  // Delete a notification
+  fastify.delete<{ Params: { id: string } }>('/notifications/:id', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
       const { id } = request.params;
@@ -164,9 +167,8 @@ export async function notificationsRoutes(fastify: FastifyInstance) {
   });
 
   // Create a notification (for testing or admin)
-  fastify.post('/notifications', {
-    preHandler: authenticateToken
-  }, async (request: FastifyRequest<{
+  // Create a notification (for testing or admin)
+  fastify.post<{
     Body: {
       userId: string,
       type: string,
@@ -174,7 +176,9 @@ export async function notificationsRoutes(fastify: FastifyInstance) {
       message: string,
       data?: string
     }
-  }>, reply: FastifyReply) => {
+  }>('/notifications', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
     try {
       const { userId, type, title, message, data } = request.body;
 

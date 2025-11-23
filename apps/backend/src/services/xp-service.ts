@@ -117,7 +117,7 @@ export async function awardCatchXP(userId: string, catchData: any) {
   const isFirstOfSpecies = await isFirstCatch(userId, catchData.species);
 
   // Check if personal record
-  const isPersonalRecord = await isPersonalRecord(
+  const isNewPR = await isPersonalRecord(
     userId,
     catchData.species,
     catchData.weightKg
@@ -127,7 +127,7 @@ export async function awardCatchXP(userId: string, catchData: any) {
     weightKg: catchData.weightKg,
     speciesRarity,
     isFirstOfSpecies,
-    isPersonalRecord,
+    isPersonalRecord: isNewPR,
     isPremium: catchData.isPremium,
     isWeekend: isWeekend(),
   });
@@ -231,7 +231,7 @@ export async function getLeaderboard(
 // Helper functions
 
 async function getSpeciesRarity(species: string) {
-  const fishSpecies = await prisma.fishSpecies.findFirst({
+  const fishSpecies = await prisma.species.findFirst({
     where: { name: species },
   });
 

@@ -362,7 +362,7 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
           species: species ? {
             name: species,
           } : undefined,
-          region: { not: { equals: null } },
+          region: { not: '' },
         },
         include: {
           species: true,

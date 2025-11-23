@@ -95,9 +95,9 @@ export async function messagesRoutes(fastify: FastifyInstance) {
   });
 
   // Get messages with a specific user
-  fastify.get('/messages/:userId', {
+  fastify.get<{ Params: { userId: string } }>('/messages/:userId', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { userId: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const currentUserId = (request.user as any).userId;
       const { userId: otherUserId } = request.params;
@@ -150,9 +150,9 @@ export async function messagesRoutes(fastify: FastifyInstance) {
   });
 
   // Send a message
-  fastify.post('/messages', {
+  fastify.post<{ Body: SendMessageBody }>('/messages', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Body: SendMessageBody }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const senderId = (request.user as any).userId;
       const { receiverId, text, imageUrl } = request.body;
@@ -228,9 +228,9 @@ export async function messagesRoutes(fastify: FastifyInstance) {
   });
 
   // Delete a message (sender only)
-  fastify.delete('/messages/:messageId', {
+  fastify.delete<{ Params: { messageId: string } }>('/messages/:messageId', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { messageId: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
       const { messageId } = request.params;
@@ -259,9 +259,9 @@ export async function messagesRoutes(fastify: FastifyInstance) {
   });
 
   // Mark message as read
-  fastify.patch('/messages/:messageId/read', {
+  fastify.patch<{ Params: { messageId: string } }>('/messages/:messageId/read', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { messageId: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
       const { messageId } = request.params;

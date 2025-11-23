@@ -6,9 +6,10 @@ const prisma = new PrismaClient();
 
 export async function personalBestsRoutes(fastify: FastifyInstance) {
   // Get all personal bests for a user
-  fastify.get('/personal-bests', {
+  // Get all personal bests for a user
+  fastify.get<{ Querystring: { userId?: string } }>('/personal-bests', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Querystring: { userId?: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const currentUserId = (request.user as any).userId;
       const { userId = currentUserId } = request.query;
@@ -29,12 +30,13 @@ export async function personalBestsRoutes(fastify: FastifyInstance) {
   });
 
   // Get personal best for specific species and category
-  fastify.get('/personal-bests/:species/:category', {
-    preHandler: authenticateToken
-  }, async (request: FastifyRequest<{
+  // Get personal best for specific species and category
+  fastify.get<{
     Params: { species: string, category: string },
     Querystring: { userId?: string }
-  }>, reply: FastifyReply) => {
+  }>('/personal-bests/:species/:category', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
     try {
       const currentUserId = (request.user as any).userId;
       const { species, category } = request.params;
@@ -62,9 +64,10 @@ export async function personalBestsRoutes(fastify: FastifyInstance) {
   });
 
   // Check and update personal bests after a catch
-  fastify.post('/personal-bests/check/:catchId', {
+  // Check and update personal bests after a catch
+  fastify.post<{ Params: { catchId: string } }>('/personal-bests/check/:catchId', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { catchId: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
       const { catchId } = request.params;
@@ -209,12 +212,13 @@ export async function personalBestsRoutes(fastify: FastifyInstance) {
   });
 
   // Get leaderboard for a specific species and category
-  fastify.get('/personal-bests/leaderboard/:species/:category', {
-    preHandler: authenticateToken
-  }, async (request: FastifyRequest<{
+  // Get leaderboard for a specific species and category
+  fastify.get<{
     Params: { species: string, category: string },
     Querystring: { limit?: string }
-  }>, reply: FastifyReply) => {
+  }>('/personal-bests/leaderboard/:species/:category', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
     try {
       const { species, category } = request.params;
       const limit = parseInt(request.query.limit || '10');
@@ -247,9 +251,10 @@ export async function personalBestsRoutes(fastify: FastifyInstance) {
   });
 
   // Delete a personal best
-  fastify.delete('/personal-bests/:id', {
+  // Delete a personal best
+  fastify.delete<{ Params: { id: string } }>('/personal-bests/:id', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
       const { id } = request.params;

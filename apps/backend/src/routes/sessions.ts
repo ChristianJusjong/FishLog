@@ -64,7 +64,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to start session' });
     }
   });
@@ -102,7 +102,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         message: 'Strike recorded',
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to record strike' });
     }
   });
@@ -144,7 +144,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
       try {
         route = session.route ? JSON.parse(session.route) : [];
       } catch (parseError) {
-        fastify.log.warn('Failed to parse route JSON, using empty array:', parseError);
+        fastify.log.warn({ err: parseError }, 'Failed to parse route JSON, using empty array');
         route = [];
       }
       route.push(locationPoint);
@@ -177,7 +177,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         totalDistance: totalDistance.toFixed(2),
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to track location' });
     }
   });
@@ -216,7 +216,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
       try {
         route = session.route ? JSON.parse(session.route) : [];
       } catch (parseError) {
-        fastify.log.warn('Failed to parse route JSON, using empty array:', parseError);
+        fastify.log.warn({ err: parseError }, 'Failed to parse route JSON, using empty array');
         route = [];
       }
       let maxSpeed = 0;
@@ -308,7 +308,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to end session' });
     }
   });
@@ -409,7 +409,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
       try {
         route = session.route ? JSON.parse(session.route) : [];
       } catch (parseError) {
-        fastify.log.warn('Failed to parse route JSON, using empty array:', parseError);
+        fastify.log.warn({ err: parseError }, 'Failed to parse route JSON, using empty array');
         route = [];
       }
 
@@ -422,7 +422,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         topKudoers: session.kudos.slice(0, 3).map(k => k.user),
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to get session' });
     }
   });
@@ -516,7 +516,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to get sessions' });
     }
   });
@@ -613,7 +613,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to get feed' });
     }
   });
@@ -648,7 +648,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
       try {
         route = activeSession.route ? JSON.parse(activeSession.route) : [];
       } catch (parseError) {
-        fastify.log.warn('Failed to parse route JSON, using empty array:', parseError);
+        fastify.log.warn({ err: parseError }, 'Failed to parse route JSON, using empty array');
         route = [];
       }
 
@@ -658,7 +658,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         catchesCount: activeSession._count.catches,
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to get active session' });
     }
   });
@@ -700,7 +700,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         session: updatedSession,
       });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to update session' });
     }
   });
@@ -739,7 +739,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
 
       return reply.send({ message: 'Session deleted successfully' });
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to delete session' });
     }
   });

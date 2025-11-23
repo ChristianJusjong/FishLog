@@ -21,9 +21,10 @@ const WEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || '';
 
 export async function weatherRoutes(fastify: FastifyInstance) {
   // Get weather data for a catch
-  fastify.get('/weather/catch/:catchId', {
+  // Get weather data for a catch
+  fastify.get<{ Params: { catchId: string } }>('/weather/catch/:catchId', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { catchId: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const { catchId } = request.params;
 
@@ -37,15 +38,16 @@ export async function weatherRoutes(fastify: FastifyInstance) {
 
       reply.code(200).send(weatherData);
     } catch (error) {
-      request.log.error(error);
+      request.log.error(error as any);
       reply.code(500).send({ error: 'Kunne ikke hente vejrdata' });
     }
   });
 
   // Add weather data to a catch
-  fastify.post('/weather/catch/:catchId', {
+  // Add weather data to a catch
+  fastify.post<{ Params: { catchId: string }, Body: Omit<AddWeatherDataBody, 'catchId'> }>('/weather/catch/:catchId', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Params: { catchId: string }, Body: Omit<AddWeatherDataBody, 'catchId'> }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
       const { catchId } = request.params;
@@ -76,15 +78,16 @@ export async function weatherRoutes(fastify: FastifyInstance) {
 
       reply.code(201).send(weatherData);
     } catch (error) {
-      request.log.error(error);
+      request.log.error(error as any);
       reply.code(500).send({ error: 'Kunne ikke tilføje vejrdata' });
     }
   });
 
   // Fetch current weather for coordinates
-  fastify.get('/weather/current', {
+  // Fetch current weather for coordinates
+  fastify.get<{ Querystring: { lat: string, lon: string } }>('/weather/current', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Querystring: { lat: string, lon: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const { lat, lon } = request.query;
 
@@ -115,15 +118,16 @@ export async function weatherRoutes(fastify: FastifyInstance) {
 
       reply.code(200).send(weatherData);
     } catch (error) {
-      request.log.error(error);
+      request.log.error(error as any);
       reply.code(500).send({ error: 'Kunne ikke hente vejrdata' });
     }
   });
 
   // Get moon phase for a date
-  fastify.get('/weather/moon', {
+  // Get moon phase for a date
+  fastify.get<{ Querystring: { date: string } }>('/weather/moon', {
     preHandler: authenticateToken
-  }, async (request: FastifyRequest<{ Querystring: { date: string } }>, reply: FastifyReply) => {
+  }, async (request, reply) => {
     try {
       const { date } = request.query;
       const targetDate = new Date(date);
@@ -133,7 +137,7 @@ export async function weatherRoutes(fastify: FastifyInstance) {
 
       reply.code(200).send({ moonPhase, date: targetDate.toISOString() });
     } catch (error) {
-      request.log.error(error);
+      request.log.error(error as any);
       reply.code(500).send({ error: 'Kunne ikke beregne månefase' });
     }
   });
