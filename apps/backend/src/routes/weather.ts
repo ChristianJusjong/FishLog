@@ -104,7 +104,7 @@ export async function weatherRoutes(fastify: FastifyInstance) {
         return reply.code(500).send({ error: 'Kunne ikke hente vejrdata' });
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       // Transform to our format
       const weatherData = {

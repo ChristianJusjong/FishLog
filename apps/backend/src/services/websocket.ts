@@ -1,10 +1,9 @@
 import { FastifyInstance } from 'fastify';
-import { SocketStream } from '@fastify/websocket';
 import jwt from 'jsonwebtoken';
 
 interface WebSocketClient {
   userId: string;
-  socket: SocketStream['socket'];
+  socket: any;
   connectedAt: Date;
 }
 
@@ -19,7 +18,7 @@ class WebSocketService {
   /**
    * Add a new WebSocket client
    */
-  addClient(userId: string, socket: SocketStream['socket']) {
+  addClient(userId: string, socket: any) {
     const client: WebSocketClient = {
       userId,
       socket,
@@ -37,8 +36,8 @@ class WebSocketService {
       this.removeClient(userId, socket);
     });
 
-    socket.on('error', (error) => {
-      this.fastify?.log.error(`WebSocket error for user ${userId}:`, error);
+    socket.on('error', (error: any) => {
+      this.fastify?.log.error({ err: error }, `WebSocket error for user ${userId}`);
       this.removeClient(userId, socket);
     });
   }
@@ -46,7 +45,7 @@ class WebSocketService {
   /**
    * Remove a WebSocket client
    */
-  private removeClient(userId: string, socket: SocketStream['socket']) {
+  private removeClient(userId: string, socket: any) {
     const userClients = this.clients.get(userId) || [];
     const filteredClients = userClients.filter((c) => c.socket !== socket);
 
@@ -71,7 +70,7 @@ class WebSocketService {
         try {
           client.socket.send(message);
         } catch (error) {
-          this.fastify?.log.error(`Failed to send message to user ${userId}:`, error);
+          this.fastify?.log.error({ err: error }, `Failed to send message to user ${userId}`);
         }
       }
     });
@@ -98,7 +97,7 @@ class WebSocketService {
           try {
             client.socket.send(message);
           } catch (error) {
-            this.fastify?.log.error('Failed to broadcast message:', error);
+            this.fastify?.log.error({ err: error }, 'Failed to broadcast message');
           }
         }
       });
