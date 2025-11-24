@@ -51,8 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('No token, skipping profile fetch');
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('Auth check failed, clearing tokens:', error);
+      // Clear tokens and user state on auth failure
       await AsyncStorage.multiRemove(['accessToken', 'refreshToken']);
+      setUser(null);
     } finally {
       console.log('checkAuth finished, setting loading to false');
       setLoading(false);

@@ -228,7 +228,7 @@ export async function identifyHotSpots(
   }> = new Map();
 
   for (const catch_ of catches) {
-    if (!catch_.latitude || !catch_.longitude) continue;
+    if (!catch_.latitude || !catch_.longitude || !catch_.user) continue;
 
     // Find existing cluster within radius
     let foundCluster: string | null = null;

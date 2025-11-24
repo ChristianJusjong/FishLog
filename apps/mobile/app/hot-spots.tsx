@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import PageLayout from '../components/PageLayout';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 import * as Location from 'expo-location';
 
@@ -258,6 +259,7 @@ export default function HotSpotsScreen() {
   const { colors } = useTheme();
   const styles = useStyles();
   const router = useRouter();
+  const { user } = useAuth();
 
   const [filter, setFilter] = useState<'auto' | 'manual'>('auto');
   const [hotSpots, setHotSpots] = useState<HotSpot[]>([]);
@@ -266,8 +268,16 @@ export default function HotSpotsScreen() {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
+    if (!user) {
+      Alert.alert(
+        'Login Required',
+        'You need to log in to view hot spots',
+        [{ text: 'OK', onPress: () => router.replace('/login') }]
+      );
+      return;
+    }
     initializeAndFetch();
-  }, [filter]);
+  }, [filter, user]);
 
   const initializeAndFetch = async () => {
     try {
