@@ -272,6 +272,44 @@ export async function friendsRoutes(fastify: FastifyInstance) {
   });
 
   // Search users by name or email
+
+  // Get pending friend requests (alias for frontend compatibility)
+  fastify.get('/friends/requests', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const userId = request.user!.userId;
+
+      // Get pending requests where user is the accepter
+      const receivedRequests = await prisma.friendship.findMany({
+        where: {
+          accepterId: userId,
+          status: 'pending'
+        },
+        include: {
+          requester: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      return receivedRequests.map(f => ({
+        friendshipId: f.id,
+        user: f.requester,
+        receivedAt: f.createdAt
+      }));
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to fetch friend requests' });
+    }
+  });
   fastify.get('/friends/search', {
     preHandler: authenticateToken
   }, async (request, reply) => {

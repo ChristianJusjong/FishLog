@@ -36,7 +36,7 @@ export async function hotSpotsRoutes(fastify: FastifyInstance) {
         favoriteSpots.map(async (spot) => {
           const radiusDegrees = parseInt(radius) / 111000;
 
-          // Get catches at this location
+          // Get catches at this location (limit to last 100 for performance)
           const catches = await prisma.catch.findMany({
             where: {
               userId,
@@ -60,6 +60,7 @@ export async function hotSpotsRoutes(fastify: FastifyInstance) {
               },
             },
             orderBy: { createdAt: 'desc' },
+            take: 100,
           });
 
           // Calculate statistics
@@ -222,7 +223,7 @@ export async function hotSpotsRoutes(fastify: FastifyInstance) {
       const radiusMeters = parseInt(radius);
       const radiusDegrees = radiusMeters / 111000;
 
-      // Get all catches at this location
+      // Get catches at this location (limit to last 200 for performance)
       const catches = await prisma.catch.findMany({
         where: {
           isDraft: false,
@@ -245,6 +246,7 @@ export async function hotSpotsRoutes(fastify: FastifyInstance) {
           },
         },
         orderBy: { createdAt: 'desc' },
+        take: 200,
       });
 
       // Calculate statistics

@@ -6,11 +6,16 @@ const prisma = new PrismaClient();
 
 export async function feedRoutes(fastify: FastifyInstance) {
   // Get feed with catches from friends
-  fastify.get('/feed', {
+  fastify.get<{
+    Querystring: { page?: number; limit?: number; }
+  }>('/feed', {
     preHandler: authenticateToken
   }, async (request, reply) => {
     try {
       const userId = request.user!.userId;
+      const page = request.query.page || 1;
+      const limit = Math.min(request.query.limit || 20, 50); // Max 50 items per page
+      const skip = (page - 1) * limit;
 
       // Get all accepted friendships where user is involved
       const friendships = await prisma.friendship.findMany({
@@ -31,14 +36,15 @@ export async function feedRoutes(fastify: FastifyInstance) {
 
       // If no friends, return empty array (not an error)
       if (friendIds.length === 0) {
-        return [];
+        return { catches: [], page, limit, hasMore: false };
       }
 
       // Get catches from friends with visibility 'public' or 'friends'
       const catches = await prisma.catch.findMany({
         where: {
           userId: { in: friendIds },
-          visibility: { in: ['public', 'friends'] }
+          visibility: { in: ['public', 'friends'] },
+          isDraft: false
         },
         include: {
           user: {
@@ -48,72 +54,77 @@ export async function feedRoutes(fastify: FastifyInstance) {
               avatar: true
             }
           },
-          likes: {
+          _count: {
             select: {
-              id: true,
-              userId: true
-            }
-          },
-          comments: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  avatar: true
-                }
-              }
-            },
-            orderBy: {
-              createdAt: 'asc'
+              likes: true,
+              comments: true
             }
           }
         },
         orderBy: {
           createdAt: 'desc'
-        }
+        },
+        take: limit + 1, // Fetch one extra to check if there are more
+        skip
       });
 
-      // Fetch location data for each catch with raw SQL
-      const catchesWithLocation = await Promise.all(
-        catches.map(async (catch_) => {
-          let latitude = undefined;
-          let longitude = undefined;
+      const hasMore = catches.length > limit;
+      const paginatedCatches = hasMore ? catches.slice(0, limit) : catches;
 
-          // Try to fetch location data, but don't fail if PostGIS has issues
-          try {
-            const locationResult = await prisma.$queryRaw<Array<{latitude: number, longitude: number}>>`
-              SELECT ST_Y(location::geometry) as latitude, ST_X(location::geometry) as longitude
-              FROM catches
-              WHERE id = ${catch_.id} AND location IS NOT NULL
-            `;
+      // Batch fetch location data for all catches in a single query
+      const catchIds = paginatedCatches.map(c => c.id);
+      let locationMap = new Map<string, { latitude: number; longitude: number }>();
 
-            if (locationResult && locationResult.length > 0) {
-              latitude = locationResult[0].latitude;
-              longitude = locationResult[0].longitude;
-            }
-          } catch (locationError) {
-            // Log the error but don't fail the entire request
-            fastify.log.warn({ err: locationError }, `Failed to fetch location for catch ${catch_.id}`);
-          }
+      if (catchIds.length > 0) {
+        try {
+          // Batch fetch locations - checks both PostGIS column and regular lat/lng columns
+          const locations = await prisma.$queryRaw<Array<{ id: string; latitude: number; longitude: number }>>`
+            SELECT
+              id,
+              COALESCE(latitude, ST_Y(location::geometry)) as latitude,
+              COALESCE(longitude, ST_X(location::geometry)) as longitude
+            FROM catches
+            WHERE id = ANY(${catchIds}::text[])
+              AND (latitude IS NOT NULL OR location IS NOT NULL)
+          `;
 
-          // Check if current user has liked this catch
-          const isLikedByMe = catch_.likes.some(like => like.userId === userId);
+          locationMap = new Map(locations.map(l => [l.id, { latitude: l.latitude, longitude: l.longitude }]));
+        } catch (locationError) {
+          fastify.log.warn({ err: locationError }, 'Failed to batch fetch locations');
+        }
+      }
 
-          return {
-            ...catch_,
-            latitude,
-            longitude,
-            likesCount: catch_.likes.length,
-            commentsCount: catch_.comments.length,
-            isLikedByMe,
-            // Remove the full likes array and just keep the simplified data
-            likes: undefined
-          };
-        })
-      );
+      // Get user's likes in batch
+      const userLikes = await prisma.like.findMany({
+        where: {
+          userId,
+          catchId: { in: catchIds }
+        },
+        select: { catchId: true }
+      });
+      const likedCatchIds = new Set(userLikes.map(l => l.catchId));
 
-      return catchesWithLocation;
+      // Map catches with location and like data
+      const catchesWithData = paginatedCatches.map(catch_ => {
+        const location = locationMap.get(catch_.id);
+
+        return {
+          ...catch_,
+          latitude: location?.latitude,
+          longitude: location?.longitude,
+          likesCount: catch_._count.likes,
+          commentsCount: catch_._count.comments,
+          isLikedByMe: likedCatchIds.has(catch_.id),
+          _count: undefined
+        };
+      });
+
+      return {
+        catches: catchesWithData,
+        page,
+        limit,
+        hasMore
+      };
     } catch (error) {
       fastify.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch feed' });

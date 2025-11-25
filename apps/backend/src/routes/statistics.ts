@@ -12,99 +12,89 @@ export async function statisticsRoutes(fastify: FastifyInstance) {
     try {
       const userId = request.user!.userId;
 
-      // Get all catches for the user (excluding drafts)
-      const catches = await prisma.catch.findMany({
-        where: {
-          userId,
-          isDraft: false,
-        },
-        select: {
-          id: true,
-          species: true,
-          lengthCm: true,
-          weightKg: true,
-          createdAt: true,
-          latitude: true,
-          longitude: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
+      // Use database aggregations for better performance
+      const [totalCatches, avgStats, biggestFish, heaviestFish, speciesBreakdown] = await Promise.all([
+        // Total count
+        prisma.catch.count({
+          where: { userId, isDraft: false }
+        }),
 
-      // Total catches
-      const totalCatches = catches.length;
+        // Average stats using aggregation
+        prisma.catch.aggregate({
+          where: { userId, isDraft: false },
+          _avg: {
+            lengthCm: true,
+            weightKg: true
+          }
+        }),
 
-      // Species breakdown
-      const speciesCount: { [key: string]: number } = {};
-      catches.forEach(c => {
-        if (c.species) {
-          speciesCount[c.species] = (speciesCount[c.species] || 0) + 1;
-        }
-      });
+        // Biggest fish
+        prisma.catch.findFirst({
+          where: { userId, isDraft: false, lengthCm: { not: null } },
+          orderBy: { lengthCm: 'desc' },
+          select: { species: true, lengthCm: true, weightKg: true, createdAt: true }
+        }),
 
-      const speciesBreakdown = Object.entries(speciesCount)
-        .map(([species, count]) => ({ species, count }))
-        .sort((a, b) => b.count - a.count);
+        // Heaviest fish
+        prisma.catch.findFirst({
+          where: { userId, isDraft: false, weightKg: { not: null } },
+          orderBy: { weightKg: 'desc' },
+          select: { species: true, lengthCm: true, weightKg: true, createdAt: true }
+        }),
 
-      // Personal records
-      const records = {
-        biggestFish: catches.reduce((max, c) =>
-          (c.lengthCm && (!max.lengthCm || c.lengthCm > max.lengthCm)) ? c : max
-        , {} as any),
-        heaviestFish: catches.reduce((max, c) =>
-          (c.weightKg && (!max.weightKg || c.weightKg > max.weightKg)) ? c : max
-        , {} as any),
-      };
+        // Species breakdown using groupBy
+        prisma.catch.groupBy({
+          by: ['species'],
+          where: { userId, isDraft: false, species: { not: null } },
+          _count: { species: true },
+          orderBy: { _count: { species: 'desc' } },
+          take: 20 // Limit to top 20 species
+        })
+      ]);
 
-      // Species-specific records
-      const speciesRecords: any = {};
-      Object.keys(speciesCount).forEach(species => {
-        const speciesCatches = catches.filter(c => c.species === species);
-        speciesRecords[species] = {
-          biggest: speciesCatches.reduce((max, c) =>
-            (c.lengthCm && (!max.lengthCm || c.lengthCm > max.lengthCm)) ? c : max
-          , {} as any),
-          heaviest: speciesCatches.reduce((max, c) =>
-            (c.weightKg && (!max.weightKg || c.weightKg > max.weightKg)) ? c : max
-          , {} as any),
-          count: speciesCatches.length,
-        };
-      });
+      // Species-specific records (load only for top 10 species)
+      const topSpecies = speciesBreakdown.slice(0, 10).map(s => s.species!);
+      const speciesRecordsData = await Promise.all(
+        topSpecies.map(async (species) => {
+          const [biggest, heaviest, count] = await Promise.all([
+            prisma.catch.findFirst({
+              where: { userId, isDraft: false, species, lengthCm: { not: null } },
+              orderBy: { lengthCm: 'desc' },
+              select: { lengthCm: true, weightKg: true, createdAt: true }
+            }),
+            prisma.catch.findFirst({
+              where: { userId, isDraft: false, species, weightKg: { not: null } },
+              orderBy: { weightKg: 'desc' },
+              select: { lengthCm: true, weightKg: true, createdAt: true }
+            }),
+            prisma.catch.count({
+              where: { userId, isDraft: false, species }
+            })
+          ]);
 
-      // Average stats
-      const catchesWithLength = catches.filter(c => c.lengthCm);
-      const catchesWithWeight = catches.filter(c => c.weightKg);
+          return { species, biggest, heaviest, count };
+        })
+      );
 
-      const averageLength = catchesWithLength.length > 0
-        ? catchesWithLength.reduce((sum, c) => sum + (c.lengthCm || 0), 0) / catchesWithLength.length
-        : 0;
-
-      const averageWeight = catchesWithWeight.length > 0
-        ? catchesWithWeight.reduce((sum, c) => sum + (c.weightKg || 0), 0) / catchesWithWeight.length
-        : 0;
+      const speciesRecords = speciesRecordsData.reduce((acc, { species, biggest, heaviest, count }) => {
+        acc[species] = { biggest, heaviest, count };
+        return acc;
+      }, {} as any);
 
       return {
         totalCatches,
-        speciesBreakdown,
+        speciesBreakdown: speciesBreakdown.map(s => ({
+          species: s.species,
+          count: s._count.species
+        })),
         records: {
-          biggest: records.biggestFish.lengthCm ? {
-            species: records.biggestFish.species,
-            lengthCm: records.biggestFish.lengthCm,
-            weightKg: records.biggestFish.weightKg,
-            date: records.biggestFish.createdAt,
-          } : null,
-          heaviest: records.heaviestFish.weightKg ? {
-            species: records.heaviestFish.species,
-            lengthCm: records.heaviestFish.lengthCm,
-            weightKg: records.heaviestFish.weightKg,
-            date: records.heaviestFish.createdAt,
-          } : null,
+          biggest: biggestFish,
+          heaviest: heaviestFish
         },
         speciesRecords,
         averages: {
-          length: Math.round(averageLength * 10) / 10,
-          weight: Math.round(averageWeight * 1000) / 1000,
+          length: Math.round((avgStats._avg.lengthCm || 0) * 10) / 10,
+          weight: Math.round((avgStats._avg.weightKg || 0) * 1000) / 1000,
         },
       };
     } catch (error) {

@@ -102,6 +102,7 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         latitude,
         longitude,
         visibility: visibility || 'private',
+        isDraft: isDraft !== undefined ? isDraft : false,
       };
 
       // Create catch with Prisma

@@ -6,15 +6,16 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
-# Copy package files
+# Copy package files first (changes less frequently = better layer caching)
 COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY turbo.json ./
 
-# Install ALL dependencies (using npm install instead of ci for cross-platform robustness)
-RUN npm install
+# Install dependencies with cache mount for faster rebuilds
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline
 
-# Copy Prisma schema and generate client
+# Copy Prisma schema and generate client (separate layer for caching)
 COPY apps/backend/prisma ./apps/backend/prisma
 RUN cd apps/backend && npx prisma generate
 

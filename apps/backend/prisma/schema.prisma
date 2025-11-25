@@ -143,6 +143,11 @@ model Catch {
   @@index([isDraft])
   @@index([sessionId])
   @@index([score])
+  @@index([userId, createdAt(sort: Desc)]) // For timeline queries
+  @@index([userId, species]) // For species filtering
+  @@index([latitude, longitude]) // For location queries
+  @@index([userId, isDraft, createdAt]) // Composite for catches list
+  @@index([visibility, createdAt]) // For feed queries
   @@map("catches")
 }
 

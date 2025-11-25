@@ -3,6 +3,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import { authenticateToken } from '../middleware/auth';
 import { PrismaClient } from '@prisma/client';
 import { getLevelFromXP, getRankForLevel } from '../utils/xp-system.js';
 import { getLeaderboard } from '../services/xp-service.js';
@@ -11,8 +12,8 @@ const prisma = new PrismaClient();
 
 export default async function xpRoutes(fastify: FastifyInstance) {
   // Get user's XP and level data
-  fastify.get('/api/xp/me', async (request, reply) => {
-    const userId = (request as any).userId;
+  fastify.get('/api/xp/me', { preHandler: authenticateToken }, async (request, reply) => {
+    const userId = request.user!.userId;
 
     if (!userId) {
       return reply.status(401).send({ error: 'Unauthorized' });
@@ -103,7 +104,7 @@ export default async function xpRoutes(fastify: FastifyInstance) {
 
   // Get XP history (recent XP gains)
   fastify.get('/api/xp/history', async (request, reply) => {
-    const userId = (request as any).userId;
+    const userId = request.user!.userId;
 
     if (!userId) {
       return reply.status(401).send({ error: 'Unauthorized' });
@@ -140,7 +141,7 @@ export default async function xpRoutes(fastify: FastifyInstance) {
 
   // Get user's ranking position
   fastify.get('/api/xp/my-rank', async (request, reply) => {
-    const userId = (request as any).userId;
+    const userId = request.user!.userId;
 
     if (!userId) {
       return reply.status(401).send({ error: 'Unauthorized' });
