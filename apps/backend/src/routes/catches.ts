@@ -46,7 +46,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
       return reply.code(201).send(catch_);
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Failed to start catch' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to start catch', details: errorMessage });
     }
   });
 
@@ -128,7 +129,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Failed to create catch' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to create catch', details: errorMessage });
     }
   });
 
@@ -165,7 +167,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
       return catches;
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Failed to fetch catches' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to fetch catches', details: errorMessage });
     }
   });
 
@@ -430,7 +433,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
       return drafts;
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Failed to fetch drafts' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to fetch drafts', details: errorMessage });
     }
   });
 

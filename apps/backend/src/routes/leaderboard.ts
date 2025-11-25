@@ -250,7 +250,8 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       request.log.error(error);
-      return reply.code(500).send({ error: 'Failed to fetch leaderboard' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to fetch leaderboard', details: errorMessage });
     }
   });
 }

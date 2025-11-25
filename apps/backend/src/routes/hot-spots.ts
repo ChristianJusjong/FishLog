@@ -91,7 +91,8 @@ export async function hotSpotsRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Failed to identify favorite spots' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to identify favorite spots', details: errorMessage });
     }
   });
 
@@ -149,7 +150,8 @@ export async function hotSpotsRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Failed to identify hot spots' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to identify hot spots', details: errorMessage });
     }
   });
 
@@ -326,7 +328,8 @@ export async function hotSpotsRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Failed to get hot spot details' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to get hot spot details', details: errorMessage });
     }
   });
 }
