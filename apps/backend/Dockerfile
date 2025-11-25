@@ -11,9 +11,8 @@ COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY turbo.json ./
 
-# Install dependencies with cache mount for faster rebuilds
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline
+# Install dependencies
+RUN npm ci
 
 # Copy Prisma schema and generate client (separate layer for caching)
 COPY apps/backend/prisma ./apps/backend/prisma
