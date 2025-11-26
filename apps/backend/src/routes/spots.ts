@@ -23,7 +23,7 @@ export async function spotsRoutes(fastify: FastifyInstance) {
     addDeprecationHeader(reply);
     const query = request.query as { species?: string; season?: string; gridSize?: string };
     const queryString = new URLSearchParams(query as Record<string, string>).toString();
-    return reply.redirect(307, `/hot-spots/heatmap${queryString ? '?' + queryString : ''}`);
+    return reply.code(307).redirect(`/hot-spots/heatmap${queryString ? '?' + queryString : ''}`);
   });
 
   // Get top spots -> redirects to hot-spots top
@@ -33,7 +33,7 @@ export async function spotsRoutes(fastify: FastifyInstance) {
     addDeprecationHeader(reply);
     const query = request.query as { species?: string; limit?: string };
     const queryString = new URLSearchParams(query as Record<string, string>).toString();
-    return reply.redirect(307, `/hot-spots/top${queryString ? '?' + queryString : ''}`);
+    return reply.code(307).redirect(`/hot-spots/top${queryString ? '?' + queryString : ''}`);
   });
 
   // Get area stats -> redirects to hot-spots area-stats
@@ -43,7 +43,7 @@ export async function spotsRoutes(fastify: FastifyInstance) {
     addDeprecationHeader(reply);
     const query = request.query as { lat?: string; lng?: string; radius?: string };
     const queryString = new URLSearchParams(query as Record<string, string>).toString();
-    return reply.redirect(307, `/hot-spots/area-stats${queryString ? '?' + queryString : ''}`);
+    return reply.code(307).redirect(`/hot-spots/area-stats${queryString ? '?' + queryString : ''}`);
   });
 
   // Deprecation notice endpoint

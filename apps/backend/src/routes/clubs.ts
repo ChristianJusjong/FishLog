@@ -21,14 +21,7 @@ export async function clubsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     addDeprecationHeader(reply);
-    const { name, description, visibility } = request.body as {
-      name: string;
-      description?: string;
-      visibility?: 'private' | 'public';
-    };
-
-    // Redirect to groups endpoint
-    return reply.redirect(307, `/groups`);
+    return reply.code(307).redirect('/groups');
   });
 
   // Get all clubs (user's clubs) -> redirects to get my groups
@@ -36,7 +29,7 @@ export async function clubsRoutes(fastify: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request, reply) => {
     addDeprecationHeader(reply);
-    return reply.redirect(307, '/groups/my-groups');
+    return reply.code(307).redirect('/groups/my-groups');
   });
 
   // Get club by ID -> redirects to get group by ID
@@ -45,7 +38,7 @@ export async function clubsRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     addDeprecationHeader(reply);
     const { id } = request.params as { id: string };
-    return reply.redirect(307, `/groups/${id}`);
+    return reply.code(307).redirect(`/groups/${id}`);
   });
 
   // Join a club -> redirects to join group
@@ -54,7 +47,7 @@ export async function clubsRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     addDeprecationHeader(reply);
     const { id } = request.params as { id: string };
-    return reply.redirect(307, `/groups/${id}/join`);
+    return reply.code(307).redirect(`/groups/${id}/join`);
   });
 
   // Get club messages -> redirects to get group messages
@@ -65,7 +58,7 @@ export async function clubsRoutes(fastify: FastifyInstance) {
     const { id } = request.params as { id: string };
     const query = request.query as { limit?: string; before?: string };
     const queryString = new URLSearchParams(query as Record<string, string>).toString();
-    return reply.redirect(307, `/groups/${id}/messages${queryString ? '?' + queryString : ''}`);
+    return reply.code(307).redirect(`/groups/${id}/messages${queryString ? '?' + queryString : ''}`);
   });
 
   // Send a message -> redirects to send group message
@@ -74,7 +67,7 @@ export async function clubsRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     addDeprecationHeader(reply);
     const { id } = request.params as { id: string };
-    return reply.redirect(307, `/groups/${id}/messages`);
+    return reply.code(307).redirect(`/groups/${id}/messages`);
   });
 
   // Get new messages since timestamp (for polling) -> redirects to group poll
@@ -84,7 +77,7 @@ export async function clubsRoutes(fastify: FastifyInstance) {
     addDeprecationHeader(reply);
     const { id } = request.params as { id: string };
     const { since } = request.query as { since: string };
-    return reply.redirect(307, `/groups/${id}/messages/poll?since=${encodeURIComponent(since)}`);
+    return reply.code(307).redirect(`/groups/${id}/messages/poll?since=${encodeURIComponent(since)}`);
   });
 
   // Delete a message -> redirects to delete group message
@@ -93,7 +86,7 @@ export async function clubsRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     addDeprecationHeader(reply);
     const { clubId, messageId } = request.params as { clubId: string; messageId: string };
-    return reply.redirect(307, `/groups/${clubId}/messages/${messageId}`);
+    return reply.code(307).redirect(`/groups/${clubId}/messages/${messageId}`);
   });
 
   // Deprecation notice endpoint
