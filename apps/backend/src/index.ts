@@ -138,6 +138,56 @@ fastify.register(hotSpotsRoutes);
 fastify.register(speciesRoutes);
 fastify.register(leaderboardRoutes);
 
+// Debug endpoint for testing Prisma queries
+fastify.get('/debug/catch-test', async (request, reply) => {
+  try {
+    // Test 1: Simple count
+    const count = await prisma.catch.count();
+
+    // Test 2: FindMany without include
+    const catchesSimple = await prisma.catch.findMany({
+      take: 1,
+      select: { id: true, species: true, userId: true }
+    });
+
+    // Test 3: FindMany with include
+    let catchesWithUser = null;
+    let includeError = null;
+    try {
+      catchesWithUser = await prisma.catch.findMany({
+        take: 1,
+        include: {
+          user: {
+            select: { id: true, name: true, avatar: true }
+          }
+        }
+      });
+    } catch (e) {
+      includeError = e instanceof Error ? e.message : String(e);
+    }
+
+    // Test 4: Check User model
+    const userCount = await prisma.user.count();
+
+    return {
+      success: true,
+      tests: {
+        catchCount: count,
+        simpleQuery: catchesSimple,
+        withUserInclude: catchesWithUser,
+        includeError,
+        userCount
+      }
+    };
+  } catch (error) {
+    return reply.code(500).send({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+  }
+});
+
 // Health check endpoint
 fastify.get('/health', async (request, reply) => {
   try {
