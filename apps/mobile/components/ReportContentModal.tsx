@@ -18,7 +18,7 @@ import { API_URL } from '../config/api';
 interface ReportContentModalProps {
   visible: boolean;
   onClose: () => void;
-  contentType: 'catch' | 'comment' | 'user' | 'group_post' | 'club_message';
+  contentType: 'catch' | 'comment' | 'user' | 'group_post' | 'group_message';
   contentId: string;
   contentTitle?: string; // Optional title to show what's being reported
 }
