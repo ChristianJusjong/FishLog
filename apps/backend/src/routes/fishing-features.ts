@@ -245,7 +245,8 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
       }
 
       const where: any = {
-        region: { not: null }, // Would implement proper region lookup based on lat/lng
+        // Filter regulations that have a region set
+        region: { not: '' },
       };
 
       if (species) {
