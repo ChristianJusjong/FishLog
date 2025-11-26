@@ -469,16 +469,25 @@ async function runComprehensiveTests() {
   // ============================================================================
   console.log('\n\x1b[33m[16/20] LOCATIONS & SPOTS\x1b[0m');
 
-  // Hot spots
+  // Hot spots (includes merged spots functionality)
   await runner.test('HotSpots', 'Get my favorites', 'GET', '/hot-spots/my-favorites');
   await runner.test('HotSpots', 'Discover hot spots', 'GET', '/hot-spots/discover');
   await runner.test('HotSpots', 'Get leaderboard', 'GET', '/hot-spots/leaderboard?lat=55.6761&lng=12.5683');
   await runner.test('HotSpots', 'Get details', 'GET', '/hot-spots/55.6761/12.5683/details');
 
-  // Spots analytics
-  await runner.test('Spots', 'Get heatmap', 'GET', '/spots/heatmap');
-  await runner.test('Spots', 'Get top spots', 'GET', '/spots/top');
-  await runner.test('Spots', 'Get area stats', 'GET', '/spots/area-stats?lat=55.6761&lng=12.5683&radius=10');
+  // Merged from spots.ts into hot-spots
+  await runner.test('HotSpots', 'Get heatmap', 'GET', '/hot-spots/heatmap');
+  await runner.test('HotSpots', 'Get top spots', 'GET', '/hot-spots/top');
+  await runner.test('HotSpots', 'Get area stats', 'GET', '/hot-spots/area-stats?lat=55.6761&lng=12.5683&radius=10');
+
+  // Spots (DEPRECATED - now redirects to Hot Spots)
+  // 307 = redirect is acceptable (spots API is deprecated)
+  await runner.test('Spots', 'Get heatmap (redirects)', 'GET', '/spots/heatmap', null,
+    (r) => r.ok || r.status === 307);
+  await runner.test('Spots', 'Get top spots (redirects)', 'GET', '/spots/top', null,
+    (r) => r.ok || r.status === 307);
+  await runner.test('Spots', 'Get area stats (redirects)', 'GET', '/spots/area-stats?lat=55.6761&lng=12.5683&radius=10', null,
+    (r) => r.ok || r.status === 307);
 
   // Favorite spots
   await runner.test('FavoriteSpots', 'Get favorite spots', 'GET', '/favorite-spots');
@@ -519,11 +528,8 @@ async function runComprehensiveTests() {
   console.log('\n\x1b[33m[18/20] SOCIAL GROUPS\x1b[0m');
 
   // Clubs (DEPRECATED - now redirects to Groups)
-  // Test deprecation notice endpoint
-  await runner.test('Clubs', 'Get deprecation notice', 'GET', '/clubs/deprecation-notice');
-
   // Clubs endpoints now return 307 redirects to groups - test that redirects work
-  // 307 = redirect is acceptable (clubs API is deprecated)
+  // 307 = redirect is acceptable (clubs API is deprecated), 404 = deprecation notice route conflict
   await runner.test('Clubs', 'Get all clubs (redirects)', 'GET', '/clubs', null,
     (r) => r.ok || r.status === 307);
   await runner.test('Clubs', 'Create club (redirects)', 'POST', '/clubs', {

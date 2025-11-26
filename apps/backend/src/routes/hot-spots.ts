@@ -332,6 +332,275 @@ export async function hotSpotsRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ error: 'Failed to get hot spot details', details: errorMessage });
     }
   });
+
+  /**
+   * GET /api/hot-spots/heatmap
+   * Get heatmap data for fishing spots (merged from spots.ts)
+   */
+  fastify.get('/hot-spots/heatmap', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { species, season, gridSize = '0.01' } = request.query as {
+        species?: string | string[];
+        season?: 'spring' | 'summer' | 'fall' | 'winter';
+        gridSize?: string;
+      };
+
+      const conditions: string[] = ['latitude IS NOT NULL', 'longitude IS NOT NULL'];
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      if (species) {
+        const speciesArray = Array.isArray(species) ? species : [species];
+        if (speciesArray.length > 0) {
+          conditions.push(`species = ANY($${paramIndex}::text[])`);
+          params.push(speciesArray);
+          paramIndex++;
+        }
+      }
+
+      if (season) {
+        const seasonMonths: Record<string, number[]> = {
+          spring: [3, 4, 5],
+          summer: [6, 7, 8],
+          fall: [9, 10, 11],
+          winter: [12, 1, 2],
+        };
+        const months = seasonMonths[season];
+        conditions.push(`EXTRACT(MONTH FROM "createdAt") = ANY($${paramIndex}::int[])`);
+        params.push(months);
+        paramIndex++;
+      }
+
+      const whereClause = conditions.join(' AND ');
+      const gridSizeNum = parseFloat(gridSize);
+
+      const heatmapQuery = `
+        SELECT
+          grid_lng as longitude,
+          grid_lat as latitude,
+          COUNT(*) as intensity,
+          ARRAY_AGG(DISTINCT species) as species_list,
+          AVG(COALESCE("weightKg", 0)) as avg_weight,
+          COUNT(DISTINCT "userId") as unique_anglers
+        FROM (
+          SELECT
+            FLOOR(longitude / $${paramIndex}) * $${paramIndex} as grid_lng,
+            FLOOR(latitude / $${paramIndex}) * $${paramIndex} as grid_lat,
+            species,
+            "weightKg",
+            "userId"
+          FROM catches
+          WHERE ${whereClause}
+        ) as gridded
+        GROUP BY grid_lng, grid_lat
+        HAVING COUNT(*) > 0
+        ORDER BY intensity DESC
+        LIMIT 500
+      `;
+
+      params.push(gridSizeNum);
+
+      const heatmapData = await prisma.$queryRawUnsafe<Array<{
+        longitude: number;
+        latitude: number;
+        intensity: bigint;
+        species_list: string[];
+        avg_weight: number;
+        unique_anglers: bigint;
+      }>>(heatmapQuery, ...params);
+
+      const formattedData = heatmapData.map(point => ({
+        longitude: point.longitude,
+        latitude: point.latitude,
+        intensity: Number(point.intensity),
+        species: point.species_list,
+        avgWeight: point.avg_weight,
+        uniqueAnglers: Number(point.unique_anglers),
+      }));
+
+      return {
+        points: formattedData,
+        filters: { species, season, gridSize: parseFloat(gridSize) },
+        total: formattedData.length,
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to generate heatmap' });
+    }
+  });
+
+  /**
+   * GET /api/hot-spots/top
+   * Get top fishing spots - most catches (merged from spots.ts)
+   */
+  fastify.get('/hot-spots/top', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { species, limit = '10' } = request.query as {
+        species?: string | string[];
+        limit?: string;
+      };
+
+      const conditions: string[] = ['latitude IS NOT NULL', 'longitude IS NOT NULL'];
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      if (species) {
+        const speciesArray = Array.isArray(species) ? species : [species];
+        if (speciesArray.length > 0) {
+          conditions.push(`species = ANY($${paramIndex}::text[])`);
+          params.push(speciesArray);
+          paramIndex++;
+        }
+      }
+
+      const whereClause = conditions.join(' AND ');
+
+      const topSpotsQuery = `
+        SELECT
+          AVG(longitude) as longitude,
+          AVG(latitude) as latitude,
+          COUNT(*) as catch_count,
+          ARRAY_AGG(DISTINCT species) as species_list,
+          AVG(COALESCE("weightKg", 0)) * 1000 as avg_weight_g,
+          MAX(COALESCE("weightKg", 0)) * 1000 as max_weight_g
+        FROM (
+          SELECT
+            FLOOR(longitude / 0.01) * 0.01 as grid_lng,
+            FLOOR(latitude / 0.01) * 0.01 as grid_lat,
+            longitude,
+            latitude,
+            species,
+            "weightKg"
+          FROM catches
+          WHERE ${whereClause}
+        ) as gridded
+        GROUP BY grid_lng, grid_lat
+        HAVING COUNT(*) >= 2
+        ORDER BY catch_count DESC
+        LIMIT $${paramIndex}
+      `;
+
+      params.push(parseInt(limit));
+
+      const topSpots = await prisma.$queryRawUnsafe<Array<{
+        longitude: number;
+        latitude: number;
+        catch_count: bigint;
+        species_list: string[];
+        avg_weight_g: number;
+        max_weight_g: number;
+      }>>(topSpotsQuery, ...params);
+
+      const formattedSpots = topSpots.map((spot, index) => ({
+        id: `spot-${index}`,
+        longitude: spot.longitude,
+        latitude: spot.latitude,
+        catchCount: Number(spot.catch_count),
+        species: spot.species_list,
+        avgWeight: Math.round(spot.avg_weight_g),
+        maxWeight: Math.round(spot.max_weight_g),
+      }));
+
+      return {
+        spots: formattedSpots,
+        filters: { species },
+        total: formattedSpots.length,
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to get top spots' });
+    }
+  });
+
+  /**
+   * GET /api/hot-spots/area-stats
+   * Get catch statistics for a specific area (merged from spots.ts)
+   */
+  fastify.get('/hot-spots/area-stats', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      if (!request.user) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+
+      const { lat, lng, radius = '1' } = request.query as {
+        lat: string;
+        lng: string;
+        radius?: string;
+      };
+
+      if (!lat || !lng) {
+        return reply.code(400).send({ error: 'Latitude and longitude are required' });
+      }
+
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      const radiusKm = parseFloat(radius);
+      const degreeRadius = radiusKm / 111.0;
+
+      const statsQuery = `
+        SELECT
+          COUNT(*) as total_catches,
+          COUNT(DISTINCT species) as unique_species,
+          COUNT(DISTINCT "userId") as unique_anglers,
+          AVG(COALESCE("weightKg", 0)) * 1000 as avg_weight_g,
+          MAX(COALESCE("weightKg", 0)) * 1000 as max_weight_g,
+          ARRAY_AGG(DISTINCT species) as species_list
+        FROM catches
+        WHERE latitude IS NOT NULL
+          AND longitude IS NOT NULL
+          AND latitude BETWEEN $1 - $3 AND $1 + $3
+          AND longitude BETWEEN $2 - $3 AND $2 + $3
+      `;
+
+      const stats = await prisma.$queryRawUnsafe<Array<{
+        total_catches: bigint;
+        unique_species: bigint;
+        unique_anglers: bigint;
+        avg_weight_g: number;
+        max_weight_g: number;
+        species_list: string[];
+      }>>(statsQuery, latitude, longitude, degreeRadius);
+
+      if (stats.length === 0 || Number(stats[0].total_catches) === 0) {
+        return {
+          totalCatches: 0,
+          uniqueSpecies: 0,
+          uniqueAnglers: 0,
+          avgWeight: 0,
+          maxWeight: 0,
+          species: [],
+        };
+      }
+
+      const stat = stats[0];
+      return {
+        totalCatches: Number(stat.total_catches),
+        uniqueSpecies: Number(stat.unique_species),
+        uniqueAnglers: Number(stat.unique_anglers),
+        avgWeight: Math.round(stat.avg_weight_g),
+        maxWeight: Math.round(stat.max_weight_g),
+        species: stat.species_list.filter(s => s !== null),
+        area: { latitude, longitude, radiusKm },
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to get area statistics' });
+    }
+  });
 }
 
 function calculateDistanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
