@@ -81,7 +81,8 @@ export async function segmentsRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Failed to create segment' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to create segment', details: errorMessage });
     }
   });
 

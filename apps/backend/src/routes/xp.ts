@@ -103,7 +103,7 @@ export default async function xpRoutes(fastify: FastifyInstance) {
   });
 
   // Get XP history (recent XP gains)
-  fastify.get('/api/xp/history', async (request, reply) => {
+  fastify.get('/api/xp/history', { preHandler: authenticateToken }, async (request, reply) => {
     const userId = request.user!.userId;
 
     if (!userId) {
@@ -140,7 +140,7 @@ export default async function xpRoutes(fastify: FastifyInstance) {
   );
 
   // Get user's ranking position
-  fastify.get('/api/xp/my-rank', async (request, reply) => {
+  fastify.get('/api/xp/my-rank', { preHandler: authenticateToken }, async (request, reply) => {
     const userId = request.user!.userId;
 
     if (!userId) {

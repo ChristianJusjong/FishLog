@@ -278,7 +278,8 @@ export async function fishingFeaturesRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Failed to get fishing regulations' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return reply.code(500).send({ error: 'Failed to get fishing regulations', details: errorMessage });
     }
   });
 
