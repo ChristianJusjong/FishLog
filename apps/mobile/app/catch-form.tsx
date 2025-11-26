@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,24 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import {
+  findNearestFishingLocation,
+  getSpeciesName,
+  getWaterTypeLabel,
+  getWaterTypeColor,
+  type FishingLocation,
+} from '../data/fishingLocations';
+import {
+  LURE_TYPES,
+  BAIT_TYPES,
+  TECHNIQUES,
+  getSmartGearSuggestions,
+  type LureType,
+  type BaitType,
+  type TechniqueType,
+} from '../data/fishingGear';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -203,6 +220,74 @@ const useStyles = () => {
       color: colors.textSecondary,
       marginTop: SPACING.md,
     },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
+    },
+    completeButtonGradient: {
+      paddingVertical: SPACING.md,
+      borderRadius: RADIUS.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    locationInfoCard: {
+      backgroundColor: colors.surface,
+      padding: SPACING.md,
+      borderRadius: RADIUS.lg,
+      marginBottom: SPACING.lg,
+      borderLeftWidth: 4,
+      ...SHADOWS.sm,
+    },
+    locationInfoHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: SPACING.sm,
+    },
+    locationInfoTitle: {
+      ...TYPOGRAPHY.styles.body,
+      fontWeight: '700',
+      marginLeft: SPACING.xs,
+      flex: 1,
+    },
+    locationInfoDistance: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.textSecondary,
+    },
+    locationInfoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: SPACING.xs,
+    },
+    locationInfoLabel: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.textSecondary,
+      marginRight: SPACING.xs,
+    },
+    locationInfoValue: {
+      ...TYPOGRAPHY.styles.small,
+      fontWeight: '600',
+    },
+    speciesChipsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.xs,
+      marginTop: SPACING.xs,
+    },
+    speciesChip: {
+      backgroundColor: colors.primaryLight,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 2,
+      borderRadius: RADIUS.full,
+    },
+    speciesChipText: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.primary,
+      fontWeight: '600',
+    },
   });
 };
 
@@ -259,6 +344,66 @@ export default function CatchFormScreen() {
   const [technique, setTechnique] = useState('');
   const [notes, setNotes] = useState('');
   const [visibility, setVisibility] = useState('private');
+
+  // Find nearest known fishing location based on catch coordinates
+  const nearestLocation = useMemo(() => {
+    if (!catch_?.latitude || !catch_?.longitude) return null;
+    return findNearestFishingLocation(catch_.latitude, catch_.longitude, 25); // Within 25km
+  }, [catch_?.latitude, catch_?.longitude]);
+
+  // Get species ID for gear suggestions (normalize Danish species name to ID)
+  const speciesId = useMemo(() => {
+    if (!species) return undefined;
+    // Map common species names to IDs
+    const speciesMap: Record<string, string> = {
+      'Aborre': 'aborre',
+      'Gedde': 'gedde',
+      'Sandart': 'sandart',
+      'Havørred': 'havorred',
+      'Laks': 'laks',
+      'Torsk': 'torsk',
+      'Skalle': 'skalle',
+      'Karpe': 'karpe',
+      'Hornfisk': 'hornfisk',
+      'Makrel': 'makrel',
+      'Regnbueørred': 'regnbueorred',
+      'Brasen': 'brasen',
+      'Ål': 'al',
+      'Stalling': 'stalling',
+      'Bækørred': 'bakorred',
+      'Suder': 'suder',
+      'Sej/mørksej': 'sej',
+      'Havbars': 'havbars',
+    };
+    return speciesMap[species] || species.toLowerCase().replace(/ø/g, 'o').replace(/æ/g, 'ae').replace(/å/g, 'a');
+  }, [species]);
+
+  // Get smart gear suggestions based on selected species
+  const gearSuggestions = useMemo(() => {
+    return getSmartGearSuggestions(speciesId);
+  }, [speciesId]);
+
+  // Combine all gear options with suggestions at top
+  const lureOptions = useMemo(() => {
+    const suggested = gearSuggestions.lures;
+    const suggestedIds = new Set(suggested.map(l => l.id));
+    const others = LURE_TYPES.filter(l => !suggestedIds.has(l.id)).sort((a, b) => a.nameDa.localeCompare(b.nameDa, 'da'));
+    return { suggested, others };
+  }, [gearSuggestions.lures]);
+
+  const baitOptions = useMemo(() => {
+    const suggested = gearSuggestions.baits;
+    const suggestedIds = new Set(suggested.map(b => b.id));
+    const others = BAIT_TYPES.filter(b => !suggestedIds.has(b.id)).sort((a, b) => a.nameDa.localeCompare(b.nameDa, 'da'));
+    return { suggested, others };
+  }, [gearSuggestions.baits]);
+
+  const techniqueOptions = useMemo(() => {
+    const suggested = gearSuggestions.techniques;
+    const suggestedIds = new Set(suggested.map(t => t.id));
+    const others = TECHNIQUES.filter(t => !suggestedIds.has(t.id)).sort((a, b) => a.nameDa.localeCompare(b.nameDa, 'da'));
+    return { suggested, others };
+  }, [gearSuggestions.techniques]);
 
   useEffect(() => {
     if (catchId) {
@@ -465,10 +610,18 @@ export default function CatchFormScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Indlæser...</Text>
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark || '#D4880F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoGradient}
+          >
+            <Ionicons name="fish" size={40} color={colors.primary} />
+          </LinearGradient>
+          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
+          <Text style={styles.loadingText}>Indlæser fangst...</Text>
         </View>
       </SafeAreaView>
     );
@@ -510,6 +663,65 @@ export default function CatchFormScreen() {
             <Text style={styles.gpsText}>
               {catch_.latitude.toFixed(6)}, {catch_.longitude.toFixed(6)}
             </Text>
+          </View>
+        )}
+
+        {/* Nearest known fishing location info */}
+        {nearestLocation && (
+          <View style={[styles.locationInfoCard, { borderLeftColor: getWaterTypeColor(nearestLocation.location.waterType) }]}>
+            <View style={styles.locationInfoHeader}>
+              <Ionicons name="compass" size={20} color={getWaterTypeColor(nearestLocation.location.waterType)} />
+              <Text style={[styles.locationInfoTitle, { color: colors.text }]}>
+                {nearestLocation.location.name}
+              </Text>
+              <Text style={styles.locationInfoDistance}>
+                {nearestLocation.distance.toFixed(1)} km væk
+              </Text>
+            </View>
+
+            <View style={styles.locationInfoRow}>
+              <Text style={styles.locationInfoLabel}>Vandtype:</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: getWaterTypeColor(nearestLocation.location.waterType), marginRight: 4 }} />
+                <Text style={[styles.locationInfoValue, { color: colors.text }]}>
+                  {getWaterTypeLabel(nearestLocation.location.waterType)}
+                </Text>
+              </View>
+            </View>
+
+            {nearestLocation.location.depth && (
+              <View style={styles.locationInfoRow}>
+                <Text style={styles.locationInfoLabel}>Dybde:</Text>
+                <Text style={[styles.locationInfoValue, { color: colors.text }]}>{nearestLocation.location.depth}</Text>
+              </View>
+            )}
+
+            {nearestLocation.location.regulations && (
+              <View style={styles.locationInfoRow}>
+                <Ionicons name="alert-circle" size={14} color={colors.warning} style={{ marginRight: 4 }} />
+                <Text style={[styles.locationInfoValue, { color: colors.warning }]}>
+                  {nearestLocation.location.regulations}
+                </Text>
+              </View>
+            )}
+
+            <Text style={[styles.locationInfoLabel, { marginTop: SPACING.xs, marginBottom: 2 }]}>
+              Almindelige arter på dette sted:
+            </Text>
+            <View style={styles.speciesChipsContainer}>
+              {nearestLocation.location.species.slice(0, 6).map((speciesId) => (
+                <View key={speciesId} style={styles.speciesChip}>
+                  <Text style={styles.speciesChipText}>{getSpeciesName(speciesId)}</Text>
+                </View>
+              ))}
+              {nearestLocation.location.species.length > 6 && (
+                <View style={[styles.speciesChip, { backgroundColor: colors.border }]}>
+                  <Text style={[styles.speciesChipText, { color: colors.textSecondary }]}>
+                    +{nearestLocation.location.species.length - 6}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         )}
 
@@ -583,34 +795,85 @@ export default function CatchFormScreen() {
           </View>
         </View>
 
-        {/* Bait and Lure */}
+        {/* Bait (Agn) Picker */}
         <View style={styles.fieldGroup}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="bug" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
-            <Text style={styles.label}>Agn</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="bug" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
+              <Text style={styles.label}>Agn</Text>
+            </View>
+            {speciesId && baitOptions.suggested.length > 0 && (
+              <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.success }}>
+                {baitOptions.suggested.length} anbefalinger
+              </Text>
+            )}
           </View>
-          <TextInput
-            style={styles.input}
-            value={bait}
-            onChangeText={setBait}
-            placeholder="f.eks. orm, majs"
-          />
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={bait}
+              onValueChange={(value) => setBait(value)}
+              style={styles.picker}
+              dropdownIconColor={colors.primary}
+            >
+              <Picker.Item label="Vælg agn..." value="" color={colors.textSecondary} />
+              {speciesId && baitOptions.suggested.length > 0 && (
+                <Picker.Item label="── Anbefalet ──" value="" enabled={false} color={colors.success} />
+              )}
+              {baitOptions.suggested.map((b) => (
+                <Picker.Item key={b.id} label={`★ ${b.nameDa}`} value={b.nameDa} />
+              ))}
+              {baitOptions.others.length > 0 && (
+                <Picker.Item label="── Alle agn ──" value="" enabled={false} color={colors.textSecondary} />
+              )}
+              {baitOptions.others.map((b) => (
+                <Picker.Item key={b.id} label={b.nameDa} value={b.nameDa} />
+              ))}
+              <Picker.Item label="── Andet ──" value="" enabled={false} color={colors.textSecondary} />
+              <Picker.Item label="Andet (skriv i noter)" value="Andet" />
+            </Picker>
+          </View>
         </View>
 
+        {/* Lure (Wobler/Spin) Picker */}
         <View style={styles.fieldGroup}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="fish-outline" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
-            <Text style={styles.label}>Wobler/Spin</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="fish-outline" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
+              <Text style={styles.label}>Wobler/Spin</Text>
+            </View>
+            {speciesId && lureOptions.suggested.length > 0 && (
+              <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.success }}>
+                {lureOptions.suggested.length} anbefalinger
+              </Text>
+            )}
           </View>
-          <TextInput
-            style={styles.input}
-            value={lure}
-            onChangeText={setLure}
-            placeholder="f.eks. Rapala"
-          />
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={lure}
+              onValueChange={(value) => setLure(value)}
+              style={styles.picker}
+              dropdownIconColor={colors.primary}
+            >
+              <Picker.Item label="Vælg agn/lokkemad..." value="" color={colors.textSecondary} />
+              {speciesId && lureOptions.suggested.length > 0 && (
+                <Picker.Item label="── Anbefalet ──" value="" enabled={false} color={colors.success} />
+              )}
+              {lureOptions.suggested.map((l) => (
+                <Picker.Item key={l.id} label={`★ ${l.nameDa}`} value={l.nameDa} />
+              ))}
+              {lureOptions.others.length > 0 && (
+                <Picker.Item label="── Alle kunstagn ──" value="" enabled={false} color={colors.textSecondary} />
+              )}
+              {lureOptions.others.map((l) => (
+                <Picker.Item key={l.id} label={l.nameDa} value={l.nameDa} />
+              ))}
+              <Picker.Item label="── Andet ──" value="" enabled={false} color={colors.textSecondary} />
+              <Picker.Item label="Andet (skriv i noter)" value="Andet" />
+            </Picker>
+          </View>
         </View>
 
-        {/* Rig and Technique */}
+        {/* Rig (Grej) - keep as text input for flexibility */}
         <View style={styles.fieldGroup}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="construct" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
@@ -620,21 +883,47 @@ export default function CatchFormScreen() {
             style={styles.input}
             value={rig}
             onChangeText={setRig}
-            placeholder="f.eks. kastestang 2.7m"
+            placeholder="f.eks. kastestang 2.7m, 10-30g"
           />
         </View>
 
+        {/* Technique Picker */}
         <View style={styles.fieldGroup}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="flag" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
-            <Text style={styles.label}>Teknik</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="flag" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
+              <Text style={styles.label}>Teknik</Text>
+            </View>
+            {speciesId && techniqueOptions.suggested.length > 0 && (
+              <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.success }}>
+                {techniqueOptions.suggested.length} anbefalinger
+              </Text>
+            )}
           </View>
-          <TextInput
-            style={styles.input}
-            value={technique}
-            onChangeText={setTechnique}
-            placeholder="f.eks. spinning, bundfi skeri"
-          />
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={technique}
+              onValueChange={(value) => setTechnique(value)}
+              style={styles.picker}
+              dropdownIconColor={colors.primary}
+            >
+              <Picker.Item label="Vælg teknik..." value="" color={colors.textSecondary} />
+              {speciesId && techniqueOptions.suggested.length > 0 && (
+                <Picker.Item label="── Anbefalet ──" value="" enabled={false} color={colors.success} />
+              )}
+              {techniqueOptions.suggested.map((t) => (
+                <Picker.Item key={t.id} label={`★ ${t.nameDa}`} value={t.nameDa} />
+              ))}
+              {techniqueOptions.others.length > 0 && (
+                <Picker.Item label="── Alle teknikker ──" value="" enabled={false} color={colors.textSecondary} />
+              )}
+              {techniqueOptions.others.map((t) => (
+                <Picker.Item key={t.id} label={t.nameDa} value={t.nameDa} />
+              ))}
+              <Picker.Item label="── Andet ──" value="" enabled={false} color={colors.textSecondary} />
+              <Picker.Item label="Andet (skriv i noter)" value="Andet" />
+            </Picker>
+          </View>
         </View>
 
         {/* Notes */}
@@ -698,18 +987,26 @@ export default function CatchFormScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.completeButton]}
+            style={[styles.button, { overflow: 'hidden', ...SHADOWS.glow }]}
             onPress={completeCatch}
             disabled={saving || !species}
+            activeOpacity={0.85}
           >
-            {saving ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="checkmark-circle" size={20} color={colors.white} style={{ marginRight: 6 }} />
-                <Text style={styles.buttonText}>Færdiggør fangst</Text>
-              </View>
-            )}
+            <LinearGradient
+              colors={[colors.accent, colors.accentDark || '#D4880F']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.completeButtonGradient}
+            >
+              {saving ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={[styles.buttonText, { color: colors.primary }]}>Færdiggør fangst</Text>
+                </View>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 

@@ -11,16 +11,74 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, GRADIENTS } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { API_URL } from '../config/api';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 
+// Import fishing gear database for gear info
+import {
+  LURE_TYPES,
+  BAIT_TYPES,
+  TECHNIQUES,
+  getLureByName,
+  getBaitByName,
+  getTechniqueByName,
+} from '../data/fishingGear';
+
 const screenWidth = Dimensions.get('window').width;
+
+// Helper to get icon for bait type from gear database
+const getBaitIcon = (baitName: string): string => {
+  const bait = getBaitByName(baitName);
+  if (bait) {
+    switch (bait.category) {
+      case 'live': return 'bug';
+      case 'natural': return 'leaf';
+      case 'prepared': return 'cube';
+      case 'artificial': return 'color-palette';
+      default: return 'fish';
+    }
+  }
+  // Check if it might be a lure
+  const lure = getLureByName(baitName);
+  if (lure) {
+    switch (lure.category) {
+      case 'spinner': return 'sync';
+      case 'spoon': return 'ellipse';
+      case 'softbait': return 'water';
+      case 'hardbait': return 'cube';
+      case 'jig': return 'arrow-down';
+      case 'fly': return 'airplane';
+      default: return 'flash';
+    }
+  }
+  return 'fish';
+};
+
+// Helper to get icon for technique from gear database
+const getTechniqueIcon = (techniqueName: string): string => {
+  const technique = getTechniqueByName(techniqueName);
+  if (technique) {
+    switch (technique.id) {
+      case 'spinning': return 'sync';
+      case 'trolling': return 'boat';
+      case 'fly-fishing': return 'airplane';
+      case 'bottom-fishing': return 'arrow-down';
+      case 'float-fishing': return 'water';
+      case 'jigging': return 'pulse';
+      case 'drop-shot': return 'git-branch';
+      case 'surfcasting': return 'trending-up';
+      default: return 'settings';
+    }
+  }
+  return 'settings';
+};
 
 interface SpeciesData {
   species: string;
@@ -102,6 +160,15 @@ const useStyles = () => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: RADIUS['2xl'],
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: SPACING.lg,
+      ...SHADOWS.glow,
     },
     loadingText: {
       marginTop: SPACING.md,
@@ -625,6 +692,14 @@ export default function StatisticsScreen() {
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <LinearGradient
+          colors={[colors.accent, colors.accentDark || '#D4880F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoGradient}
+        >
+          <Ionicons name="stats-chart" size={40} color={colors.primary} />
+        </LinearGradient>
         <ActivityIndicator size="large" color={colors.accent} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Indlæser statistik...</Text>
       </View>
@@ -1206,11 +1281,24 @@ export default function StatisticsScreen() {
                   </View>
                   {patternsData.bestBaits.map((bait, index) => (
                     <View key={index} style={[styles.patternItem, { backgroundColor: colors.background }]}>
-                      <View style={styles.patternItemLeft}>
-                        <Text style={[styles.patternItemTitle, { color: colors.text }]}>{bait.bait}</Text>
-                        <Text style={[styles.patternItemCount, { color: colors.textSecondary }]}>
-                          {bait.count} fangster
-                        </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <View style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: colors.primaryLight + '30',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          marginRight: SPACING.md,
+                        }}>
+                          <Ionicons name={getBaitIcon(bait.bait) as any} size={18} color={colors.primary} />
+                        </View>
+                        <View style={styles.patternItemLeft}>
+                          <Text style={[styles.patternItemTitle, { color: colors.text }]}>{bait.bait}</Text>
+                          <Text style={[styles.patternItemCount, { color: colors.textSecondary }]}>
+                            {bait.count} fangster
+                          </Text>
+                        </View>
                       </View>
                       <View style={[styles.percentageBadge, { backgroundColor: colors.primaryLight + '30' }]}>
                         <Text style={[styles.percentageText, { color: colors.primary }]}>{bait.percentage}%</Text>
@@ -1229,11 +1317,24 @@ export default function StatisticsScreen() {
                   </View>
                   {patternsData.bestTechniques.map((technique, index) => (
                     <View key={index} style={[styles.patternItem, { backgroundColor: colors.background }]}>
-                      <View style={styles.patternItemLeft}>
-                        <Text style={[styles.patternItemTitle, { color: colors.text }]}>{technique.technique}</Text>
-                        <Text style={[styles.patternItemCount, { color: colors.textSecondary }]}>
-                          {technique.count} fangster
-                        </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <View style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: colors.accent + '20',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          marginRight: SPACING.md,
+                        }}>
+                          <Ionicons name={getTechniqueIcon(technique.technique) as any} size={18} color={colors.accent} />
+                        </View>
+                        <View style={styles.patternItemLeft}>
+                          <Text style={[styles.patternItemTitle, { color: colors.text }]}>{technique.technique}</Text>
+                          <Text style={[styles.patternItemCount, { color: colors.textSecondary }]}>
+                            {technique.count} fangster
+                          </Text>
+                        </View>
                       </View>
                       <View style={[styles.percentageBadge, { backgroundColor: colors.primaryLight + '30' }]}>
                         <Text style={[styles.percentageText, { color: colors.primary }]}>{technique.percentage}%</Text>
