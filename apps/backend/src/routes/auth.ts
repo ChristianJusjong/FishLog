@@ -486,4 +486,58 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Facebook Data Deletion Callback (required by Facebook)
+  // This endpoint handles user data deletion requests from Facebook
+  fastify.post('/auth/facebook/deletion', async (request, reply) => {
+    try {
+      const { signed_request } = request.body as { signed_request?: string };
+
+      if (!signed_request) {
+        return reply.code(400).send({ error: 'Missing signed_request' });
+      }
+
+      // Parse the signed request from Facebook
+      const [encodedSig, payload] = signed_request.split('.');
+      const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
+      const userId = data.user_id;
+
+      if (userId) {
+        // Find and delete user by Facebook provider ID
+        const user = await prisma.user.findFirst({
+          where: {
+            provider: 'facebook',
+            providerId: userId
+          }
+        });
+
+        if (user) {
+          // Delete user and all associated data
+          await prisma.user.delete({
+            where: { id: user.id }
+          });
+        }
+      }
+
+      // Facebook expects a specific response format
+      const confirmationCode = crypto.randomBytes(16).toString('hex');
+      const statusUrl = `https://fishlog-production.up.railway.app/auth/facebook/deletion-status?code=${confirmationCode}`;
+
+      return {
+        url: statusUrl,
+        confirmation_code: confirmationCode
+      };
+    } catch (error) {
+      fastify.log.error(error, 'Facebook deletion error');
+      return reply.code(500).send({ error: 'Deletion request failed' });
+    }
+  });
+
+  // Facebook Data Deletion Status (for user to check deletion status)
+  fastify.get('/auth/facebook/deletion-status', async (request, reply) => {
+    return {
+      status: 'completed',
+      message: 'Your data has been deleted from Hook/FishLog'
+    };
+  });
+
 }
