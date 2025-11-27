@@ -39,7 +39,7 @@
     "jsonwebtoken": "^9.0.2",
     "sharp": "^0.34.5",
     "ws": "^7.5.10",
-    "zod": "^3.25.76"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
