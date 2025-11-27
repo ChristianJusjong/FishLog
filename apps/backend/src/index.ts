@@ -7,6 +7,7 @@ import rateLimit from '@fastify/rate-limit';
 import helmet from '@fastify/helmet';
 import websocket from '@fastify/websocket';
 import path from 'path';
+import * as fs from 'fs';
 import { authRoutes } from './routes/auth';
 import { userRoutes } from './routes/users';
 import { catchesRoutes } from './routes/catches';
@@ -103,20 +104,17 @@ fastify.register(multipart, {
 });
 
 // Serve static files (privacy policy, etc.)
-// In production (dist/), public is at ../../public relative to dist/index.js
-// In development (src/), public is at ../public relative to src/index.ts
-const publicPath = path.join(__dirname, '..', 'public');
-const altPublicPath = path.join(__dirname, '..', '..', 'public');
-const fs = require('fs');
-const staticRoot = fs.existsSync(publicPath) ? publicPath : altPublicPath;
+// Build copies public/ to dist/public/
+const publicPath = path.join(__dirname, 'public');
 
-if (fs.existsSync(staticRoot)) {
+if (fs.existsSync(publicPath)) {
   fastify.register(fastifyStatic, {
-    root: staticRoot,
+    root: publicPath,
     prefix: '/',
   });
+  console.log('Static files enabled from:', publicPath);
 } else {
-  console.warn('Public directory not found, static files will not be served');
+  console.warn('Public directory not found at:', publicPath);
 }
 
 // WebSocket support

@@ -4,7 +4,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && tsc",
+    "build": "prisma generate && tsc && npm run copy:public",
+    "copy:public": "node -e \"const fs=require('fs');const path=require('path');const src='public';const dest='dist/public';if(fs.existsSync(src)){fs.mkdirSync(dest,{recursive:true});fs.readdirSync(src).forEach(f=>fs.copyFileSync(path.join(src,f),path.join(dest,f)));console.log('Copied public folder to dist');}\"",
     "build:ci": "tsc",
     "build:clean": "rimraf dist && prisma generate && tsc",
     "start": "node dist/index.js",
