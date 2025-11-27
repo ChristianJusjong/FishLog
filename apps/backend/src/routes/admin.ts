@@ -102,15 +102,9 @@ export async function adminRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Fetch location data for each catch
+      // Process catches with metadata (latitude/longitude stored directly on catch)
       const catchesWithMetadata = await Promise.all(
         catches.map(async (catch_) => {
-          const locationResult = await prisma.$queryRaw<Array<{latitude: number, longitude: number}>>`
-            SELECT ST_Y(location::geometry) as latitude, ST_X(location::geometry) as longitude
-            FROM catches
-            WHERE id = ${catch_.id} AND location IS NOT NULL
-          `;
-
           const latestValidation = catch_.validations[0] || null;
 
           // Parse EXIF data
@@ -135,8 +129,8 @@ export async function adminRoutes(fastify: FastifyInstance) {
             technique: catch_.technique,
             notes: catch_.notes,
             photoUrl: catch_.photoUrl,
-            latitude: locationResult[0]?.latitude || catch_.latitude,
-            longitude: locationResult[0]?.longitude || catch_.longitude,
+            latitude: catch_.latitude,
+            longitude: catch_.longitude,
             createdAt: catch_.createdAt,
             updatedAt: catch_.updatedAt,
             // Metadata for validation
