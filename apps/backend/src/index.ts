@@ -103,10 +103,21 @@ fastify.register(multipart, {
 });
 
 // Serve static files (privacy policy, etc.)
-fastify.register(fastifyStatic, {
-  root: path.join(__dirname, '../public'),
-  prefix: '/',
-});
+// In production (dist/), public is at ../../public relative to dist/index.js
+// In development (src/), public is at ../public relative to src/index.ts
+const publicPath = path.join(__dirname, '..', 'public');
+const altPublicPath = path.join(__dirname, '..', '..', 'public');
+const fs = require('fs');
+const staticRoot = fs.existsSync(publicPath) ? publicPath : altPublicPath;
+
+if (fs.existsSync(staticRoot)) {
+  fastify.register(fastifyStatic, {
+    root: staticRoot,
+    prefix: '/',
+  });
+} else {
+  console.warn('Public directory not found, static files will not be served');
+}
 
 // WebSocket support
 fastify.register(websocket);
