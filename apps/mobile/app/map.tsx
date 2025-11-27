@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,14 @@ import WeatherLocationCard from '../components/WeatherLocationCard';
 import { useTheme } from '../contexts/ThemeContext';
 import { SPACING, SHADOWS } from '@/constants/branding';
 import { api } from '../lib/api';
+import {
+  ALL_FISHING_LOCATIONS,
+  FishingLocation,
+  findNearestFishingLocation,
+  getWaterTypeColor,
+  getSpeciesById,
+  getSpeciesName,
+} from '../data/fishingLocations';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -104,6 +112,9 @@ export default function MapScreen() {
   const [showDepthChart, setShowDepthChart] = useState(false);
   const [showHotSpots, setShowHotSpots] = useState(true);
   const [showFavoriteSpots, setShowFavoriteSpots] = useState(true);
+  const [showFishingSpots, setShowFishingSpots] = useState(true);
+  const [selectedFishingSpot, setSelectedFishingSpot] = useState<FishingLocation | null>(null);
+  const [nearestFishingSpot, setNearestFishingSpot] = useState<{ location: FishingLocation; distance: number } | null>(null);
 
   // Accordion states for filter sections
   const [expandedSpecies, setExpandedSpecies] = useState(false);
@@ -158,7 +169,6 @@ export default function MapScreen() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.log('Location permission not granted');
         return;
       }
 
@@ -309,7 +319,6 @@ export default function MapScreen() {
         }).filter(Boolean);
 
         setFredningsbaelterPolygons(polygons);
-        console.log(`Loaded ${polygons.length} fredningsbælter`);
       }
     } catch (error) {
       console.error('Fredningsbælter fetch error:', error);
@@ -411,7 +420,6 @@ export default function MapScreen() {
     const limitedPolygons = visiblePolygons.slice(0, 50);
 
     if (visiblePolygons.length > 0) {
-      console.log(`Rendering ${limitedPolygons.length} of ${visiblePolygons.length} visible fredningsbælter (${fredningsbaelterPolygons.length} total)`);
     }
 
     return limitedPolygons;
@@ -475,7 +483,6 @@ export default function MapScreen() {
 
   const handleLongPress = async (event: any) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
-    console.log('Long press detected at:', latitude, longitude);
     setLoadingDepthInfo(true);
     setDepthInfo(null);
 
@@ -492,7 +499,6 @@ export default function MapScreen() {
           const nameData = await nameResponse.json();
           waterName = nameData.address?.water || nameData.address?.bay || nameData.address?.lake ||
                       nameData.address?.river || nameData.name || nameData.display_name?.split(',')[0] || 'Ukendt farvand';
-          console.log('Water name:', waterName);
         }
       } catch (nameError) {
         console.error('Failed to fetch water name:', nameError);
@@ -501,22 +507,15 @@ export default function MapScreen() {
       // Try to fetch depth from EMODnet REST API
       try {
         const depthUrl = `https://rest.emodnet-bathymetry.eu/depth_sample?geom=POINT(${longitude}%20${latitude})&crs=4326`;
-        console.log('Fetching depth from:', depthUrl);
         const depthResponse = await fetch(depthUrl);
-        console.log('Depth response status:', depthResponse.status);
-
         if (depthResponse.ok) {
           const depthText = await depthResponse.text();
-          console.log('Depth response text:', depthText.substring(0, 200));
-
           try {
             const depthData = JSON.parse(depthText);
             // Convert meters to centimeters
             depth = depthData.avg !== undefined ? Math.round(depthData.avg * 100) : null;
-            console.log('Parsed depth (cm):', depth);
           } catch (parseError) {
             console.error('Failed to parse depth JSON:', parseError);
-            console.log('Response was:', depthText);
           }
         } else {
           console.error('Depth API returned error:', depthResponse.status);
@@ -543,16 +542,26 @@ export default function MapScreen() {
     setSelectedLocation({ latitude, longitude });
     setLoadingAiAdvice(true);
 
+    // Find nearest fishing spot from the database
+    const nearest = findNearestFishingLocation(latitude, longitude, 50);
+    setNearestFishingSpot(nearest);
+
     // Check if clicked inside a protection zone
     const fredningsZone = showFredningsbaelter ? findFredningAtLocation(latitude, longitude) : null;
     const fredningsInfo = fredningsZone ? formatFredningsInfo(fredningsZone) : '';
 
-    // Show zone info immediately if found
+    // Show zone info and nearest spot immediately
+    let initialInfo = '';
     if (fredningsInfo) {
-      setAiAdvice(fredningsInfo + '\n\n---\n\n*Henter fiskerådgivning...*');
-    } else {
-      setAiAdvice('');
+      initialInfo = fredningsInfo + '\n\n---\n\n';
     }
+    if (nearest) {
+      initialInfo += `Nærmeste fiskeplads: ${nearest.location.name} (${nearest.distance.toFixed(1)} km)\n`;
+      initialInfo += `🌊 ${nearest.location.waterType === 'ferskvand' ? 'Ferskvand' : nearest.location.waterType === 'saltvand' ? 'Saltvand' : 'Brakvand'}\n`;
+      initialInfo += `🐟 Arter: ${nearest.location.species.slice(0, 5).map(id => getSpeciesName(id)).join(', ')}${nearest.location.species.length > 5 ? '...' : ''}\n\n`;
+    }
+    initialInfo += '*Henter fiskerådgivning...*';
+    setAiAdvice(initialInfo);
 
     try {
 
@@ -570,7 +579,7 @@ export default function MapScreen() {
         return distance < 0.1; // Within ~11km
       });
 
-      // Prepare context for AI with ArcGIS map data
+      // Prepare context for AI with ArcGIS map data and fishing location data
       const context = {
         location: { latitude, longitude },
         weather: {
@@ -583,6 +592,16 @@ export default function MapScreen() {
           commonSpecies: [...new Set(nearbyCatches.flatMap(p => p.species))],
           avgWeight: nearbyCatches.reduce((sum, p) => sum + p.avgWeight, 0) / nearbyCatches.length
         } : null,
+        // Include nearest fishing location data for AI context
+        nearestFishingSpot: nearest ? {
+          name: nearest.location.name,
+          distance: nearest.distance,
+          waterType: nearest.location.waterType,
+          species: nearest.location.species.map(id => getSpeciesName(id)),
+          depth: nearest.location.depth,
+          regulations: nearest.location.regulations,
+          description: nearest.location.description,
+        } : null,
         season: new Date().getMonth() < 3 ? 'vinter' :
                 new Date().getMonth() < 6 ? 'forår' :
                 new Date().getMonth() < 9 ? 'sommer' : 'efterår',
@@ -591,7 +610,8 @@ export default function MapScreen() {
           heatmap: showHeatmap,
           hotspots: showHotSpots,
           depthChart: showDepthChart,
-          fredningsbaelter: showFredningsbaelter
+          fredningsbaelter: showFredningsbaelter,
+          fishingSpots: showFishingSpots
         },
         arcgisData: {
           mapType: baseMap.includes('arcgis') ? baseMap.replace('arcgis-', '') : 'standard',
@@ -605,8 +625,6 @@ export default function MapScreen() {
 
       // Call AI service through backend using api client (handles token refresh)
       const { data } = await api.post('/ai/fishing-advice', context);
-      console.log('AI advice response:', data);
-
       // Combine protection zone info with AI advice
       let finalAdvice = '';
       if (fredningsInfo) {
@@ -752,7 +770,7 @@ export default function MapScreen() {
             onRegionChangeComplete={setRegion}
             onPress={handleMapPress}
             onLongPress={handleLongPress}
-            mapType={baseMap.startsWith('arcgis') ? 'none' : baseMap}
+            mapType={baseMap.startsWith('arcgis') ? 'none' : (baseMap as 'standard' | 'satellite' | 'none')}
           >
             {/* ========== BASE MAPS ========== */}
 
@@ -838,7 +856,6 @@ export default function MapScreen() {
 
             {/* Water Depth Chart - Shows water areas with depth colors */}
             {showDepthChart && (() => {
-              console.log('Rendering water depth chart - EMODnet multicolour');
               return (
                 <UrlTile
                   urlTemplate="https://tiles.emodnet-bathymetry.eu/v11/mean_multicolour/web_mercator/{z}/{x}/{y}.png"
@@ -909,6 +926,43 @@ export default function MapScreen() {
                   onPress={() => setSelectedFavoriteSpot(spot)}
                 >
                   <Text style={{ fontSize: 28 }}>⭐</Text>
+                </Marker>
+              ))}
+
+            {/* Fishing Spots from Database */}
+            {showFishingSpots &&
+              ALL_FISHING_LOCATIONS.map((spot, index) => (
+                <Marker
+                  key={`fishingspot-${index}`}
+                  coordinate={{
+                    latitude: spot.latitude,
+                    longitude: spot.longitude,
+                  }}
+                  title={spot.name}
+                  description={`${spot.waterType === 'ferskvand' ? 'Ferskvand' : spot.waterType === 'saltvand' ? 'Saltvand' : 'Brakvand'} • ${spot.depth || 'Ukendt dybde'}`}
+                  onPress={() => setSelectedFishingSpot(spot)}
+                >
+                  <View style={{
+                    backgroundColor: getWaterTypeColor(spot.waterType),
+                    borderRadius: 16,
+                    width: 32,
+                    height: 32,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderWidth: 2,
+                    borderColor: '#FFFFFF',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3.84,
+                    elevation: 5,
+                  }}>
+                    <Ionicons
+                      name={spot.waterType === 'ferskvand' ? 'leaf' : spot.waterType === 'saltvand' ? 'water' : 'git-merge'}
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                  </View>
                 </Marker>
               ))}
 
@@ -1224,6 +1278,21 @@ export default function MapScreen() {
                       Favoritsteder
                     </Text>
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.toggleButton, showFishingSpots && styles.toggleButtonActive]}
+                    onPress={() => setShowFishingSpots(!showFishingSpots)}
+                  >
+                    <Ionicons
+                      name="fish"
+                      size={16}
+                      color={showFishingSpots ? 'white' : '#666'}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text style={[styles.toggleButtonText, showFishingSpots && styles.toggleButtonTextActive]}>
+                      Fiskepladser
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             )}
@@ -1256,7 +1325,7 @@ export default function MapScreen() {
               )}
               <View style={styles.depthInfoCoords}>
                 <Text style={styles.depthInfoCoordsText}>
-                  📍 {depthInfo.coords.latitude.toFixed(4)}°N, {depthInfo.coords.longitude.toFixed(4)}°Ø
+                   {depthInfo.coords.latitude.toFixed(4)}°N, {depthInfo.coords.longitude.toFixed(4)}°Ø
                 </Text>
               </View>
             </>
@@ -1752,6 +1821,154 @@ export default function MapScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Fishing Spot Details Modal */}
+      <Modal
+        visible={selectedFishingSpot !== null}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setSelectedFishingSpot(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: selectedFishingSpot ? getWaterTypeColor(selectedFishingSpot.waterType) : '#666',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: 10,
+                }}>
+                  <Ionicons
+                    name={
+                      selectedFishingSpot?.waterType === 'ferskvand' ? 'leaf' :
+                      selectedFishingSpot?.waterType === 'saltvand' ? 'water' : 'git-merge'
+                    }
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                </View>
+                <Text style={styles.modalTitle}>{selectedFishingSpot?.name || 'Fiskeplads'}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setSelectedFishingSpot(null)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              {selectedFishingSpot && (
+                <>
+                  {/* Water Type Badge */}
+                  <View style={styles.fishingSpotBadgeRow}>
+                    <View style={[styles.fishingSpotBadge, { backgroundColor: getWaterTypeColor(selectedFishingSpot.waterType) }]}>
+                      <Text style={styles.fishingSpotBadgeText}>
+                        {selectedFishingSpot.waterType === 'ferskvand' ? 'Ferskvand' :
+                         selectedFishingSpot.waterType === 'saltvand' ? 'Saltvand' : 'Brakvand'}
+                      </Text>
+                    </View>
+                    {selectedFishingSpot.depth && (
+                      <View style={[styles.fishingSpotBadge, { backgroundColor: '#3B82F6' }]}>
+                        <Text style={styles.fishingSpotBadgeText}>{selectedFishingSpot.depth}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Description */}
+                  {selectedFishingSpot.description && (
+                    <View style={styles.fishingSpotSection}>
+                      <Text style={styles.fishingSpotDescription}>{selectedFishingSpot.description}</Text>
+                    </View>
+                  )}
+
+                  {/* Species Section */}
+                  {selectedFishingSpot.species && selectedFishingSpot.species.length > 0 && (
+                    <View style={styles.fishingSpotSection}>
+                      <Text style={styles.fishingSpotSectionTitle}>
+                        <Ionicons name="fish" size={16} color={colors.primary} /> Fiskearter
+                      </Text>
+                      <View style={styles.fishSpeciesContainer}>
+                        {selectedFishingSpot.species.map((speciesId, index) => (
+                          <View key={index} style={styles.fishSpeciesChip}>
+                            <Text style={styles.fishSpeciesText}>{getSpeciesName(speciesId)}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Regulations */}
+                  {selectedFishingSpot.regulations && (
+                    <View style={styles.fishingSpotSection}>
+                      <Text style={styles.fishingSpotSectionTitle}>
+                        <Ionicons name="shield-checkmark" size={16} color={colors.warning} /> Regler & Information
+                      </Text>
+                      <Text style={styles.fishingSpotRegulations}>{selectedFishingSpot.regulations}</Text>
+                    </View>
+                  )}
+
+                  {/* Coordinates */}
+                  <View style={styles.fishingSpotSection}>
+                    <Text style={styles.fishingSpotSectionTitle}>
+                      <Ionicons name="location" size={16} color={colors.primary} /> Koordinater
+                    </Text>
+                    <Text style={styles.fishingSpotCoords}>
+                      {selectedFishingSpot.latitude.toFixed(4)}°N, {selectedFishingSpot.longitude.toFixed(4)}°Ø
+                    </Text>
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View style={styles.fishingSpotActions}>
+                    <TouchableOpacity
+                      style={[styles.fishingSpotActionButton, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        setSelectedFishingSpot(null);
+                        setSelectedLocation({
+                          latitude: selectedFishingSpot.latitude,
+                          longitude: selectedFishingSpot.longitude,
+                        });
+                        setLoadingAiAdvice(true);
+                        // Trigger AI advice for this location
+                        const event = {
+                          nativeEvent: {
+                            coordinate: {
+                              latitude: selectedFishingSpot.latitude,
+                              longitude: selectedFishingSpot.longitude,
+                            },
+                          },
+                        };
+                        handleMapPress(event);
+                      }}
+                    >
+                      <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+                      <Text style={styles.fishingSpotActionText}>Få AI Rådgivning</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.fishingSpotActionButton, { backgroundColor: '#22C55E' }]}
+                      onPress={() => {
+                        // Open in maps app
+                        const url = Platform.OS === 'ios'
+                          ? `maps:?q=${selectedFishingSpot.latitude},${selectedFishingSpot.longitude}`
+                          : `geo:${selectedFishingSpot.latitude},${selectedFishingSpot.longitude}?q=${selectedFishingSpot.latitude},${selectedFishingSpot.longitude}(${encodeURIComponent(selectedFishingSpot.name)})`;
+                        Linking.openURL(url);
+                      }}
+                    >
+                      <Ionicons name="navigate" size={20} color="#FFFFFF" />
+                      <Text style={styles.fishingSpotActionText}>Navigation</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
       </View>
     </PageLayout>
   );
@@ -2050,24 +2267,6 @@ const useStyles = () => {
     fontSize: 12,
     color: '#999',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 20,
-  },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
@@ -2348,6 +2547,72 @@ const useStyles = () => {
     color: '#999',
     fontStyle: 'italic',
     marginTop: 2,
+  },
+  // Fishing Spot Modal Styles
+  fishingSpotBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  fishingSpotBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  fishingSpotBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  fishingSpotSection: {
+    marginBottom: 20,
+  },
+  fishingSpotDescription: {
+    fontSize: 15,
+    color: '#555',
+    lineHeight: 22,
+  },
+  fishingSpotSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  fishingSpotRegulations: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    backgroundColor: '#FFF9E6',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#F59E0B',
+  },
+  fishingSpotCoords: {
+    fontSize: 14,
+    color: '#666',
+    fontFamily: 'monospace',
+  },
+  fishingSpotActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  fishingSpotActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  fishingSpotActionText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   });
 };

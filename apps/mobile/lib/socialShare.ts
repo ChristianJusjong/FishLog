@@ -1,6 +1,6 @@
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform, Alert } from 'react-native';
 
 export interface CatchShareData {
@@ -17,7 +17,7 @@ export interface CatchShareData {
  * Generate a shareable caption for a catch
  */
 export function generateCatchCaption(data: CatchShareData): string {
-  const parts = [`🎣 Fangede en ${data.species}!`];
+  const parts = [`Fangede en ${data.species}!`];
 
   if (data.lengthCm) {
     parts.push(`📏 Længde: ${data.lengthCm} cm`);

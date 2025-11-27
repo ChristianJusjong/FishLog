@@ -1,10 +1,10 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export interface Catch {
   id: string;
-  species: string;
+  species?: string;
   lengthCm?: number;
   weightKg?: number;
   bait?: string;
@@ -344,7 +344,6 @@ export async function exportCatchesToPDF(catches: Catch[], title?: string): Prom
         UTI: 'com.adobe.pdf',
       });
     } else {
-      console.log('Sharing is not available on this platform');
     }
   } catch (error) {
     console.error('Error exporting catches to PDF:', error);
@@ -368,7 +367,6 @@ export async function exportStatisticsToPDF(stats: Statistics, title?: string): 
         UTI: 'com.adobe.pdf',
       });
     } else {
-      console.log('Sharing is not available on this platform');
     }
   } catch (error) {
     console.error('Error exporting statistics to PDF:', error);
@@ -396,7 +394,6 @@ export async function exportCatchesToCSV(catches: Catch[]): Promise<void> {
         dialogTitle: 'Del fangstdata',
       });
     } else {
-      console.log('Sharing is not available on this platform');
     }
   } catch (error) {
     console.error('Error exporting catches to CSV:', error);

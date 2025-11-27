@@ -498,7 +498,7 @@ export default function CreateEventScreen() {
             value={startAt}
             mode="datetime"
             display="default"
-            onChange={(event, selectedDate) => {
+            onChange={(event: any, selectedDate: Date | undefined) => {
               setShowStartPicker(false);
               if (selectedDate) setStartAt(selectedDate);
             }}
@@ -524,7 +524,7 @@ export default function CreateEventScreen() {
             value={endAt}
             mode="datetime"
             display="default"
-            onChange={(event, selectedDate) => {
+            onChange={(event: any, selectedDate: Date | undefined) => {
               setShowEndPicker(false);
               if (selectedDate) setEndAt(selectedDate);
             }}

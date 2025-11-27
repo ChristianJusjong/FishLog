@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,19 @@ import {
   ActivityIndicator,
   RefreshControl,
   Pressable,
+  TouchableOpacity,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { api } from '../lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  findNearestFishingLocation,
+  getLocationsForSpecies,
+  getWaterTypeLabel,
+  FishingLocation
+} from '../data/fishingLocations';
 
 interface PredictionFactors {
   timeOfDay: { hour: number; successRate: number; avgCatches: number }[];
@@ -234,6 +242,129 @@ const useStyles = () => {
       fontSize: 14,
       color: colors.textSecondary,
     },
+    // Suggested locations for species
+    suggestedLocations: {
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    suggestedLabel: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    suggestedLocation: {
+      fontSize: 13,
+      color: colors.primary,
+      paddingVertical: 2,
+    },
+    // Top locations styles
+    locationItem: {
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    locationHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    locationMain: {
+      flex: 1,
+    },
+    locationName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    locationCatches: {
+      fontSize: 14,
+      color: colors.success,
+      marginTop: 2,
+    },
+    locationDetails: {
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    locationDetailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    locationDetailLabel: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    locationDetailValue: {
+      fontSize: 14,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    locationSpecies: {
+      marginTop: 8,
+    },
+    speciesTags: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: 4,
+    },
+    speciesTag: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    speciesTagText: {
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    moreSpecies: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      alignSelf: 'center',
+    },
+    regulationsBox: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 6,
+      marginTop: 12,
+      padding: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+    },
+    regulationsText: {
+      fontSize: 13,
+      flex: 1,
+      lineHeight: 18,
+    },
+    // Weather link card styles
+    weatherLinkCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    weatherLinkIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    weatherLinkContent: {
+      flex: 1,
+    },
+    weatherLinkTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 2,
+    },
+    weatherLinkSubtitle: {
+      fontSize: 14,
+    },
   });
 };
 
@@ -241,10 +372,63 @@ export default function PredictionsScreen() {
   const { colors } = useTheme();
   const styles = useStyles();
   const { token } = useAuth();
+  const router = useRouter();
   const [predictions, setPredictions] = useState<Prediction | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedLocation, setExpandedLocation] = useState<string | null>(null);
+
+  // Map top locations to known fishing spots
+  const topLocationsWithNames = useMemo(() => {
+    if (!predictions?.factors.topLocations) return [];
+
+    return predictions.factors.topLocations.map(loc => {
+      const nearestSpot = findNearestFishingLocation(loc.lat, loc.lng, 10);
+      return {
+        ...loc,
+        knownSpot: nearestSpot?.location || null,
+        distance: nearestSpot?.distance || null,
+      };
+    });
+  }, [predictions?.factors.topLocations]);
+
+  // Map top species to their best locations
+  const speciesWithLocations = useMemo(() => {
+    if (!predictions?.topSpeciesPredictions) return [];
+
+    const speciesNameToId: Record<string, string> = {
+      'Aborre': 'aborre',
+      'Gedde': 'gedde',
+      'Havørred': 'havorred',
+      'Bækørred': 'bakorred',
+      'Regnbueørred': 'regnbueorred',
+      'Sandart': 'sandart',
+      'Helt': 'helt',
+      'Laks': 'laks',
+      'Ål': 'al',
+      'Karpe': 'karpe',
+      'Skalle': 'skalle',
+      'Brasen': 'brasen',
+      'Suder': 'suder',
+      'Torsk': 'torsk',
+      'Makrel': 'makrel',
+      'Hornfisk': 'hornfisk',
+      'Havbars': 'havbars',
+      'Multe': 'multe',
+      'Fladfisk': 'fladfisk',
+      'Sild': 'sild',
+    };
+
+    return predictions.topSpeciesPredictions.map(sp => {
+      const speciesId = speciesNameToId[sp.species];
+      const locations = speciesId ? getLocationsForSpecies(speciesId).slice(0, 3) : [];
+      return {
+        ...sp,
+        suggestedLocations: locations,
+      };
+    });
+  }, [predictions?.topSpeciesPredictions]);
 
   const fetchPredictions = async () => {
     try {
@@ -329,6 +513,26 @@ export default function PredictionsScreen() {
         <Text style={styles.title}>Fangst Forudsigelser</Text>
       </View>
 
+      {/* Weather Insights Link */}
+      <TouchableOpacity
+        style={[styles.card, styles.weatherLinkCard]}
+        onPress={() => router.push('/weather-insights')}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.weatherLinkIcon, { backgroundColor: colors.primary + '20' }]}>
+          <Ionicons name="partly-sunny" size={28} color={colors.primary} />
+        </View>
+        <View style={styles.weatherLinkContent}>
+          <Text style={[styles.weatherLinkTitle, { color: colors.text }]}>
+            Vejr Indsigter
+          </Text>
+          <Text style={[styles.weatherLinkSubtitle, { color: colors.textSecondary }]}>
+            Se hvilke vejrforhold der giver dig flest fangster
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
+      </TouchableOpacity>
+
       {/* Confidence Score */}
       <View style={styles.card}>
         <View style={styles.confidenceContainer}>
@@ -394,14 +598,14 @@ export default function PredictionsScreen() {
         </View>
       </View>
 
-      {/* Top Species Predictions */}
-      {predictions.topSpeciesPredictions.length > 0 && (
+      {/* Top Species Predictions with Locations */}
+      {speciesWithLocations.length > 0 && (
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="fish" size={24} color={colors.secondary} />
             <Text style={styles.cardTitle}>Top arter at fange</Text>
           </View>
-          {predictions.topSpeciesPredictions.map((sp, index) => (
+          {speciesWithLocations.map((sp, index) => (
             <View key={index} style={styles.speciesItem}>
               <Text style={styles.speciesName}>{sp.species}</Text>
               <View style={styles.likelihoodContainer}>
@@ -413,7 +617,94 @@ export default function PredictionsScreen() {
                 />
                 <Text style={styles.likelihoodText}>{sp.likelihood}%</Text>
               </View>
+              {sp.suggestedLocations.length > 0 && (
+                <View style={styles.suggestedLocations}>
+                  <Text style={styles.suggestedLabel}>Gode steder:</Text>
+                  {sp.suggestedLocations.map((loc, locIndex) => (
+                    <Text key={locIndex} style={styles.suggestedLocation}>
+                      {loc.name}
+                    </Text>
+                  ))}
+                </View>
+              )}
             </View>
+          ))}
+        </View>
+      )}
+
+      {/* Top Locations with Names */}
+      {topLocationsWithNames.length > 0 && (
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="location" size={24} color={colors.primary} />
+            <Text style={styles.cardTitle}>Dine bedste fiskepladser</Text>
+          </View>
+          {topLocationsWithNames.map((loc, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.locationItem}
+              onPress={() => loc.knownSpot && setExpandedLocation(
+                expandedLocation === loc.knownSpot.name ? null : loc.knownSpot.name
+              )}
+              activeOpacity={loc.knownSpot ? 0.7 : 1}
+            >
+              <View style={styles.locationHeader}>
+                <View style={styles.locationMain}>
+                  <Text style={styles.locationName}>
+                    {loc.knownSpot ? loc.knownSpot.name : `${loc.lat.toFixed(4)}°, ${loc.lng.toFixed(4)}°`}
+                  </Text>
+                  <Text style={styles.locationCatches}>
+                    {loc.catchCount} fangster
+                  </Text>
+                </View>
+                {loc.knownSpot && (
+                  <Ionicons
+                    name={expandedLocation === loc.knownSpot.name ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                )}
+              </View>
+              {loc.knownSpot && expandedLocation === loc.knownSpot.name && (
+                <View style={styles.locationDetails}>
+                  <View style={styles.locationDetailRow}>
+                    <Text style={styles.locationDetailLabel}>Type:</Text>
+                    <Text style={styles.locationDetailValue}>
+                      {getWaterTypeLabel(loc.knownSpot.waterType)}
+                    </Text>
+                  </View>
+                  {loc.knownSpot.depth && (
+                    <View style={styles.locationDetailRow}>
+                      <Text style={styles.locationDetailLabel}>Dybde:</Text>
+                      <Text style={styles.locationDetailValue}>{loc.knownSpot.depth}</Text>
+                    </View>
+                  )}
+                  {loc.knownSpot.species.length > 0 && (
+                    <View style={styles.locationSpecies}>
+                      <Text style={styles.locationDetailLabel}>Arter:</Text>
+                      <View style={styles.speciesTags}>
+                        {loc.knownSpot.species.slice(0, 5).map((species, i) => (
+                          <View key={i} style={[styles.speciesTag, { backgroundColor: colors.primaryLight }]}>
+                            <Text style={[styles.speciesTagText, { color: colors.primary }]}>{species}</Text>
+                          </View>
+                        ))}
+                        {loc.knownSpot.species.length > 5 && (
+                          <Text style={styles.moreSpecies}>+{loc.knownSpot.species.length - 5}</Text>
+                        )}
+                      </View>
+                    </View>
+                  )}
+                  {loc.knownSpot.regulations && (
+                    <View style={[styles.regulationsBox, { backgroundColor: colors.warning + '15', borderColor: colors.warning }]}>
+                      <Ionicons name="warning" size={14} color={colors.warning} />
+                      <Text style={[styles.regulationsText, { color: colors.warning }]}>
+                        {loc.knownSpot.regulations}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </TouchableOpacity>
           ))}
         </View>
       )}

@@ -11,9 +11,10 @@ import {
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
-import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GRADIENTS } from '@/constants/theme';
 
 interface DrawerMenuProps {
   visible: boolean;
@@ -52,7 +53,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
 
   const menuSections: MenuSection[] = [
     {
-      title: '🗺️ NAVIGATION',
+      title: 'NAVIGATION',
       items: [
         { icon: 'map', label: 'Kort', route: '/map' },
         { icon: 'navigate', label: 'Fisketure', route: '/fisketure' },
@@ -61,7 +62,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
       ],
     },
     {
-      title: '🎯 UDFORDRINGER',
+      title: 'UDFORDRINGER',
       items: [
         { icon: 'fitness', label: 'Udfordringer', route: '/challenges' },
         { icon: 'calendar', label: 'Events', route: '/events' },
@@ -70,7 +71,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
       ],
     },
     {
-      title: '👥 SOCIALT',
+      title: 'SOCIALT',
       items: [
         { icon: 'people', label: 'Venner', route: '/friends' },
         { icon: 'people-circle', label: 'Grupper', route: '/groups' },
@@ -78,7 +79,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
       ],
     },
     {
-      title: '📊 ANALYSE',
+      title: 'ANALYSE',
       items: [
         { icon: 'analytics', label: 'Analyse', route: '/analytics' },
         { icon: 'git-compare', label: 'Sammenlign Stats', route: '/compare-stats' },
@@ -86,7 +87,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
       ],
     },
     {
-      title: '📚 MIN FISKEBOG',
+      title: 'MIN FISKEBOG',
       items: [
         { icon: 'document-text', label: 'Kladder', route: '/drafts' },
       ],
@@ -131,15 +132,30 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
           },
         ]}
       >
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-            Menu
-          </Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={28} color={colors.textPrimary} />
-          </TouchableOpacity>
-        </View>
+        {/* Premium Header with Gradient */}
+        <LinearGradient
+          colors={[colors.primary, colors.primaryLight || '#1A3A5C']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.headerContent}>
+            <View style={styles.headerLogo}>
+              <LinearGradient
+                colors={[colors.accent, colors.accentDark || '#D4880F']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoIcon}
+              >
+                <Ionicons name="fish" size={24} color={colors.primary} />
+              </LinearGradient>
+              <Text style={styles.headerTitle}>Hook</Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={28} color="rgba(255,255,255,0.9)" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
 
         {/* Menu Content */}
         <ScrollView
@@ -251,18 +267,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
-  header: {
+  headerGradient: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
+    paddingTop: SPACING.xl,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
+  },
+  headerLogo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  logoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    ...TYPOGRAPHY.styles.h2,
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
   },
   closeButton: {
     padding: SPACING.sm,

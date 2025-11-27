@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, EMPTY_STATE, LOADING_CONTAINER } from '@/constants/theme';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, EMPTY_STATE, LOADING_CONTAINER, GRADIENTS } from '@/constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { exportCatchesToPDF, exportCatchesToCSV } from '@/lib/exportUtils';
 
@@ -22,14 +23,14 @@ const useStyles = () => {
     loadingContainer: {
       ...LOADING_CONTAINER,
     },
-    logoContainer: {
+    logoGradient: {
       width: 80,
       height: 80,
-      borderRadius: RADIUS.xl,
-      backgroundColor: colors.primaryLight + '20',
+      borderRadius: RADIUS['2xl'],
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: SPACING.md,
+      marginBottom: SPACING.lg,
+      ...SHADOWS.glow,
     },
     loader: {
       marginBottom: SPACING.md,
@@ -660,9 +661,14 @@ export default function CatchesScreen() {
       <View style={styles.safeArea}>
         <WeatherLocationCard showLocation={true} showWeather={true} />
         <View style={styles.loadingContainer}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="fish" size={48} color={colors.primary} />
-          </View>
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark || '#D4880F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoGradient}
+          >
+            <Ionicons name="fish" size={40} color={colors.primary} />
+          </LinearGradient>
           <ActivityIndicator size="large" color={colors.accent} style={styles.loader} />
           <Text style={styles.loadingText}>Indlæser fangster...</Text>
         </View>

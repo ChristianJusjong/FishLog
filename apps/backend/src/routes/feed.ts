@@ -1,8 +1,7 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 
-const prisma = new PrismaClient();
 
 export async function feedRoutes(fastify: FastifyInstance) {
   // Get feed with catches from friends

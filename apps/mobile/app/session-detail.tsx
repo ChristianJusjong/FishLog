@@ -9,13 +9,14 @@ import {
   Dimensions,
   Share,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
-import { TYPOGRAPHY, SPACING, RADIUS, SHADOW } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -76,7 +77,7 @@ const useStyles = () => {
       backgroundColor: colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
-      ...SHADOW.medium,
+      ...SHADOWS.md,
     },
     headerActions: {
       flexDirection: 'row',
@@ -259,7 +260,7 @@ const useStyles = () => {
       backgroundColor: colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
-      ...SHADOW.medium,
+      ...SHADOWS.md,
     },
   });
 };
@@ -402,7 +403,7 @@ export default function SessionDetail() {
     );
   }
 
-  const route = session.route ? JSON.parse(session.route) : [];
+  const route = session.route ? (typeof session.route === 'string' ? JSON.parse(session.route) : session.route) : [];
   const isOwnSession = session.user.id === user?.userId;
 
   return (

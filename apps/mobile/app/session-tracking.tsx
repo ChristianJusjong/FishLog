@@ -165,7 +165,7 @@ const useStyles = () => {
       backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
-      ...SHADOW.large,
+      ...SHADOWS.lg,
       zIndex: 1,
     },
     catchCount: {
@@ -206,7 +206,7 @@ export default function SessionTracking() {
 
   const mapRef = useRef<MapView>(null);
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
-  const durationInterval = useRef<NodeJS.Timeout | null>(null);
+  const durationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTime = useRef<Date | null>(null);
 
   const sessionTypes = [

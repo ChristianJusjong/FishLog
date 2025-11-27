@@ -290,13 +290,13 @@ export default function CameraCaptureScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]}>📸 Tag billede af fangst</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Tag billede af fangst</Text>
         <Text style={[styles.description, { color: colors.textSecondary }]}>
           For at logge en fangst skal du først tage et billede. Billedet og GPS-koordinater bliver låst efter upload.
         </Text>
 
         <TouchableOpacity style={[styles.cameraButton, { backgroundColor: colors.primary }]} onPress={openCamera}>
-          <Text style={[styles.cameraButtonText, { color: colors.white }]}>🎣 Åbn kamera</Text>
+          <Text style={[styles.cameraButtonText, { color: colors.white }]}>Åbn kamera</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -304,7 +304,7 @@ export default function CameraCaptureScreen() {
         </TouchableOpacity>
 
         <View style={[styles.infoBox, { backgroundColor: colors.surface, borderLeftColor: colors.accent }]}>
-          <Text style={[styles.infoTitle, { color: colors.text }]}>📍 Vigtigt:</Text>
+          <Text style={[styles.infoTitle, { color: colors.text }]}>Vigtigt:</Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
             • Billede og GPS-koordinater kan ikke ændres efter upload{'\n'}
             • Du kan udfylde fangstdata bagefter{'\n'}

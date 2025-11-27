@@ -15,6 +15,8 @@ if (!isExpoGo) {
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
     }),
   });
 }
@@ -40,8 +42,8 @@ export function PushNotificationProvider({ children }: Props) {
   const router = useRouter();
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
-  const notificationListener = useRef<Notifications.EventSubscription>();
-  const responseListener = useRef<Notifications.EventSubscription>();
+  const notificationListener = useRef<Notifications.EventSubscription | undefined>(undefined);
+  const responseListener = useRef<Notifications.EventSubscription | undefined>(undefined);
 
   /**
    * Register for push notifications and get Expo push token
@@ -49,12 +51,10 @@ export function PushNotificationProvider({ children }: Props) {
   async function registerForPushNotificationsAsync() {
     // Push notifications don't work in Expo Go (SDK 53+)
     if (isExpoGo) {
-      console.log('Push notifications are not supported in Expo Go. Use a development build.');
       return null;
     }
 
     if (!Device.isDevice) {
-      console.log('Push notifications only work on physical devices');
       return null;
     }
 
@@ -65,12 +65,17 @@ export function PushNotificationProvider({ children }: Props) {
 
       // Request permission if not granted
       if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+          },
+        });
         finalStatus = status;
       }
 
       if (finalStatus !== 'granted') {
-        console.log('Permission not granted for push notifications');
         return null;
       }
 
@@ -78,8 +83,6 @@ export function PushNotificationProvider({ children }: Props) {
       const tokenData = await Notifications.getExpoPushTokenAsync({
         projectId: 'your-project-id', // Replace with your Expo project ID from app.json
       });
-
-      console.log('Expo Push Token:', tokenData.data);
 
       // Configure notification channel for Android
       if (Platform.OS === 'android') {
@@ -116,7 +119,6 @@ export function PushNotificationProvider({ children }: Props) {
         },
       });
 
-      console.log('Push token registered with backend');
     } catch (error) {
       console.error('Error sending push token to backend:', error);
     }
@@ -127,8 +129,6 @@ export function PushNotificationProvider({ children }: Props) {
    */
   function handleNotificationResponse(response: Notifications.NotificationResponse) {
     const data = response.notification.request.content.data;
-    console.log('Notification tapped:', data);
-
     // Navigate based on notification type
     if (data.type === 'new_like' || data.type === 'new_comment') {
       router.push(`/catch-detail?id=${data.catchId}`);
@@ -155,7 +155,6 @@ export function PushNotificationProvider({ children }: Props) {
   useEffect(() => {
     // Listen for notifications received while app is foregrounded
     notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('Notification received:', notification);
       setNotification(notification);
     });
 
@@ -164,10 +163,10 @@ export function PushNotificationProvider({ children }: Props) {
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, []);

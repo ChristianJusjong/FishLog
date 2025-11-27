@@ -18,7 +18,9 @@ import { authService } from '../lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -80,11 +82,23 @@ const useStyles = () => {
       borderRadius: RADIUS.md,
     },
     saveButton: {
-      backgroundColor: colors.success,
-      padding: SPACING.md,
       borderRadius: RADIUS.md,
       marginBottom: SPACING.md,
-      ...SHADOWS.sm,
+      overflow: 'hidden',
+      ...SHADOWS.glow,
+    },
+    saveButtonGradient: {
+      padding: SPACING.md,
+      borderRadius: RADIUS.md,
+      alignItems: 'center',
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
     },
     cancelButton: {
       backgroundColor: colors.gray600,
@@ -162,11 +176,8 @@ export default function EditProfileScreen() {
         input.onchange = async (e: any) => {
           const file = e.target.files?.[0];
           if (!file) {
-            console.log('No file selected');
             return;
           }
-
-          console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
 
           // Validate file type
           if (!file.type.startsWith('image/')) {
@@ -183,13 +194,9 @@ export default function EditProfileScreen() {
           setUploadingImage(true);
           try {
             const accessToken = await AsyncStorage.getItem('accessToken');
-            console.log('Access token:', accessToken ? 'Found' : 'Missing');
-
             // Create FormData
             const formData = new FormData();
             formData.append('file', file);
-
-            console.log('Uploading to:', `${API_URL}/upload/image`);
 
             // Upload to backend
             const response = await fetch(`${API_URL}/upload/image`, {
@@ -200,11 +207,8 @@ export default function EditProfileScreen() {
               body: formData,
             });
 
-            console.log('Upload response status:', response.status);
-
             if (response.ok) {
               const data = await response.json();
-              console.log('Upload successful:', data);
               setAvatar(data.url);
               Alert.alert('Succes', 'Billede uploadet!');
             } else {
@@ -262,9 +266,7 @@ export default function EditProfileScreen() {
 
     setLoading(true);
     try {
-      console.log('Saving profile with:', { name, avatar: avatar || 'empty', groqApiKey: groqApiKey ? 'present' : 'empty' });
       await authService.updateProfile({ name, avatar: avatar || '', groqApiKey: groqApiKey || '' });
-      console.log('Profile update successful, refreshing user...');
       await refreshUser();
       Alert.alert('Succes', 'Profil opdateret!', [
         { text: 'OK', onPress: () => router.back() }
@@ -279,8 +281,16 @@ export default function EditProfileScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }} edges={['top']}>
+        <LinearGradient
+          colors={[colors.accent, colors.accentDark || '#D4880F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoGradient}
+        >
+          <Ionicons name="person" size={40} color={colors.primary} />
+        </LinearGradient>
+        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
       </SafeAreaView>
     );
   }
@@ -366,12 +376,20 @@ export default function EditProfileScreen() {
         style={[styles.saveButton, (loading || !hasChanges) && styles.disabledButton]}
         onPress={handleSave}
         disabled={loading || !hasChanges}
+        activeOpacity={0.85}
       >
-        {loading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.buttonText}>💾 Gem Ændringer</Text>
-        )}
+        <LinearGradient
+          colors={[colors.accent, colors.accentDark || '#D4880F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.saveButtonGradient}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <Text style={[styles.buttonText, { color: colors.primary }]}>💾 Gem Ændringer</Text>
+          )}
+        </LinearGradient>
       </TouchableOpacity>
 
       <TouchableOpacity

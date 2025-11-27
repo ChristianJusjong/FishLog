@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Linking, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { api } from '../lib/api';
-import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
-import { INPUT_STYLE, LABEL_STYLE } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GRADIENTS } from '@/constants/theme';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
 export default function LoginScreen() {
-  console.log('===== LOGIN SCREEN RENDERED =====');
   const router = useRouter();
   const { login } = useAuth();
-  const { colors } = useTheme();
-  const styles = useStyles();
+  const { colors, isDark } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +32,7 @@ export default function LoginScreen() {
       const response = await api.post('/auth/login', { email, password });
       const { accessToken, refreshToken, user } = response.data;
 
-      await login(accessToken, refreshToken, user);
+      await login(accessToken, refreshToken);
       router.replace('/feed');
     } catch (error: any) {
       Alert.alert('Login fejlede', error.response?.data?.error || 'Ugyldigt email eller adgangskode');
@@ -52,7 +50,7 @@ export default function LoginScreen() {
       });
       const { accessToken, refreshToken, user } = response.data;
 
-      await login(accessToken, refreshToken, user);
+      await login(accessToken, refreshToken);
       router.replace('/feed');
     } catch (error: any) {
       Alert.alert('Login fejlede', error.response?.data?.error || 'Kunne ikke logge ind');
@@ -62,12 +60,10 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = () => {
-    console.log('Opening Google OAuth');
     Linking.openURL(`${API_URL}/auth/google`);
   };
 
   const handleFacebookLogin = () => {
-    console.log('Opening Facebook OAuth');
     Linking.openURL(`${API_URL}/auth/facebook`);
   };
 
@@ -76,287 +72,337 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Premium Ocean Gradient Background */}
+      <LinearGradient
+        colors={['#0A2540', '#1A3A5C', '#1E4976']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientBackground}
+      />
+
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
         >
-          <View style={styles.content}>
-            {/* Header Section */}
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Premium Header Section */}
             <View style={styles.headerSection}>
-              <View style={[styles.logoContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                <Ionicons name="fish" size={48} color={colors.primary} />
+              <View style={styles.logoContainer}>
+                <LinearGradient
+                  colors={['#F5A623', '#FFD93D']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.logoGradient}
+                >
+                  <Ionicons name="fish" size={40} color="#0A2540" />
+                </LinearGradient>
               </View>
-              <Text style={[styles.title, { color: colors.primary }]}>Hook</Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Din digitale fiskebog</Text>
+              <Text style={styles.title}>Hook</Text>
+              <Text style={styles.subtitle}>Din digitale fiskebog</Text>
             </View>
 
-            {/* Email/Password Login */}
-            <View style={styles.formContainer}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="mail-outline" size={20} color={colors.iconDefault} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="din@email.dk"
-                    placeholderTextColor={colors.textTertiary}
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    editable={!loading}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Adgangskode</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="lock-closed-outline" size={20} color={colors.iconDefault} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="••••••••"
-                    placeholderTextColor={colors.textTertiary}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    editable={!loading}
-                  />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                    <Ionicons
-                      name={showPassword ? "eye-off-outline" : "eye-outline"}
-                      size={20}
-                      color={colors.iconDefault}
+            {/* Premium Form Card */}
+            <View style={styles.formCard}>
+              <View style={styles.formContainer}>
+                {/* Email Input */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.textTertiary }]}>EMAIL</Text>
+                  <View style={[styles.inputWrapper, { backgroundColor: colors.gray50, borderColor: colors.border }]}>
+                    <Ionicons name="mail-outline" size={20} color={colors.iconDefault} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.input, { color: colors.text }]}
+                      placeholder="din@email.dk"
+                      placeholderTextColor={colors.textTertiary}
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      editable={!loading}
                     />
-                  </TouchableOpacity>
+                  </View>
                 </View>
+
+                {/* Password Input */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.textTertiary }]}>ADGANGSKODE</Text>
+                  <View style={[styles.inputWrapper, { backgroundColor: colors.gray50, borderColor: colors.border }]}>
+                    <Ionicons name="lock-closed-outline" size={20} color={colors.iconDefault} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.input, { color: colors.text }]}
+                      placeholder="••••••••"
+                      placeholderTextColor={colors.textTertiary}
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      editable={!loading}
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                      <Ionicons
+                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                        size={20}
+                        color={colors.iconDefault}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Primary Login Button with Golden Gradient */}
+                <TouchableOpacity
+                  onPress={handleEmailLogin}
+                  disabled={loading}
+                  activeOpacity={0.9}
+                  style={[styles.primaryButtonWrapper, loading && styles.buttonDisabled]}
+                >
+                  <LinearGradient
+                    colors={['#F5A623', '#D4880F']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.primaryButton}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#0A2540" />
+                    ) : (
+                      <>
+                        <Text style={styles.primaryButtonText}>Log ind</Text>
+                        <Ionicons name="arrow-forward" size={20} color="#0A2540" />
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                {/* Secondary Button */}
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: colors.primary }]}
+                  onPress={handleSignup}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>Opret ny konto</Text>
+                </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleEmailLogin}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                {loading ? (
-                  <ActivityIndicator color={colors.white} />
-                ) : (
-                  <>
-                    <Text style={styles.primaryButtonText}>Log ind</Text>
-                    <Ionicons name="arrow-forward" size={20} color={colors.white} />
-                  </>
-                )}
-              </TouchableOpacity>
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                <Text style={[styles.dividerText, { color: colors.textTertiary }]}>eller</Text>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              </View>
 
-              <TouchableOpacity
-                style={[styles.secondaryButton, loading && styles.buttonDisabled]}
-                onPress={handleSignup}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.secondaryButtonText}>Opret ny konto</Text>
-              </TouchableOpacity>
+              {/* OAuth Buttons */}
+              <View style={styles.oauthContainer}>
+                <TouchableOpacity
+                  style={[styles.oauthButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={handleGoogleLogin}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-google" size={20} color="#DB4437" />
+                  <Text style={[styles.oauthButtonText, { color: colors.text }]}>Google</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.oauthButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={handleFacebookLogin}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-facebook" size={20} color="#1877F2" />
+                  <Text style={[styles.oauthButtonText, { color: colors.text }]}>Facebook</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {/* OAuth Divider */}
-            <View style={styles.divider}>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              <Text style={[styles.dividerText, { color: colors.textTertiary }]}>eller</Text>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            </View>
-
-            {/* OAuth Buttons */}
-            <View style={styles.oauthContainer}>
-              <TouchableOpacity
-                style={[styles.oauthButton, { backgroundColor: colors.surface, borderColor: colors.border }, loading && styles.buttonDisabled]}
-                onPress={handleGoogleLogin}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="logo-google" size={20} color={colors.text} />
-                <Text style={[styles.oauthButtonText, { color: colors.text }]}>Fortsæt med Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.oauthButton, { backgroundColor: colors.surface, borderColor: colors.border }, loading && styles.buttonDisabled]}
-                onPress={handleFacebookLogin}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="logo-facebook" size={20} color={colors.text} />
-                <Text style={[styles.oauthButtonText, { color: colors.text }]}>Fortsæt med Facebook</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Test Login Button */}
+            {/* Test Login */}
             <TouchableOpacity
-              style={[styles.testButton, loading && styles.buttonDisabled]}
+              style={styles.testButton}
               onPress={handleTestLogin}
               disabled={loading}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <Ionicons name="code-outline" size={16} color={colors.textSecondary} />
-              <Text style={[styles.testButtonText, { color: colors.textSecondary }]}>Test Login (Udvikler)</Text>
+              <Ionicons name="code-outline" size={14} color="rgba(255,255,255,0.5)" />
+              <Text style={styles.testButtonText}>Test Login</Text>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
-const useStyles = () => {
-  const { colors } = useTheme();
-
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    keyboardView: {
-      flex: 1,
-    },
-    scrollContent: {
-      flexGrow: 1,
-    },
-    content: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: SPACING.xl,
-    },
-    headerSection: {
-      alignItems: 'center',
-      marginBottom: SPACING['2xl'],
-    },
-    logoContainer: {
-      width: 80,
-      height: 80,
-      borderRadius: RADIUS.xl,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: SPACING.md,
-    },
-    title: {
-      ...TYPOGRAPHY.styles.h1,
-      fontSize: TYPOGRAPHY.fontSize['4xl'],
-      marginBottom: SPACING.xs,
-    },
-    subtitle: {
-      ...TYPOGRAPHY.styles.body,
-    },
-    formContainer: {
-      width: '100%',
-      maxWidth: 400,
-      marginBottom: SPACING.lg,
-    },
-    inputGroup: {
-      marginBottom: SPACING.md,
-    },
-    label: {
-      ...LABEL_STYLE,
-    },
-    inputWrapper: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      ...INPUT_STYLE,
-      paddingLeft: SPACING.md,
-    },
-    inputIcon: {
-      marginRight: SPACING.sm,
-    },
-    input: {
-      flex: 1,
-      fontSize: TYPOGRAPHY.fontSize.base,
-      paddingVertical: SPACING.xs,
-    },
-    eyeIcon: {
-      padding: SPACING.xs,
-    },
-    primaryButton: {
-      backgroundColor: colors.accent,
-      borderRadius: RADIUS.md,
-      padding: SPACING.md,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      ...SHADOWS.sm,
-      flexDirection: 'row',
-      gap: SPACING.sm,
-      marginTop: SPACING.md,
-      minHeight: 52,
-    },
-    primaryButtonText: {
-      ...TYPOGRAPHY.styles.button,
-      color: colors.white,
-    },
-    secondaryButton: {
-      backgroundColor: colors.surface,
-      borderRadius: RADIUS.md,
-      padding: SPACING.md,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      marginTop: SPACING.md,
-      minHeight: 52,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    secondaryButtonText: {
-      ...TYPOGRAPHY.styles.button,
-      color: colors.primary,
-    },
-    buttonDisabled: {
-      opacity: 0.6,
-    },
-    divider: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      width: '100%',
-      maxWidth: 400,
-      marginVertical: SPACING.xl,
-    },
-    dividerLine: {
-      flex: 1,
-      height: 1,
-    },
-    dividerText: {
-      ...TYPOGRAPHY.styles.small,
-      paddingHorizontal: SPACING.md,
-    },
-    oauthContainer: {
-      width: '100%',
-      maxWidth: 400,
-      gap: SPACING.md,
-    },
-    oauthButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: SPACING.sm,
-      borderWidth: 1,
-      borderRadius: RADIUS.md,
-      padding: SPACING.md,
-      minHeight: 52,
-      ...SHADOWS.sm,
-    },
-    oauthButtonText: {
-      ...TYPOGRAPHY.styles.button,
-      fontWeight: TYPOGRAPHY.fontWeight.medium,
-    },
-    testButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: SPACING.xs,
-      backgroundColor: 'transparent',
-      padding: SPACING.md,
-      marginTop: SPACING.xl,
-    },
-    testButtonText: {
-      ...TYPOGRAPHY.styles.small,
-    },
-  });
-};
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  gradientBackground: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING['2xl'],
+  },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: SPACING['2xl'],
+  },
+  logoContainer: {
+    marginBottom: SPACING.lg,
+    ...SHADOWS.glow,
+  },
+  logoGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: RADIUS['2xl'],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 42,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+    marginBottom: SPACING.xs,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '400',
+  },
+  formCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: RADIUS['2xl'],
+    padding: SPACING.xl,
+    ...SHADOWS.xl,
+  },
+  formContainer: {
+    width: '100%',
+  },
+  inputGroup: {
+    marginBottom: SPACING.base,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginBottom: SPACING.sm,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.base,
+    minHeight: 52,
+  },
+  inputIcon: {
+    marginRight: SPACING.sm,
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: SPACING.md,
+  },
+  eyeIcon: {
+    padding: SPACING.xs,
+  },
+  primaryButtonWrapper: {
+    marginTop: SPACING.lg,
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    ...SHADOWS.glow,
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.base,
+    minHeight: 52,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0A2540',
+    letterSpacing: 0.25,
+  },
+  secondaryButton: {
+    borderWidth: 1.5,
+    borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.md,
+    minHeight: 52,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.25,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: SPACING.xl,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 13,
+    paddingHorizontal: SPACING.base,
+  },
+  oauthContainer: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  oauthButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.md,
+    minHeight: 48,
+  },
+  oauthButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    marginTop: SPACING.xl,
+    padding: SPACING.md,
+  },
+  testButtonText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.5)',
+  },
+});

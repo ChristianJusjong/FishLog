@@ -105,7 +105,7 @@ export default function LevelUpModal({
           >
             {/* Level Up Header */}
             <View style={styles.header}>
-              <Text style={styles.levelUpText}>🎉 LEVEL UP! 🎉</Text>
+              <Text style={styles.levelUpText}>LEVEL UP!</Text>
             </View>
 
             {/* Level Display */}
@@ -144,7 +144,7 @@ export default function LevelUpModal({
                   },
                 ]}
               >
-                <Text style={styles.rewardsTitle}>🎁 Belønninger:</Text>
+                <Text style={styles.rewardsTitle}>Belønninger:</Text>
                 {rewards.map((reward, index) => (
                   <View key={index} style={styles.rewardItem}>
                     <Text style={styles.rewardBullet}>•</Text>

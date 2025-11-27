@@ -80,7 +80,6 @@ export async function extractExifData(buffer: Buffer): Promise<ExifData> {
       }
     } catch (exifError) {
       // EXIF parsing failed - this is ok, not all images have EXIF data
-      console.log('No EXIF data found in image');
     }
 
     return exifData;

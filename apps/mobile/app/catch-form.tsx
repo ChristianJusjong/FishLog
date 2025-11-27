@@ -515,7 +515,7 @@ export default function CatchFormScreen() {
             ? ' (AI er usikker - bekræft venligst arten)'
             : '';
           Alert.alert(
-            '🤖 AI Genkendelse',
+            'AI Genkendelse',
             `AI har identificeret arten som: ${result.species}${confidenceText}`,
             [{ text: 'OK' }]
           );
@@ -589,7 +589,7 @@ export default function CatchFormScreen() {
 
         if (result.badges && result.badges.length > 0) {
           Alert.alert(
-            '🎉 Fangst færdiggjort!',
+            'Fangst gemt!',
             `Du har optjent ${result.badges.length} ny${result.badges.length > 1 ? 'e' : ''} badge${result.badges.length > 1 ? 's' : ''}!`,
             [{ text: 'Fedt!', onPress: () => router.back() }]
           );

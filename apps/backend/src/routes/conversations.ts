@@ -1,8 +1,7 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.js';
 
-const prisma = new PrismaClient();
 
 export async function conversationsRoutes(fastify: FastifyInstance) {
   // Create new conversation (Group DM)

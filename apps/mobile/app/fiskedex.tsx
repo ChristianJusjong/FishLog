@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,40 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { useTheme } from '../contexts/ThemeContext';
+import {
+  getLocationsForSpecies,
+  FISH_SPECIES_DB,
+  getWaterTypeColor,
+  type FishingLocation,
+} from '../data/fishingLocations';
+
+// Map common Danish species names to our species IDs
+const speciesNameToId: Record<string, string> = {
+  'Aborre': 'aborre',
+  'Gedde': 'gedde',
+  'Sandart': 'sandart',
+  'Karpe': 'karpe',
+  'Brasen': 'brasen',
+  'Suder': 'suder',
+  'Skalle': 'skalle',
+  'Ål': 'aal',
+  'Bækørred': 'oerred',
+  'Havørred': 'havorred',
+  'Laks': 'laks',
+  'Regnbueørred': 'regnbue',
+  'Helt': 'helt',
+  'Stalling': 'stallingr',
+  'Torsk': 'torsk',
+  'Fladfisk': 'fladfisk',
+  'Rødspætte': 'rodspaette',
+  'Skrubbe': 'skrubbe',
+  'Pighvarre': 'pighvar',
+  'Makrel': 'makrel',
+  'Hornfisk': 'hornfisk',
+  'Havbars': 'bars',
+  'Sild': 'sild',
+  'Multe': 'multe',
+};
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -227,7 +261,58 @@ const useStyles = () => {
       color: colors.textTertiary,
       fontStyle: 'italic',
     },
+    whereToFindContainer: {
+      marginTop: SPACING.sm,
+      paddingTop: SPACING.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    whereToFindLabel: {
+      ...TYPOGRAPHY.styles.small,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: SPACING.xs,
+    },
+    locationChipsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.xs,
+    },
+    locationChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 3,
+      borderRadius: RADIUS.full,
+      backgroundColor: colors.backgroundLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    locationChipDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      marginRight: 4,
+    },
+    locationChipText: {
+      ...TYPOGRAPHY.styles.small,
+      fontSize: 11,
+      color: colors.text,
+    },
+    moreLocationsText: {
+      ...TYPOGRAPHY.styles.small,
+      fontSize: 11,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+    },
   });
+};
+
+// Helper to get locations for a species by name
+const getLocationsForSpeciesName = (speciesName: string): FishingLocation[] => {
+  const speciesId = speciesNameToId[speciesName];
+  if (!speciesId) return [];
+  return getLocationsForSpecies(speciesId);
 };
 
 export default function FiskeDexScreen() {
@@ -441,6 +526,30 @@ export default function FiskeDexScreen() {
                       </View>
                     )}
                   </View>
+
+                  {/* Where to find section */}
+                  {(() => {
+                    const locations = getLocationsForSpeciesName(species.name);
+                    if (locations.length === 0) return null;
+                    return (
+                      <View style={styles.whereToFindContainer}>
+                        <Text style={styles.whereToFindLabel}>
+                          <Ionicons name="location" size={12} color={colors.textSecondary} /> Hvor finder du denne art:
+                        </Text>
+                        <View style={styles.locationChipsContainer}>
+                          {locations.slice(0, 4).map((loc) => (
+                            <View key={loc.name} style={styles.locationChip}>
+                              <View style={[styles.locationChipDot, { backgroundColor: getWaterTypeColor(loc.waterType) }]} />
+                              <Text style={styles.locationChipText}>{loc.name}</Text>
+                            </View>
+                          ))}
+                          {locations.length > 4 && (
+                            <Text style={styles.moreLocationsText}>+{locations.length - 4} flere steder</Text>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })()}
                 </>
               )}
 

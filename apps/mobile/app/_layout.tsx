@@ -22,8 +22,6 @@ const PushNotificationModule = isExpoGo
 const { PushNotificationProvider } = PushNotificationModule;
 
 export default function RootLayout() {
-  console.log('===== ROOT LAYOUT RENDERING =====');
-
   // Initialize deep linking
   useEffect(() => {
     const cleanup = initDeepLinking();

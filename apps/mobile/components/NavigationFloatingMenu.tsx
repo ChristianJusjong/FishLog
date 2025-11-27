@@ -74,7 +74,7 @@ export default function NavigationFloatingMenu() {
                   },
                 ]}
                 onPress={() => {
-                  router.push(item.route);
+                  router.push(item.route as any);
                   toggleMenu();
                 }}
                 activeOpacity={0.8}

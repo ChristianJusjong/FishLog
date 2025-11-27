@@ -107,7 +107,7 @@ export function AIRecommendations(props: AIRecommendationsProps) {
   if (!visible) {
     return (
       <TouchableOpacity style={styles.triggerButton} onPress={fetchRecommendations}>
-        <Text style={styles.triggerButtonText}>🤖 Få AI-Råd</Text>
+        <Text style={styles.triggerButtonText}>Få AI-Råd</Text>
       </TouchableOpacity>
     );
   }
@@ -116,7 +116,7 @@ export function AIRecommendations(props: AIRecommendationsProps) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>🤖 AI Anbefalinger</Text>
+          <Text style={styles.title}>AI Anbefalinger</Text>
           <TouchableOpacity onPress={() => setVisible(false)}>
             <Text style={styles.closeButton}>✕</Text>
           </TouchableOpacity>
@@ -136,7 +136,7 @@ export function AIRecommendations(props: AIRecommendationsProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>🤖 AI Anbefalinger</Text>
+        <Text style={styles.title}>AI Anbefalinger</Text>
         <TouchableOpacity onPress={() => setVisible(false)}>
           <Text style={styles.closeButton}>✕</Text>
         </TouchableOpacity>
@@ -162,7 +162,7 @@ export function AIRecommendations(props: AIRecommendationsProps) {
         {/* Baits */}
         {recommendations.baits.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>🎣 Anbefalet Agn</Text>
+            <Text style={styles.cardTitle}>Anbefalet Agn</Text>
             {recommendations.baits.map((bait, index) => (
               <View key={index} style={styles.item}>
                 <View style={styles.itemHeader}>
@@ -188,7 +188,7 @@ export function AIRecommendations(props: AIRecommendationsProps) {
         {/* Lures */}
         {recommendations.lures.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>🎯 Anbefalet Wobblers</Text>
+            <Text style={styles.cardTitle}>Anbefalet Wobblers</Text>
             {recommendations.lures.map((lure, index) => (
               <View key={index} style={styles.item}>
                 <View style={styles.itemHeader}>
@@ -216,7 +216,7 @@ export function AIRecommendations(props: AIRecommendationsProps) {
         {/* Techniques */}
         {recommendations.techniques.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>⚡ Teknikker</Text>
+            <Text style={styles.cardTitle}>Teknikker</Text>
             {recommendations.techniques.map((technique, index) => (
               <View key={index} style={styles.item}>
                 <Text style={styles.itemName}>{technique.name}</Text>
@@ -237,7 +237,7 @@ export function AIRecommendations(props: AIRecommendationsProps) {
 
         {/* Weather & Season */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>🌤️ Vejr & Sæson</Text>
+          <Text style={styles.cardTitle}>Vejr & Sæson</Text>
           <Text style={styles.insight}>{recommendations.weather_impact}</Text>
           <Text style={styles.insight}>{recommendations.seasonal_notes}</Text>
         </View>

@@ -40,8 +40,10 @@ import {
   getBaitById,
   getTechniqueById,
   SPECIES_GEAR_RECOMMENDATIONS,
-  type SmartGearSuggestions,
 } from "../data/fishingGear";
+
+// Type alias for smart gear suggestions
+type SmartGearSuggestions = ReturnType<typeof getSmartGearSuggestions>;
 
 // Type alias for backward compatibility
 type LocationSuggestion = FishingLocation;
@@ -253,7 +255,7 @@ const useStyles = () => {
       marginTop: SPACING.sm,
     },
     externalMapButton: {
-      backgroundColor: colors.primaryLight,
+      backgroundColor: colors.surface,
       borderRadius: RADIUS.md,
       padding: SPACING.md,
       marginBottom: SPACING.md,
@@ -295,7 +297,7 @@ const useStyles = () => {
       borderColor: colors.border,
     },
     locationItemActive: {
-      backgroundColor: colors.primaryLight,
+      backgroundColor: colors.accent + '20',
       borderColor: colors.primary,
     },
     locationItemName: {
@@ -543,7 +545,7 @@ const useStyles = () => {
       width: 60,
       height: 60,
       borderRadius: 30,
-      backgroundColor: colors.primaryLight,
+      backgroundColor: colors.accent + '20',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -737,7 +739,7 @@ const useStyles = () => {
     gearSectionTitle: {
       fontSize: 14,
       fontWeight: '600',
-      color: colors.primary,
+      color: colors.text,
       marginBottom: SPACING.sm,
     },
     gearChipContainer: {
@@ -746,16 +748,16 @@ const useStyles = () => {
       gap: SPACING.xs,
     },
     gearChip: {
-      backgroundColor: colors.primaryLight,
+      backgroundColor: colors.accent + '20',
       paddingHorizontal: SPACING.sm,
       paddingVertical: SPACING.xs,
       borderRadius: RADIUS.full,
       borderWidth: 1,
-      borderColor: colors.primary + '30',
+      borderColor: colors.accent + '40',
     },
     gearChipText: {
       fontSize: 12,
-      color: colors.primary,
+      color: colors.text,
       fontWeight: '500',
     },
     gearTipContainer: {
@@ -866,7 +868,13 @@ export default function AIGuideScreen() {
 
   // Get smart gear suggestions based on selected species
   const gearSuggestions = useMemo(() => {
-    return getSmartGearSuggestions(selectedSpeciesId);
+    const suggestions = getSmartGearSuggestions(selectedSpeciesId);
+    // Defensive null checks to prevent length errors
+    return {
+      lures: suggestions?.lures || [],
+      baits: suggestions?.baits || [],
+      techniques: suggestions?.techniques || [],
+    };
   }, [selectedSpeciesId]);
 
   // Get the species-specific gear recommendation for tips/season info
@@ -1025,8 +1033,6 @@ export default function AIGuideScreen() {
           weather_description: weatherForecast.description,
         }),
       };
-
-      console.log("Fetching AI recommendations:", payload);
 
       const response = await api.post("/ai/recommendations", payload);
       setRecommendations(response.data);

@@ -15,7 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SPACING, RADIUS, SHADOWS, FAB } from '@/constants/branding';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import { API_URL } from '../config/api';
@@ -41,6 +42,34 @@ const useStyles = () => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
+    },
+    loadingText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      marginTop: SPACING.md,
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: 100,
+      right: SPACING.lg,
+      zIndex: 999,
+      borderRadius: 30,
+      ...SHADOWS.glow,
+    },
+    fabGradient: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     container: {
       flexGrow: 1,
@@ -463,8 +492,17 @@ export default function GroupsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundLight }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <LinearGradient
+          colors={[colors.accent, colors.accentDark || '#D4880F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoGradient}
+        >
+          <Ionicons name="people" size={40} color={colors.primary} />
+        </LinearGradient>
+        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
+        <Text style={styles.loadingText}>Indlæser grupper...</Text>
       </View>
     );
   }
@@ -700,6 +738,22 @@ export default function GroupsScreen() {
           </View>
         </View>
       </Modal>
+
+        {/* Premium FAB Button */}
+        <TouchableOpacity
+          style={styles.fabContainer}
+          onPress={() => setShowCreateModal(true)}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark || '#D4880F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fabGradient}
+          >
+            <Ionicons name="add" size={28} color={colors.primary} />
+          </LinearGradient>
+        </TouchableOpacity>
       </View>
     </PageLayout>
   );

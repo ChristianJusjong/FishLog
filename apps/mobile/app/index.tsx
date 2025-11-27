@@ -50,17 +50,13 @@ export default function Index() {
   const styles = useStyles();
 
   useEffect(() => {
-    console.log('===== INDEX SCREEN MOUNTED =====');
-
     if (!loading) {
       const timer = setTimeout(() => {
         SplashScreen.hideAsync().catch(() => {});
 
         if (user) {
-          console.log('===== USER LOGGED IN, NAVIGATING TO FEED =====');
           router.replace('/feed');
         } else {
-          console.log('===== NO USER, NAVIGATING TO LOGIN =====');
           router.replace('/login');
         }
       }, 500);

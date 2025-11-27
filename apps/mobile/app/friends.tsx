@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import PageLayout from '../components/PageLayout';
@@ -19,6 +20,14 @@ const useStyles = () => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: RADIUS.xl,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
     },
     loadingText: {
       ...TYPOGRAPHY.styles.body,
@@ -451,8 +460,16 @@ export default function FriendsScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Indlæser...</Text>
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark || '#D4880F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoGradient}
+          >
+            <Ionicons name="people" size={40} color={colors.primary} />
+          </LinearGradient>
+          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
+          <Text style={styles.loadingText}>Indlæser venner...</Text>
         </View>
       </SafeAreaView>
     );

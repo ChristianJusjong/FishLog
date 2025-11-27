@@ -16,14 +16,13 @@ import {
 export type Theme = 'light' | 'dark';
 
 // Extended theme colors type with all premium features
-interface ThemeColors extends typeof COLORS {
+type ThemeColors = typeof COLORS & {
   // Computed convenience colors
   cardBackground: string;
   inputBackground: string;
   divider: string;
-  overlay: string;
   shimmer: string;
-}
+};
 
 interface ThemeContextType {
   theme: Theme;
@@ -41,19 +40,19 @@ interface ThemeContextType {
 }
 
 // Extend colors with computed convenience values
-const extendColors = (baseColors: typeof COLORS | typeof DARK_COLORS, isDark: boolean): ThemeColors => ({
+const extendColors = (baseColors: typeof COLORS | typeof DARK_COLORS, isDark: boolean): any => ({
   ...baseColors,
-  cardBackground: isDark ? baseColors.surface : baseColors.surface,
+  cardBackground: baseColors.surface,
   inputBackground: isDark ? baseColors.surfaceVariant : baseColors.gray50,
-  divider: isDark ? baseColors.border : baseColors.border,
-  overlay: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(10, 37, 64, 0.5)',
+  divider: baseColors.border,
+  overlay: baseColors.overlay as string,
   shimmer: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.6)',
 });
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: 'light',
   toggleTheme: () => {},
-  colors: extendColors(COLORS, false),
+  colors: extendColors(COLORS, false) as ThemeColors,
   isDark: false,
   gradients: GRADIENTS,
   shadows: SHADOWS,

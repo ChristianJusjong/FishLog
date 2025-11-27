@@ -25,12 +25,10 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, readO
     if (Platform.OS === 'web') {
       // Check if Leaflet is already loaded
       if (window.L) {
-        console.log('MapPicker: Leaflet already loaded');
         setMapLoaded(true);
         return;
       }
 
-      console.log('MapPicker: Loading Leaflet...');
       // Load Leaflet CSS
       const link = document.createElement('link');
       link.rel = 'stylesheet';
@@ -41,7 +39,6 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, readO
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
       script.onload = () => {
-        console.log('MapPicker: Leaflet loaded successfully');
         setMapLoaded(true);
       };
       script.onerror = () => {
@@ -60,12 +57,10 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, readO
   // Initialize map
   useEffect(() => {
     if (Platform.OS === 'web' && mapLoaded && window.L && mapContainerRef.current) {
-      console.log('MapPicker: Initializing map with coordinates:', { latitude, longitude, readOnly });
       const L = window.L;
 
       // Clean up existing map instance
       if (mapInstanceRef.current) {
-        console.log('MapPicker: Removing existing map instance');
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         markerRef.current = null;
@@ -79,8 +74,6 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, readO
 
       mapInstanceRef.current = map;
 
-      console.log('MapPicker: Map created, adding tiles...');
-
       // Add OpenStreetMap tiles
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -89,7 +82,6 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, readO
 
       // Add marker if coordinates exist
       if (latitude && longitude) {
-        console.log('MapPicker: Adding marker at', latitude, longitude);
         markerRef.current = L.marker([latitude, longitude]).addTo(map);
       }
 
@@ -111,8 +103,6 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, readO
         });
       }
 
-      console.log('MapPicker: Map initialization complete');
-
       // Force map to recalculate size after a short delay
       setTimeout(() => {
         if (mapInstanceRef.current) {
@@ -124,7 +114,6 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, readO
     // Cleanup function
     return () => {
       if (mapInstanceRef.current) {
-        console.log('MapPicker: Cleaning up map');
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         markerRef.current = null;

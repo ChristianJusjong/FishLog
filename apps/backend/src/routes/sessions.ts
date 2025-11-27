@@ -1,9 +1,8 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 import { detectAndRecordSegmentEfforts } from '../services/segmentService';
 
-const prisma = new PrismaClient();
 
 export async function sessionsRoutes(fastify: FastifyInstance) {
   // POST /sessions/start - Start a new fishing session

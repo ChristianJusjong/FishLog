@@ -1,15 +1,48 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { generateTokenPair, verifyRefreshToken } from '../utils/jwt';
+import { signupSchema, loginSchema, refreshTokenSchema, validate } from '../lib/validation';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
-const prisma = new PrismaClient();
 
 // OAuth Configuration
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const FACEBOOK_AUTH_URL = 'https://www.facebook.com/v12.0/dialog/oauth';
 const FACEBOOK_TOKEN_URL = 'https://graph.facebook.com/v12.0/oauth/access_token';
+
+// Temporary auth code store (codes expire after 5 minutes)
+// This allows secure OAuth token exchange via POST instead of URL params
+const authCodeStore = new Map<string, { userId: string; expiresAt: number }>();
+const AUTH_CODE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
+function generateAuthCode(userId: string): string {
+  const code = crypto.randomBytes(32).toString('hex');
+  authCodeStore.set(code, {
+    userId,
+    expiresAt: Date.now() + AUTH_CODE_EXPIRY_MS,
+  });
+  cleanupExpiredCodes();
+  return code;
+}
+
+function consumeAuthCode(code: string): string | null {
+  const entry = authCodeStore.get(code);
+  if (!entry) return null;
+  authCodeStore.delete(code);
+  if (Date.now() > entry.expiresAt) return null;
+  return entry.userId;
+}
+
+function cleanupExpiredCodes(): void {
+  const now = Date.now();
+  for (const [code, entry] of authCodeStore.entries()) {
+    if (now > entry.expiresAt) {
+      authCodeStore.delete(code);
+    }
+  }
+}
 
 export async function authRoutes(fastify: FastifyInstance) {
   // Google OAuth - Initiate login
@@ -99,27 +132,18 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Generate JWT tokens
-      const tokens = generateTokenPair({
-        id: user.id,
-        userId: user.id,
-        email: user.email,
-      });
+      // Generate short-lived auth code instead of sending tokens in URL
+      const authCode = generateAuthCode(user.id);
 
-      // Save refresh token to database
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { refreshToken: tokens.refreshToken },
-      });
-
-      // Redirect to frontend with tokens
+      // Redirect to frontend with auth code (not tokens!)
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
       return reply.redirect(
-        `${frontendUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`
+        `${frontendUrl}/auth/callback?code=${authCode}&provider=google`
       );
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Authentication failed' });
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
+      return reply.redirect(`${frontendUrl}/auth/callback?error=authentication_failed`);
     }
   });
 
@@ -201,6 +225,46 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Generate short-lived auth code instead of sending tokens in URL
+      const authCode = generateAuthCode(user.id);
+
+      // Redirect to frontend with auth code (not tokens!)
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
+      return reply.redirect(
+        `${frontendUrl}/auth/callback?code=${authCode}&provider=facebook`
+      );
+    } catch (error) {
+      fastify.log.error(error);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
+      return reply.redirect(`${frontendUrl}/auth/callback?error=authentication_failed`);
+    }
+  });
+
+  // Exchange auth code for tokens (secure POST endpoint)
+  fastify.post('/auth/exchange', async (request, reply) => {
+    try {
+      const { code } = request.body as { code?: string };
+
+      if (!code) {
+        return reply.code(400).send({ error: 'Authorization code required' });
+      }
+
+      // Consume the auth code (one-time use)
+      const userId = consumeAuthCode(code);
+
+      if (!userId) {
+        return reply.code(401).send({ error: 'Invalid or expired authorization code' });
+      }
+
+      // Get user from database
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return reply.code(404).send({ error: 'User not found' });
+      }
+
       // Generate JWT tokens
       const tokens = generateTokenPair({
         id: user.id,
@@ -214,14 +278,20 @@ export async function authRoutes(fastify: FastifyInstance) {
         data: { refreshToken: tokens.refreshToken },
       });
 
-      // Redirect to frontend with tokens
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
-      return reply.redirect(
-        `${frontendUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`
-      );
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+          provider: user.provider,
+        },
+      };
     } catch (error) {
-      fastify.log.error(error);
-      return reply.code(500).send({ error: 'Authentication failed' });
+      fastify.log.error(error, 'Token exchange error');
+      return reply.code(500).send({ error: 'Token exchange failed' });
     }
   });
 
@@ -295,26 +365,11 @@ export async function authRoutes(fastify: FastifyInstance) {
   // SIGNUP ENDPOINT - Email/Password registration
   fastify.post('/auth/signup', async (request, reply) => {
     try {
-      const { email, password, name } = request.body as {
-        email?: string;
-        password?: string;
-        name?: string;
-      };
+      // Validate input with Zod
+      const validData = validate(signupSchema, request.body, reply);
+      if (!validData) return;
 
-      if (!email || !password || !name) {
-        return reply.code(400).send({ error: 'Email, password, and name are required' });
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return reply.code(400).send({ error: 'Invalid email format' });
-      }
-
-      // Validate password strength
-      if (password.length < 8) {
-        return reply.code(400).send({ error: 'Password must be at least 8 characters' });
-      }
+      const { email, password, name } = validData;
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
@@ -376,14 +431,11 @@ export async function authRoutes(fastify: FastifyInstance) {
   // EMAIL/PASSWORD LOGIN ENDPOINT
   fastify.post('/auth/login', async (request, reply) => {
     try {
-      const { email, password } = request.body as {
-        email?: string;
-        password?: string;
-      };
+      // Validate input with Zod
+      const validData = validate(loginSchema, request.body, reply);
+      if (!validData) return;
 
-      if (!email || !password) {
-        return reply.code(400).send({ error: 'Email and password are required' });
-      }
+      const { email, password } = validData;
 
       // Find user by email
       const user = await prisma.user.findUnique({
@@ -434,67 +486,4 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // TEST LOGIN ENDPOINT - For development/testing only
-  fastify.post('/auth/test-login', async (request, reply) => {
-    try {
-      const { email, name } = request.body as { email?: string; name?: string };
-
-      if (!email || !name) {
-        return reply.code(400).send({ error: 'Email and name required' });
-      }
-
-      // Find or create test user
-      let user = await prisma.user.findUnique({
-        where: {
-          provider_providerId: {
-            provider: 'test',
-            providerId: email,
-          },
-        },
-      });
-
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            email,
-            name,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-            provider: 'test',
-            providerId: email,
-          },
-        });
-      }
-
-      // Generate JWT tokens
-      const tokens = generateTokenPair({
-        id: user.id,
-        userId: user.id,
-        email: user.email,
-      });
-
-      // Save refresh token to database
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { refreshToken: tokens.refreshToken },
-      });
-
-      return {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatar: user.avatar,
-          provider: user.provider,
-        },
-      };
-    } catch (error) {
-      fastify.log.error(error, 'Test login error');
-      return reply.code(500).send({
-        error: 'Test login failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
 }

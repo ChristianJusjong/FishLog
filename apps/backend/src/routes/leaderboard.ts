@@ -1,9 +1,8 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 import { getTitleForLevel } from '../services/title-service';
 
-const prisma = new PrismaClient();
 
 /**
  * Leaderboard Categories:

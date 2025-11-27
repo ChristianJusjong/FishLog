@@ -1,10 +1,9 @@
+import { prisma } from "../lib/prisma";
 /**
  * Privacy Service - Handles privacy checks for user data
  */
 
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
 
 /**
  * Check if viewer can see target user's profile

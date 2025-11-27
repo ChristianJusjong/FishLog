@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../lib/prisma";
 
-const prisma = new PrismaClient();
 
 interface BadgeDefinition {
   name: string;
@@ -621,8 +620,6 @@ const badges: BadgeDefinition[] = [
 ];
 
 export async function seedBadges() {
-  console.log('🏅 Seeding badges...');
-
   for (const badge of badges) {
     try {
       await prisma.badge.upsert({
@@ -643,31 +640,18 @@ export async function seedBadges() {
           tier: badge.tier,
         },
       });
-      console.log(`✅ Created/Updated: ${badge.name} (${badge.tier})`);
     } catch (error) {
       console.error(`❌ Failed to create ${badge.name}:`, error);
     }
   }
 
   const badgeCount = await prisma.badge.count();
-  console.log(`\n🎉 Total badges in database: ${badgeCount}`);
-  console.log('\nBadge categories:');
-  console.log(`  Achievement: ${badges.filter(b => b.category === 'achievement').length}`);
-  console.log(`  Funny: ${badges.filter(b => b.category === 'funny').length}`);
-  console.log(`  Social: ${badges.filter(b => b.category === 'social').length}`);
-  console.log(`  Conservation: ${badges.filter(b => b.category === 'conservation').length}`);
-  console.log(`  Seasonal: ${badges.filter(b => b.category === 'seasonal').length}`);
-  console.log(`  Rare: ${badges.filter(b => b.category === 'rare').length}`);
-  console.log(`  Secret: ${badges.filter(b => b.category === 'secret').length}`);
-  console.log(`\nLegendary badges: ${badges.filter(b => b.tier === 'legendary').length}`);
-  console.log(`Secret badges: ${badges.filter(b => b.isSecret).length}`);
 }
 
 // Run if called directly
 if (require.main === module) {
   seedBadges()
     .then(() => {
-      console.log('\n✨ Badge seeding complete!');
       process.exit(0);
     })
     .catch((error) => {

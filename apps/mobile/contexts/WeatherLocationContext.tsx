@@ -55,7 +55,6 @@ export function WeatherLocationProvider({ children }: { children: ReactNode }) {
 
     // Check if we should skip fetching (data is still fresh)
     if (!force && lastFetchTime && (now - lastFetchTime) < CACHE_DURATION) {
-      console.log('Using cached weather/location data');
       return;
     }
 

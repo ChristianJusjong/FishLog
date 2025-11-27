@@ -14,9 +14,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS, FAB_STYLE, FAB } from '@/constants/theme';
+import { SPACING, RADIUS, SHADOWS, FAB_STYLE, FAB, GRADIENTS } from '@/constants/theme';
 import { API_URL } from '../config/api';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
@@ -80,16 +81,32 @@ const useStyles = () => {
       justifyContent: 'center',
       alignItems: 'center',
     },
-    logoContainer: {
-      width: 120,
-      height: 120,
-      borderRadius: 60,
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: RADIUS['2xl'],
       justifyContent: 'center',
       alignItems: 'center',
+      ...SHADOWS.glow,
     },
     loadingText: {
       marginTop: SPACING.md,
       fontSize: 16,
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: 100,
+      right: SPACING.lg,
+      zIndex: 999,
+      borderRadius: 30,
+      ...SHADOWS.glow,
+    },
+    fabGradient: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     container: {
       flexGrow: 1,
@@ -733,9 +750,14 @@ export default function ChallengesScreen() {
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <View style={[styles.logoContainer, { backgroundColor: colors.primaryLight }]}>
-          <Ionicons name="trophy" size={48} color={colors.primary} />
-        </View>
+        <LinearGradient
+          colors={[colors.accent, colors.accentDark || '#D4880F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoGradient}
+        >
+          <Ionicons name="trophy" size={40} color={colors.primary} />
+        </LinearGradient>
         <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
           Indlæser udfordringer...
@@ -930,12 +952,20 @@ export default function ChallengesScreen() {
         )}
       </ScrollView>
 
-      {/* FAB Button */}
+      {/* FAB Button with Premium Gradient */}
       <TouchableOpacity
-        style={[FAB_STYLE, { backgroundColor: colors.accent }]}
+        style={styles.fabContainer}
         onPress={() => setShowCreateModal(true)}
+        activeOpacity={0.85}
       >
-        <Ionicons name="add" size={FAB.ICON_SIZE} color={colors.white} />
+        <LinearGradient
+          colors={[colors.accent, colors.accentDark || '#D4880F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabGradient}
+        >
+          <Ionicons name="add" size={FAB.ICON_SIZE} color={colors.primary} />
+        </LinearGradient>
       </TouchableOpacity>
         </SafeAreaView>
       </View>

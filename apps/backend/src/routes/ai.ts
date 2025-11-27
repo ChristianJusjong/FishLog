@@ -1,9 +1,8 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
 import Groq from 'groq-sdk';
 
-const prisma = new PrismaClient();
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 
 // Helper function to get season name in Danish

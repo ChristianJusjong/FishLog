@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../lib/prisma";
 
-const prisma = new PrismaClient();
 
 interface FishSpecies {
   name: string;
@@ -907,8 +906,6 @@ const fishSpecies: FishSpecies[] = [
 ];
 
 export async function seedFiskeDex() {
-  console.log('🐟 Seeding FiskeDex...');
-
   for (const fish of fishSpecies) {
     try {
       await prisma.species.upsert({
@@ -944,27 +941,18 @@ export async function seedFiskeDex() {
         legendary: '🟠',
       };
 
-      console.log(`${rarityEmoji[fish.rarity]} ${fish.name} (${fish.category})`);
     } catch (error) {
       console.error(`❌ Failed to seed ${fish.name}:`, error);
     }
   }
 
   const speciesCount = await prisma.species.count();
-  console.log(`\n🎉 Total species in FiskeDex: ${speciesCount}`);
-  console.log(`\nRarity distribution:`);
-  console.log(`  Common: ${fishSpecies.filter(f => f.rarity === 'common').length}`);
-  console.log(`  Uncommon: ${fishSpecies.filter(f => f.rarity === 'uncommon').length}`);
-  console.log(`  Rare: ${fishSpecies.filter(f => f.rarity === 'rare').length}`);
-  console.log(`  Very Rare: ${fishSpecies.filter(f => f.rarity === 'very_rare').length}`);
-  console.log(`  Legendary: ${fishSpecies.filter(f => f.rarity === 'legendary').length}`);
 }
 
 // Run if called directly
 if (require.main === module) {
   seedFiskeDex()
     .then(() => {
-      console.log('\n✨ FiskeDex seeding complete!');
       process.exit(0);
     })
     .catch((error) => {

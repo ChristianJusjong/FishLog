@@ -1,8 +1,8 @@
+import { prisma } from "../lib/prisma";
 /**
  * XP Service - Automatically awards XP and handles level-ups
  */
 
-import { PrismaClient } from '@prisma/client';
 import {
   calculateXP,
   getLevelFromXP,
@@ -11,7 +11,6 @@ import {
   XP_BONUSES,
 } from '../utils/xp-system.js';
 
-const prisma = new PrismaClient();
 
 interface AwardXPResult {
   xpAwarded: number;

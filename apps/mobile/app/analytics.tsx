@@ -17,6 +17,7 @@ import { LineChart, PieChart } from 'react-native-chart-kit';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
@@ -127,6 +128,14 @@ const useStyles = () => {
       marginTop: 16,
       fontSize: 16,
       color: colors.textSecondary,
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
     },
     errorText: {
       marginTop: 16,
@@ -639,7 +648,15 @@ export default function Analytics() {
           </View>
 
           <View style={styles.loader}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <LinearGradient
+              colors={[colors.accent, colors.accentDark || '#D4880F']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoGradient}
+            >
+              <Ionicons name="analytics" size={40} color={colors.primary} />
+            </LinearGradient>
+            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
             <Text style={styles.loadingText}>
               {activeTab === 'analytics' ? 'Indlæser analyser...' : 'Analyserer dine fangstmønstre...'}
             </Text>
@@ -916,7 +933,7 @@ export default function Analytics() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Mål</Text>
-                <TouchableOpacity onPress={() => router.push('/goals')}>
+                <TouchableOpacity onPress={() => router.push('/goals' as any)}>
                   <Text style={styles.sectionAction}>Se alle</Text>
                 </TouchableOpacity>
               </View>

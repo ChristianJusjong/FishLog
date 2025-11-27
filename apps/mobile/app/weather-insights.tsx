@@ -458,7 +458,7 @@ const useStyles = () => {
     },
     content: {
       padding: SPACING.lg,
-      paddingBottom: SPACING.xxl,
+      paddingBottom: SPACING['2xl'],
     },
     centered: {
       flex: 1,

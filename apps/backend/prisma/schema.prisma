@@ -99,6 +99,9 @@ model User {
   fiskedexEntries          FiskeDexEntry[]
 
   @@unique([provider, providerId])
+  @@index([totalXP(sort: Desc)])
+  @@index([level(sort: Desc)])
+  @@index([createdAt])
   @@map("users")
 }
 

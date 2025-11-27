@@ -16,9 +16,9 @@ export const AdMobProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isInitialized, setIsInitialized] = useState(false);
   const { user } = useAuth();
 
-  // Don't show ads to premium or pro users
+  // Don't show ads to premium users
   // Free users will see ads - this is the monetization strategy
-  const shouldShowAds = !user?.premium || (user.premium.tier !== 'premium' && user.premium.tier !== 'pro');
+  const shouldShowAds = !user?.premium;
 
   useEffect(() => {
     initializeAdMob();
@@ -40,7 +40,6 @@ export const AdMobProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
 
       setIsInitialized(true);
-      console.log('✅ AdMob initialized successfully');
     } catch (error) {
       console.error('❌ AdMob initialization failed:', error);
       // Still set initialized to true to prevent blocking the app

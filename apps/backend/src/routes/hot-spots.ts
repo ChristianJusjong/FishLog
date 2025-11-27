@@ -1,3 +1,4 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
 import { authenticateToken } from '../middleware/auth';
 import {
@@ -6,9 +7,7 @@ import {
   getLocationLeaderboard,
   calculateCatchScore,
 } from '../services/spot-detection-service';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
 
 export async function hotSpotsRoutes(fastify: FastifyInstance) {
   /**

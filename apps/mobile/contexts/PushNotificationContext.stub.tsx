@@ -18,8 +18,6 @@ interface Props {
 }
 
 export function PushNotificationProvider({ children }: Props) {
-  console.log('Push notifications disabled (Expo Go detected)');
-
   const value: PushNotificationContextType = {
     expoPushToken: null,
     notification: null,

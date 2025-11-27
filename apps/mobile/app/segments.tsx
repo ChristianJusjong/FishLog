@@ -431,7 +431,7 @@ export default function Segments() {
         </View>
         <TouchableOpacity
           style={styles.createButton}
-          onPress={() => router.push('/create-segment')}
+          onPress={() => router.push('/create-segment' as any)}
         >
           <Text style={styles.createButtonText}>Opret</Text>
         </TouchableOpacity>

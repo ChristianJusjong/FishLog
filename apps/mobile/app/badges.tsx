@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { useTheme } from '../contexts/ThemeContext';
 import { api } from '../lib/api';
@@ -48,6 +49,14 @@ const useStyles = () => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: RADIUS.xl,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
     },
     loadingText: {
       ...TYPOGRAPHY.styles.body,
@@ -423,7 +432,15 @@ export default function BadgesScreen() {
       <PageLayout>
         <View style={styles.container}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <LinearGradient
+              colors={[colors.accent, colors.accentDark || '#D4880F']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoGradient}
+            >
+              <Ionicons name="ribbon" size={40} color={colors.primary} />
+            </LinearGradient>
+            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
             <Text style={styles.loadingText}>Henter badges...</Text>
           </View>
         </View>

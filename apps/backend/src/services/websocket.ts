@@ -134,7 +134,11 @@ class WebSocketService {
    */
   verifyToken(token: string): string | null {
     try {
-      const secret = process.env.JWT_SECRET || 'your-secret-key';
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        this.fastify?.log.error('JWT_SECRET not configured');
+        return null;
+      }
       const decoded = jwt.verify(token, secret) as { userId: string };
       return decoded.userId;
     } catch (error) {

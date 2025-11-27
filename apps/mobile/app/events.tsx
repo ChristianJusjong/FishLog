@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../contexts/ThemeContext";
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from "@/constants/branding";
 import { FAB_STYLE, FAB } from "@/constants/theme";
@@ -93,6 +94,34 @@ const useStyles = () => {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: RADIUS.xl,
+      justifyContent: "center",
+      alignItems: "center",
+      ...SHADOWS.glow,
+    },
+    loadingText: {
+      marginTop: SPACING.md,
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+    fabContainer: {
+      position: "absolute",
+      bottom: 100,
+      right: SPACING.lg,
+      zIndex: 999,
+      borderRadius: 30,
+      ...SHADOWS.glow,
+    },
+    fabGradient: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      alignItems: "center",
+      justifyContent: "center",
     },
     header: {
       flexDirection: "row",
@@ -591,7 +620,16 @@ export default function EventsScreen() {
         edges={["top"]}
       >
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark || '#D4880F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoGradient}
+          >
+            <Ionicons name="calendar" size={40} color={colors.primary} />
+          </LinearGradient>
+          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
+          <Text style={styles.loadingText}>Indlæser events...</Text>
         </View>
       </SafeAreaView>
     );
@@ -824,12 +862,20 @@ export default function EventsScreen() {
               )}
             </ScrollView>
 
-          {/* FAB Button */}
+          {/* FAB Button with Premium Gradient */}
           <TouchableOpacity
-            style={[FAB_STYLE, { backgroundColor: colors.primary }]}
+            style={styles.fabContainer}
             onPress={handleCreateEvent}
+            activeOpacity={0.85}
           >
-            <Ionicons name="add" size={FAB.ICON_SIZE} color={colors.white} />
+            <LinearGradient
+              colors={[colors.accent, colors.accentDark || '#D4880F']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.fabGradient}
+            >
+              <Ionicons name="add" size={FAB.ICON_SIZE} color={colors.primary} />
+            </LinearGradient>
           </TouchableOpacity>
         </SafeAreaView>
       </View>

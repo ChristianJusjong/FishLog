@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GRADIENTS } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
@@ -205,14 +206,22 @@ export default function SettingsScreen() {
           )}
 
           <TouchableOpacity
-            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
             onPress={handleSaveApiKey}
             disabled={loading}
+            activeOpacity={0.85}
+            style={[styles.saveButtonWrapper, loading && styles.saveButtonDisabled]}
           >
-            <Ionicons name="save" size={20} color={colors.white} style={styles.buttonIcon} />
-            <Text style={styles.saveButtonText}>
-              {loading ? 'Gemmer...' : i18n.t('settings.saveApiKey')}
-            </Text>
+            <LinearGradient
+              colors={[colors.accent, colors.accentDark || '#D4880F']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveButton}
+            >
+              <Ionicons name="save" size={20} color={colors.primary} style={styles.buttonIcon} />
+              <Text style={[styles.saveButtonText, { color: colors.primary }]}>
+                {loading ? 'Gemmer...' : i18n.t('settings.saveApiKey')}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -453,11 +462,14 @@ const useStyles = () => {
     color: colors.success,
     fontWeight: TYPOGRAPHY.fontWeight.medium,
   },
+  saveButtonWrapper: {
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    ...SHADOWS.glow,
+  },
   saveButton: {
-    backgroundColor: colors.accent,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.lg,
     padding: SPACING.md,
-    ...SHADOWS.sm,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',

@@ -1,3 +1,4 @@
+import { prisma } from "./lib/prisma";
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
@@ -6,7 +7,6 @@ import rateLimit from '@fastify/rate-limit';
 import helmet from '@fastify/helmet';
 import websocket from '@fastify/websocket';
 import path from 'path';
-import { PrismaClient } from '@prisma/client';
 import { authRoutes } from './routes/auth';
 import { userRoutes } from './routes/users';
 import { catchesRoutes } from './routes/catches';
@@ -46,13 +46,16 @@ import { hotSpotsRoutes } from './routes/hot-spots';
 import { speciesRoutes } from './routes/species';
 import { leaderboardRoutes } from './routes/leaderboard';
 import { initializeDatabase } from './utils/init-db';
+import { errorHandler } from './lib/errors';
 import 'dotenv/config';
 
-const prisma = new PrismaClient();
 const fastify = Fastify({
   logger: true,
   bodyLimit: 10 * 1024 * 1024, // 10MB limit for JSON bodies (to support base64 images)
 });
+
+// Global error handler
+errorHandler(fastify);
 
 // Security: Helmet - adds security headers
 fastify.register(helmet, {
@@ -63,12 +66,22 @@ fastify.register(helmet, {
 // Security: Rate limiting - prevent DDoS and brute force attacks
 fastify.register(rateLimit, {
   max: 100, // Max 100 requests
-  timeWindow: '15 minutes', // per 15 minutes
+  timeWindow: '1 minute', // per minute
   cache: 10000, // Cache 10k users
   allowList: [], // No whitelist
   redis: undefined, // Use in-memory for now, switch to Redis in production for multi-server
   skipOnError: true, // Don't block on rate limiter errors
+  keyGenerator: (request) => {
+    // Use IP + user agent for better fingerprinting
+    return request.ip + (request.headers['user-agent'] || '');
+  },
 });
+
+// Stricter rate limits for auth endpoints (applied per-route in auth.ts)
+export const authRateLimit = {
+  max: 5, // Max 5 attempts
+  timeWindow: '15 minutes', // per 15 minutes
+};
 
 // CORS configuration - restrict origins in production
 const allowedOrigins = process.env.NODE_ENV === 'production'
@@ -327,7 +340,6 @@ const start = async () => {
     const host = process.env.HOST || '0.0.0.0';
 
     await fastify.listen({ port, host });
-    console.log(`🚀 Server running on http://${host}:${port}`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
@@ -336,7 +348,6 @@ const start = async () => {
 
 // Graceful shutdown
 const gracefulShutdown = async () => {
-  console.log('\n🛑 Shutting down gracefully...');
   await prisma.$disconnect();
   await fastify.close();
   process.exit(0);

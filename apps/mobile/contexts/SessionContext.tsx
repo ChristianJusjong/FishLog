@@ -38,7 +38,7 @@ const TRACK_INTERVAL_MS = 30000; // Track location every 30 seconds
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<SessionState | null>(null);
   const [loading, setLoading] = useState(false);
-  const [locationTrackingInterval, setLocationTrackingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [locationTrackingInterval, setLocationTrackingInterval] = useState<ReturnType<typeof setInterval> | null>(null);
 
   const isActive = session !== null && session.id !== null;
 
@@ -154,25 +154,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const endSession = async () => {
     if (!session?.id) {
-      console.log('❌ endSession: No active session');
       throw new Error('No active session');
     }
 
-    console.log('🔄 endSession: Ending session', session.id);
     setLoading(true);
     try {
       const response = await api.post(`/sessions/${session.id}/end`, {
         weatherData: session.weatherData ? JSON.stringify(session.weatherData) : undefined,
       });
-      console.log('✅ endSession: Session ended successfully', response.data);
-
-      console.log('🗑️ endSession: Clearing session from storage');
       await clearSessionFromStorage();
-      console.log('🛑 endSession: Stopping location tracking');
       stopLocationTracking();
-      console.log('🔄 endSession: Setting session to null');
       setSession(null);
-      console.log('✅ endSession: Complete');
     } catch (error: any) {
       console.error('❌ endSession: Failed to end session:', error);
       console.error('❌ endSession: Error response:', error.response?.data);
@@ -240,7 +232,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       // If session has been ended on the backend, clear it locally
       if (data.endTime) {
-        console.log('Session has been ended on backend, clearing local session');
         await clearSessionFromStorage();
         stopLocationTracking();
         setSession(null);
@@ -264,7 +255,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       // If session not found on backend (404), clear local session
       if (error.response?.status === 404) {
-        console.log('Session not found on backend, clearing local session');
         await clearSessionFromStorage();
         stopLocationTracking();
         setSession(null);

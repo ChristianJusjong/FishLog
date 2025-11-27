@@ -1,8 +1,7 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 
-const prisma = new PrismaClient();
 
 // Admin middleware - checks if user has admin role
 // TODO: Add admin role to User model and check here

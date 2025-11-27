@@ -12,9 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
-import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, COLORS } from '@/constants/branding';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { StyleSheet } from 'react-native';
+import { api } from '../../../lib/api';
 
 interface LeaderboardEntry {
   rank: number;
@@ -72,249 +73,249 @@ interface LiveUpdate {
 const useStyles = () => {
   const { colors } = useTheme();
   return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundLight,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    backgroundColor: colors.backgroundLight,
-  },
-  header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    padding: SPACING.sm,
-    marginRight: SPACING.sm,
-  },
-  backButtonText: {
-    fontSize: 28,
-    color: colors.primary,
-  },
-  headerContent: {
-    flex: 1,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.styles.h2,
-    marginBottom: 2,
-    color: colors.textPrimary,
-  },
-  headerSubtitle: {
-    ...TYPOGRAPHY.styles.small,
-    color: colors.textSecondary,
-  },
-  contestInfo: {
-    backgroundColor: colors.primary,
-    padding: SPACING.lg,
-    alignItems: 'center' as const,
-  },
-  contestRule: {
-    ...TYPOGRAPHY.styles.h3,
-    color: colors.white,
-    marginBottom: SPACING.xs,
-  },
-  contestSpecies: {
-    ...TYPOGRAPHY.styles.body,
-    color: colors.white,
-    opacity: 0.9,
-    marginBottom: SPACING.md,
-  },
-  statsRow: {
-    flexDirection: 'row' as const,
-    gap: SPACING.xl,
-    marginTop: SPACING.sm,
-  },
-  statBox: {
-    alignItems: 'center' as const,
-  },
-  statNumber: {
-    ...TYPOGRAPHY.styles.h1,
-    fontSize: 32,
-    color: colors.white,
-  },
-  statLabel: {
-    ...TYPOGRAPHY.styles.small,
-    color: colors.white,
-    opacity: 0.8,
-  },
-  liveUpdateBanner: {
-    backgroundColor: colors.error,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: SPACING.sm,
-  },
-  liveIndicator: {
-    ...TYPOGRAPHY.styles.body,
-    color: colors.white,
-    fontWeight: '700' as const,
-  },
-  liveUpdateText: {
-    ...TYPOGRAPHY.styles.body,
-    color: colors.white,
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  leaderboardContainer: {
-    padding: SPACING.md,
-  },
-  emptyState: {
-    alignItems: 'center' as const,
-    paddingVertical: SPACING.xl * 2,
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: SPACING.md,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.styles.h3,
-    color: colors.textSecondary,
-    marginBottom: SPACING.xs,
-  },
-  emptySubtext: {
-    ...TYPOGRAPHY.styles.body,
-    color: colors.textTertiary,
-  },
-  leaderboardCard: {
-    backgroundColor: colors.surface,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    ...SHADOWS.sm,
-  },
-  topThreeCard: {
-    borderWidth: 2,
-    borderColor: colors.primary,
-    ...SHADOWS.md,
-  },
-  rankBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.backgroundLight,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginRight: SPACING.md,
-  },
-  rankText: {
-    ...TYPOGRAPHY.styles.h3,
-    fontSize: 20,
-    color: colors.textPrimary,
-  },
-  topThreeRank: {
-    fontSize: 24,
-  },
-  userInfo: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    flex: 1,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: SPACING.sm,
-  },
-  avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginRight: SPACING.sm,
-  },
-  avatarText: {
-    ...TYPOGRAPHY.styles.body,
-    color: colors.white,
-    fontWeight: '600' as const,
-  },
-  userDetails: {
-    flex: 1,
-  },
-  userName: {
-    ...TYPOGRAPHY.styles.body,
-    fontWeight: '600' as const,
-    marginBottom: 2,
-    color: colors.textPrimary,
-  },
-  userStats: {
-    ...TYPOGRAPHY.styles.small,
-    color: colors.textSecondary,
-  },
-  scoreContainer: {
-    alignItems: 'flex-end' as const,
-  },
-  scoreDetails: {
-    ...TYPOGRAPHY.styles.h3,
-    color: colors.primary,
-  },
-  bestCatchSpecies: {
-    ...TYPOGRAPHY.styles.small,
-    color: colors.textSecondary,
-  },
-  recentUpdatesContainer: {
-    padding: SPACING.md,
-    paddingTop: SPACING.xl,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.styles.h3,
-    marginBottom: SPACING.md,
-    color: colors.textPrimary,
-  },
-  updateCard: {
-    backgroundColor: colors.surface,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    ...SHADOWS.sm,
-  },
-  updateHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginBottom: SPACING.xs,
-  },
-  updateAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: SPACING.sm,
-  },
-  updateInfo: {
-    flex: 1,
-  },
-  updateUserName: {
-    ...TYPOGRAPHY.styles.body,
-    fontWeight: '600' as const,
-    color: colors.textPrimary,
-  },
-  updateTime: {
-    ...TYPOGRAPHY.styles.small,
-    color: colors.textSecondary,
-  },
-  approvedBadge: {
-    ...TYPOGRAPHY.styles.small,
-    color: colors.success,
-    fontWeight: '600' as const,
-  },
-  updateCatchInfo: {
-    ...TYPOGRAPHY.styles.body,
-    color: colors.textSecondary,
-  },
-    });
+    container: {
+      flex: 1,
+      backgroundColor: colors.backgroundLight,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      backgroundColor: colors.backgroundLight,
+    },
+    header: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.md,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    backButton: {
+      padding: SPACING.sm,
+      marginRight: SPACING.sm,
+    },
+    backButtonText: {
+      fontSize: 28,
+      color: colors.primary,
+    },
+    headerContent: {
+      flex: 1,
+    },
+    headerTitle: {
+      ...TYPOGRAPHY.styles.h2,
+      marginBottom: 2,
+      color: colors.textPrimary,
+    },
+    headerSubtitle: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.textSecondary,
+    },
+    contestInfo: {
+      backgroundColor: colors.primary,
+      padding: SPACING.lg,
+      alignItems: 'center' as const,
+    },
+    contestRule: {
+      ...TYPOGRAPHY.styles.h3,
+      color: colors.white,
+      marginBottom: SPACING.xs,
+    },
+    contestSpecies: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.white,
+      opacity: 0.9,
+      marginBottom: SPACING.md,
+    },
+    statsRow: {
+      flexDirection: 'row' as const,
+      gap: SPACING.xl,
+      marginTop: SPACING.sm,
+    },
+    statBox: {
+      alignItems: 'center' as const,
+    },
+    statNumber: {
+      ...TYPOGRAPHY.styles.h1,
+      fontSize: 32,
+      color: colors.white,
+    },
+    statLabel: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.white,
+      opacity: 0.8,
+    },
+    liveUpdateBanner: {
+      backgroundColor: colors.error,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: SPACING.sm,
+    },
+    liveIndicator: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.white,
+      fontWeight: '700' as const,
+    },
+    liveUpdateText: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.white,
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    leaderboardContainer: {
+      padding: SPACING.md,
+    },
+    emptyState: {
+      alignItems: 'center' as const,
+      paddingVertical: SPACING.xl * 2,
+    },
+    emptyEmoji: {
+      fontSize: 64,
+      marginBottom: SPACING.md,
+    },
+    emptyText: {
+      ...TYPOGRAPHY.styles.h3,
+      color: colors.textSecondary,
+      marginBottom: SPACING.xs,
+    },
+    emptySubtext: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.textTertiary,
+    },
+    leaderboardCard: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.lg,
+      padding: SPACING.md,
+      marginBottom: SPACING.md,
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      ...SHADOWS.sm,
+    },
+    topThreeCard: {
+      borderWidth: 2,
+      borderColor: colors.primary,
+      ...SHADOWS.md,
+    },
+    rankBadge: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.backgroundLight,
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      marginRight: SPACING.md,
+    },
+    rankText: {
+      ...TYPOGRAPHY.styles.h3,
+      fontSize: 20,
+      color: colors.textPrimary,
+    },
+    topThreeRank: {
+      fontSize: 24,
+    },
+    userInfo: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      flex: 1,
+    },
+    avatar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      marginRight: SPACING.sm,
+    },
+    avatarPlaceholder: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.primary,
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      marginRight: SPACING.sm,
+    },
+    avatarText: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.white,
+      fontWeight: '600' as const,
+    },
+    userDetails: {
+      flex: 1,
+    },
+    userName: {
+      ...TYPOGRAPHY.styles.body,
+      fontWeight: '600' as const,
+      marginBottom: 2,
+      color: colors.textPrimary,
+    },
+    userStats: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.textSecondary,
+    },
+    scoreContainer: {
+      alignItems: 'flex-end' as const,
+    },
+    scoreDetails: {
+      ...TYPOGRAPHY.styles.h3,
+      color: colors.primary,
+    },
+    bestCatchSpecies: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.textSecondary,
+    },
+    recentUpdatesContainer: {
+      padding: SPACING.md,
+      paddingTop: SPACING.xl,
+    },
+    sectionTitle: {
+      ...TYPOGRAPHY.styles.h3,
+      marginBottom: SPACING.md,
+      color: colors.textPrimary,
+    },
+    updateCard: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.md,
+      padding: SPACING.md,
+      marginBottom: SPACING.sm,
+      ...SHADOWS.sm,
+    },
+    updateHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      marginBottom: SPACING.xs,
+    },
+    updateAvatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      marginRight: SPACING.sm,
+    },
+    updateInfo: {
+      flex: 1,
+    },
+    updateUserName: {
+      ...TYPOGRAPHY.styles.body,
+      fontWeight: '600' as const,
+      color: colors.textPrimary,
+    },
+    updateTime: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.textSecondary,
+    },
+    approvedBadge: {
+      ...TYPOGRAPHY.styles.small,
+      color: colors.success,
+      fontWeight: '600' as const,
+    },
+    updateCatchInfo: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.textSecondary,
+    },
+  });
 };
 
 export default function ContestLeaderboardScreen() {
@@ -334,20 +335,12 @@ export default function ContestLeaderboardScreen() {
   const [lastUpdateTime, setLastUpdateTime] = useState<string>(new Date().toISOString());
   const [newUpdateAnimation] = useState(new Animated.Value(0));
 
-  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.86.236:3000';
+
 
   const fetchLeaderboard = async () => {
     try {
-      const authHeader = await getAuthHeader();
-      const response = await fetch(`${API_URL}/contests/${id}/leaderboard`, {
-        headers: authHeader,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch leaderboard');
-      }
-
-      const data = await response.json();
+      const response = await api.get(`/contests/${id}/leaderboard`);
+      const data = response.data;
       setLeaderboard(data.leaderboard);
       setContest(data.contest);
       setEvent(data.event);
@@ -363,17 +356,8 @@ export default function ContestLeaderboardScreen() {
 
   const fetchLiveUpdates = async () => {
     try {
-      const authHeader = await getAuthHeader();
-      const response = await fetch(
-        `${API_URL}/contests/${id}/live-updates?since=${lastUpdateTime}`,
-        { headers: authHeader }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch live updates');
-      }
-
-      const data = await response.json();
+      const response = await api.get(`/contests/${id}/live-updates?since=${lastUpdateTime}`);
+      const data = response.data;
       if (data.updates.length > 0) {
         setLiveUpdates((prev) => [...data.updates, ...prev].slice(0, 5)); // Keep only latest 5
         setLastUpdateTime(data.timestamp);

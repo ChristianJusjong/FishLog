@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../lib/prisma";
 
-const prisma = new PrismaClient();
 
 // Fish species scoring system - points based on rarity and difficulty
 const SPECIES_SCORES: { [key: string]: number } = {

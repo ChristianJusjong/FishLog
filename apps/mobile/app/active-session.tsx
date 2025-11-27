@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,9 @@ import SlideToConfirm from '../components/SlideToConfirm';
 import { useSession } from '../contexts/SessionContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../lib/api';
+import { findLocationsInRadius, getWaterTypeLabel, FishingLocation } from '../data/fishingLocations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -50,6 +52,13 @@ export default function ActiveSessionScreen() {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [aiAdvice, setAiAdvice] = useState<string>('');
   const [loadingAi, setLoadingAi] = useState(false);
+  const [selectedSpot, setSelectedSpot] = useState<FishingLocation | null>(null);
+
+  // Find nearby known fishing spots within 25km
+  const nearbyKnownSpots = useMemo(() => {
+    if (!userLocation) return [];
+    return findLocationsInRadius(userLocation.latitude, userLocation.longitude, 25).slice(0, 10);
+  }, [userLocation]);
 
   // Update elapsed time every second
   useEffect(() => {
@@ -57,7 +66,7 @@ export default function ActiveSessionScreen() {
 
     const interval = setInterval(() => {
       const now = new Date();
-      const start = new Date(session.startTime);
+      const start = new Date(session.startTime!);
       const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
       setElapsedTime(diff);
     }, 1000);
@@ -248,14 +257,22 @@ export default function ActiveSessionScreen() {
                 </View>
 
                 <TouchableOpacity
-                  style={[styles.startButton, { backgroundColor: colors.success }]}
+                  style={styles.startButton}
                   onPress={handleStartSession}
                   disabled={loading}
+                  activeOpacity={0.85}
                 >
-                  <Ionicons name="play" size={24} color={colors.white} />
-                  <Text style={[styles.startButtonText, { color: colors.white }]}>
-                    {loading ? 'Starter...' : 'Start Session'}
-                  </Text>
+                  <LinearGradient
+                    colors={[colors.accent, colors.accentDark || '#D4880F']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.startButtonGradient}
+                  >
+                    <Ionicons name="play" size={24} color={colors.primary} />
+                    <Text style={[styles.startButtonText, { color: colors.primary }]}>
+                      {loading ? 'Starter...' : 'Start Session'}
+                    </Text>
+                  </LinearGradient>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -430,9 +447,9 @@ export default function ActiveSessionScreen() {
           </ScrollView>
 
           {/* Page 2: Map */}
-          <View style={[styles.page, { width: SCREEN_WIDTH }]}>
+          <ScrollView style={[styles.page, { width: SCREEN_WIDTH }]}>
             <View style={styles.pageContent}>
-              <Text style={[styles.pageTitle, { color: colors.text }]}>Rute</Text>
+              <Text style={[styles.pageTitle, { color: colors.text }]}>Kort & Fiskepladser</Text>
 
               <View style={styles.mapContainer}>
                 {userLocation ? (
@@ -443,11 +460,10 @@ export default function ActiveSessionScreen() {
                     initialRegion={{
                       latitude: userLocation.latitude,
                       longitude: userLocation.longitude,
-                      latitudeDelta: 0.01,
-                      longitudeDelta: 0.01,
+                      latitudeDelta: 0.1,
+                      longitudeDelta: 0.1,
                     }}
                     showsUserLocation
-                    followsUserLocation
                   >
                     {session.route.length > 1 && (
                       <Polyline
@@ -470,6 +486,21 @@ export default function ActiveSessionScreen() {
                         pinColor="green"
                       />
                     )}
+
+                    {/* Known fishing spot markers */}
+                    {nearbyKnownSpots.map(({ location, distance }) => (
+                      <Marker
+                        key={location.name}
+                        coordinate={{
+                          latitude: location.latitude,
+                          longitude: location.longitude,
+                        }}
+                        title={location.name}
+                        description={`${distance.toFixed(1)} km - ${getWaterTypeLabel(location.waterType)}`}
+                        pinColor={colors.primary}
+                        onPress={() => setSelectedSpot(location)}
+                      />
+                    ))}
                   </MapView>
                 ) : (
                   <View style={styles.mapPlaceholder}>
@@ -490,8 +521,100 @@ export default function ActiveSessionScreen() {
                   Punkter: {session.route.length}
                 </Text>
               </View>
+
+              {/* Selected spot info */}
+              {selectedSpot && (
+                <View style={[styles.card, { backgroundColor: colors.surface }]}>
+                  <View style={styles.cardHeader}>
+                    <Ionicons name="location" size={20} color={colors.primary} />
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>{selectedSpot.name}</Text>
+                    <TouchableOpacity onPress={() => setSelectedSpot(null)} style={{ marginLeft: 'auto' }}>
+                      <Ionicons name="close" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.spotInfoRow}>
+                    <Text style={[styles.spotInfoLabel, { color: colors.textSecondary }]}>Type:</Text>
+                    <Text style={[styles.spotInfoValue, { color: colors.text }]}>
+                      {getWaterTypeLabel(selectedSpot.waterType)}
+                    </Text>
+                  </View>
+                  {selectedSpot.depth && (
+                    <View style={styles.spotInfoRow}>
+                      <Text style={[styles.spotInfoLabel, { color: colors.textSecondary }]}>Dybde:</Text>
+                      <Text style={[styles.spotInfoValue, { color: colors.text }]}>{selectedSpot.depth}</Text>
+                    </View>
+                  )}
+                  {selectedSpot.species.length > 0 && (
+                    <View style={styles.spotSpeciesContainer}>
+                      <Text style={[styles.spotInfoLabel, { color: colors.textSecondary }]}>Arter:</Text>
+                      <View style={styles.spotSpeciesList}>
+                        {selectedSpot.species.slice(0, 5).map((species) => (
+                          <View key={species} style={[styles.spotSpeciesTag, { backgroundColor: colors.primary + '20' }]}>
+                            <Text style={[styles.spotSpeciesText, { color: colors.primary }]}>{species}</Text>
+                          </View>
+                        ))}
+                        {selectedSpot.species.length > 5 && (
+                          <Text style={[styles.spotMoreSpecies, { color: colors.textSecondary }]}>
+                            +{selectedSpot.species.length - 5}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  )}
+                  {selectedSpot.regulations && (
+                    <View style={[styles.regulationsBox, { backgroundColor: colors.warning + '15', borderColor: colors.warning }]}>
+                      <Ionicons name="warning" size={14} color={colors.warning} />
+                      <Text style={[styles.regulationsText, { color: colors.warning }]}>
+                        {selectedSpot.regulations}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Nearby spots list */}
+              {nearbyKnownSpots.length > 0 && (
+                <View style={[styles.card, { backgroundColor: colors.surface }]}>
+                  <View style={styles.cardHeader}>
+                    <Ionicons name="fish" size={20} color={colors.accent} />
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>
+                      Fiskepladser i Nærheden ({nearbyKnownSpots.length})
+                    </Text>
+                  </View>
+                  {nearbyKnownSpots.slice(0, 5).map(({ location, distance }) => (
+                    <TouchableOpacity
+                      key={location.name}
+                      style={[
+                        styles.nearbySpotItem,
+                        selectedSpot?.name === location.name && { backgroundColor: colors.primary + '10' },
+                      ]}
+                      onPress={() => {
+                        setSelectedSpot(location);
+                        mapRef.current?.animateToRegion({
+                          latitude: location.latitude,
+                          longitude: location.longitude,
+                          latitudeDelta: 0.02,
+                          longitudeDelta: 0.02,
+                        }, 500);
+                      }}
+                    >
+                      <View style={styles.nearbySpotInfo}>
+                        <Text style={[styles.nearbySpotName, { color: colors.text }]}>{location.name}</Text>
+                        <Text style={[styles.nearbySpotMeta, { color: colors.textSecondary }]}>
+                          {getWaterTypeLabel(location.waterType)} • {location.species.slice(0, 3).join(', ')}
+                          {location.species.length > 3 ? '...' : ''}
+                        </Text>
+                      </View>
+                      <View style={styles.nearbySpotDistance}>
+                        <Text style={[styles.distanceValue, { color: colors.primary }]}>{distance.toFixed(1)}</Text>
+                        <Text style={[styles.distanceUnit, { color: colors.textSecondary }]}>km</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
-          </View>
+          </ScrollView>
 
           {/* Page 3: AI Guide */}
           <ScrollView style={[styles.page, { width: SCREEN_WIDTH }]}>
@@ -839,14 +962,18 @@ const useStyles = () => {
       fontWeight: '600',
     },
     startButton: {
+      borderRadius: RADIUS.full,
+      marginBottom: SPACING.md,
+      overflow: 'hidden',
+      ...SHADOWS.glow,
+    },
+    startButtonGradient: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: SPACING.sm,
       padding: SPACING.lg,
       borderRadius: RADIUS.full,
-      marginBottom: SPACING.md,
-      ...SHADOWS.md,
     },
     startButtonText: {
       fontSize: 18,
@@ -876,6 +1003,87 @@ const useStyles = () => {
     summaryValue: {
       ...TYPOGRAPHY.styles.body,
       fontWeight: 'bold',
+    },
+    // Known fishing spot styles
+    spotInfoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: SPACING.sm,
+    },
+    spotInfoLabel: {
+      ...TYPOGRAPHY.styles.small,
+    },
+    spotInfoValue: {
+      ...TYPOGRAPHY.styles.body,
+      fontWeight: '500',
+    },
+    spotSpeciesContainer: {
+      marginTop: SPACING.sm,
+    },
+    spotSpeciesList: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.xs,
+      marginTop: SPACING.xs,
+    },
+    spotSpeciesTag: {
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 4,
+      borderRadius: RADIUS.full,
+    },
+    spotSpeciesText: {
+      ...TYPOGRAPHY.styles.small,
+      fontWeight: '500',
+    },
+    spotMoreSpecies: {
+      ...TYPOGRAPHY.styles.small,
+      alignSelf: 'center',
+      marginLeft: SPACING.xs,
+    },
+    regulationsBox: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: SPACING.xs,
+      marginTop: SPACING.md,
+      padding: SPACING.sm,
+      borderRadius: RADIUS.md,
+      borderWidth: 1,
+    },
+    regulationsText: {
+      ...TYPOGRAPHY.styles.small,
+      flex: 1,
+    },
+    nearbySpotItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.xs,
+      borderRadius: RADIUS.md,
+      marginTop: SPACING.xs,
+    },
+    nearbySpotInfo: {
+      flex: 1,
+      marginRight: SPACING.md,
+    },
+    nearbySpotName: {
+      ...TYPOGRAPHY.styles.body,
+      fontWeight: '600',
+    },
+    nearbySpotMeta: {
+      ...TYPOGRAPHY.styles.small,
+      marginTop: 2,
+    },
+    nearbySpotDistance: {
+      alignItems: 'center',
+    },
+    distanceValue: {
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    distanceUnit: {
+      ...TYPOGRAPHY.styles.small,
     },
   });
 };

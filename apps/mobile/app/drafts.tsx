@@ -13,7 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 
@@ -90,6 +92,19 @@ const useStyles = () => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
+    },
+    loadingText: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.textSecondary,
+      marginTop: SPACING.md,
     },
     emptyState: {
       flex: 1,
@@ -199,7 +214,7 @@ export default function DraftsScreen() {
         </Text>
         {item.latitude && item.longitude && (
           <Text style={styles.gps}>
-            📍 {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+             {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
           </Text>
         )}
       </View>
@@ -219,10 +234,19 @@ export default function DraftsScreen() {
     return (
       <PageLayout>
         <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-          <View style={styles.container}>
+          <View style={[styles.container, { backgroundColor: colors.background }]}>
             <WeatherLocationCard />
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
+              <LinearGradient
+                colors={[colors.accent, colors.accentDark || '#D4880F']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoGradient}
+              >
+                <Ionicons name="document-text" size={40} color={colors.primary} />
+              </LinearGradient>
+              <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
+              <Text style={styles.loadingText}>Indlæser kladder...</Text>
             </View>
           </View>
         </SafeAreaView>

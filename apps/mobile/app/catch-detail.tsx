@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import MapPicker from '../components/MapPicker';
 import { shareCatchToSocial, shareViaDialog } from '@/lib/socialShare';
@@ -226,6 +227,14 @@ const useStyles = () => {
       alignItems: 'center',
       backgroundColor: colors.background,
     },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
+    },
     buttonText: {
       ...TYPOGRAPHY.styles.button,
     },
@@ -367,12 +376,6 @@ export default function CatchDetailScreen() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Catch detail data:', data);
-        console.log('Has coordinates?', {
-          latitude: data.latitude,
-          longitude: data.longitude,
-          hasCoords: !!(data.latitude && data.longitude)
-        });
         setCatchData(data);
       } else {
         if (Platform.OS === 'web') {
@@ -491,7 +494,15 @@ export default function CatchDetailScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LinearGradient
+          colors={[colors.accent, colors.accentDark || '#D4880F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoGradient}
+        >
+          <Ionicons name="fish" size={40} color={colors.primary} />
+        </LinearGradient>
+        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
         <Text style={styles.loadingText}>Indlæser fangst...</Text>
       </View>
     );

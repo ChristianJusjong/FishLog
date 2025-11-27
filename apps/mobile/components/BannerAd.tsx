@@ -33,7 +33,6 @@ export default function BannerAdComponent({ size = BannerAdSize.BANNER }: Banner
           requestNonPersonalizedAdsOnly: false,
         }}
         onAdLoaded={() => {
-          console.log('Banner ad loaded');
         }}
         onAdFailedToLoad={(error) => {
           console.error('Banner ad failed to load:', error);

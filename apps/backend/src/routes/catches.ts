@@ -1,11 +1,10 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 import { badgeService } from '../services/badgeService.js';
 import { awardCatchXP } from '../services/xp-service.js';
 import { startCatchSchema, updateCatchSchema, safeValidate } from '../utils/validation';
 
-const prisma = new PrismaClient();
 
 export async function catchesRoutes(fastify: FastifyInstance) {
   // Start a new catch with photo and GPS only (camera-first flow)
@@ -16,7 +15,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
       // Validate input
       const validation = safeValidate(startCatchSchema, request.body);
       if (!validation.success) {
-        return reply.code(400).send({ error: 'Validation failed', details: validation.errors });
+        const errors = validation.errors;
+        return reply.code(400).send({ error: 'Validation failed', details: errors });
       }
 
       const { photoUrl, latitude, longitude, exifData, photoHash } = validation.data;
@@ -214,7 +214,8 @@ export async function catchesRoutes(fastify: FastifyInstance) {
       // Validate input
       const validation = safeValidate(updateCatchSchema, request.body);
       if (!validation.success) {
-        return reply.code(400).send({ error: 'Validation failed', details: validation.errors });
+        const errors = validation.errors;
+        return reply.code(400).send({ error: 'Validation failed', details: errors });
       }
 
       const {

@@ -297,13 +297,11 @@ export default function FeedScreen() {
 
     // Listen for new catches in feed
     const unsubscribeNewCatch = addEventListener('new_catch', (data) => {
-      console.log('New catch received:', data);
       setCatches((prevCatches) => [data.catch, ...prevCatches]);
     });
 
     // Listen for new likes
     const unsubscribeNewLike = addEventListener('new_like', (data) => {
-      console.log('New like received:', data);
       setCatches((prevCatches) =>
         prevCatches.map((c) =>
           c.id === data.catchId
@@ -315,7 +313,6 @@ export default function FeedScreen() {
 
     // Listen for new comments
     const unsubscribeNewComment = addEventListener('new_comment', (data) => {
-      console.log('New comment received:', data);
       setCatches((prevCatches) =>
         prevCatches.map((c) =>
           c.id === data.catchId
@@ -331,7 +328,6 @@ export default function FeedScreen() {
 
     // Listen for new messages
     const unsubscribeNewMessage = addEventListener('new_message', (data) => {
-      console.log('New message received:', data);
       // Refresh conversations when a new message arrives
       if (activeTab === 'messages') {
         fetchConversations(true);

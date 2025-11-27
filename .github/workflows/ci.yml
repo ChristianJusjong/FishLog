@@ -54,6 +54,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
@@ -91,6 +92,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: |
@@ -109,7 +111,7 @@ jobs:
 
       - name: Build backend
         working-directory: apps/backend
-        run: npm run build
+        run: npm run build:ci
 
       - name: Upload backend build artifacts
         uses: actions/upload-artifact@v4
@@ -133,6 +135,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: |

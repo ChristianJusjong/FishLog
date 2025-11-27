@@ -2,8 +2,8 @@
  * Public User Profile Routes
  */
 
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { getLevelFromXP, getRankForLevel } from '../utils/xp-system.js';
 import {
   getSanitizedProfile,
@@ -11,7 +11,6 @@ import {
   getUserFiskeDex,
 } from '../services/privacy-service.js';
 
-const prisma = new PrismaClient();
 
 export async function publicProfileRoutes(fastify: FastifyInstance) {
   // Get public user profile

@@ -144,14 +144,12 @@ export function initDeepLinking(): () => void {
   // Handle initial URL if app was opened via deep link
   Linking.getInitialURL().then((url) => {
     if (url) {
-      console.log('Initial deep link:', url);
       handleDeepLink(url);
     }
   });
 
   // Listen for deep links while app is running
   const subscription = Linking.addEventListener('url', (event) => {
-    console.log('Deep link received:', event.url);
     handleDeepLink(event.url);
   });
 

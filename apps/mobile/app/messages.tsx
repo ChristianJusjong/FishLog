@@ -16,9 +16,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { FAB_STYLE, FAB } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+import { API_URL } from '@/config/api';
 
 type Conversation = {
   partner: {
@@ -49,6 +50,34 @@ const useStyles = () => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
+    },
+    loadingText: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.textSecondary,
+      marginTop: SPACING.md,
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: 20,
+      right: SPACING.lg,
+      zIndex: 999,
+      borderRadius: 30,
+      ...SHADOWS.glow,
+    },
+    fabGradient: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     header: {
       flexDirection: 'row',
@@ -299,9 +328,18 @@ export default function MessagesScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark || '#D4880F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoGradient}
+          >
+            <Ionicons name="chatbubbles" size={40} color={colors.primary} />
+          </LinearGradient>
+          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
+          <Text style={styles.loadingText}>Indlæser beskeder...</Text>
         </View>
       </SafeAreaView>
     );
@@ -431,13 +469,20 @@ export default function MessagesScreen() {
           </View>
         </Modal>
 
-        {/* Floating Action Button */}
+        {/* Premium FAB Button */}
         <TouchableOpacity
-          style={[FAB_STYLE, { backgroundColor: colors.primary }]}
+          style={styles.fabContainer}
           onPress={() => setShowNewMessageModal(true)}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <Ionicons name="add" size={FAB.ICON_SIZE} color={colors.white} />
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark || '#D4880F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fabGradient}
+          >
+            <Ionicons name="add" size={FAB.ICON_SIZE} color={colors.primary} />
+          </LinearGradient>
         </TouchableOpacity>
       </SafeAreaView>
     </View>

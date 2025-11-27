@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../lib/prisma";
 import Groq from 'groq-sdk';
 
-const prisma = new PrismaClient();
 
 interface PredictionFactors {
   timeOfDay: { hour: number; successRate: number; avgCatches: number }[];

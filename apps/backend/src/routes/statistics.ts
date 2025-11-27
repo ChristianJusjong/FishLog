@@ -1,8 +1,7 @@
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 
-const prisma = new PrismaClient();
 
 export async function statisticsRoutes(fastify: FastifyInstance) {
   // Get user statistics overview
@@ -1137,5 +1136,283 @@ export async function statisticsRoutes(fastify: FastifyInstance) {
       insights,
       totalAnalyzed: catches.length,
     };
+  });
+
+  // Weather Analytics - Analyze catches by weather conditions
+  fastify.get('/statistics/weather-analytics', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const userId = request.user!.userId;
+
+      // Get all catches with weather data
+      const catchesWithWeather = await prisma.catch.findMany({
+        where: {
+          userId,
+          isDraft: false,
+          weatherData: { isNot: null },
+        },
+        include: {
+          weatherData: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (catchesWithWeather.length === 0) {
+        return {
+          success: true,
+          hasData: false,
+          message: 'Ingen fangster med vejrdata fundet',
+          totalCatchesAnalyzed: 0,
+          windDirection: { best: null, data: [] },
+          moonPhase: { best: null, data: [] },
+          conditions: { best: null, data: [] },
+          temperature: { best: null, data: [] },
+          pressure: { best: null, data: [] },
+          tideState: { best: null, data: [] },
+          insights: [],
+        };
+      }
+
+      // Helper to calculate success metrics
+      const analyzeCategory = <T extends string>(
+        getter: (w: any) => T | null | undefined,
+        labelMap?: Record<string, string>
+      ) => {
+        const counts = new Map<string, { count: number; totalWeight: number; totalLength: number }>();
+
+        catchesWithWeather.forEach(c => {
+          const value = getter(c.weatherData);
+          if (value) {
+            if (!counts.has(value)) {
+              counts.set(value, { count: 0, totalWeight: 0, totalLength: 0 });
+            }
+            const data = counts.get(value)!;
+            data.count += 1;
+            if (c.weightKg) data.totalWeight += c.weightKg;
+            if (c.lengthCm) data.totalLength += c.lengthCm;
+          }
+        });
+
+        const results = Array.from(counts.entries())
+          .map(([value, data]) => ({
+            value,
+            label: labelMap?.[value] || value,
+            count: data.count,
+            percentage: Math.round((data.count / catchesWithWeather.length) * 100),
+            avgWeight: data.totalWeight > 0 ? Math.round((data.totalWeight / data.count) * 100) / 100 : null,
+            avgLength: data.totalLength > 0 ? Math.round((data.totalLength / data.count) * 10) / 10 : null,
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        return {
+          best: results[0] || null,
+          data: results,
+        };
+      };
+
+      // Wind direction analysis
+      const windDirectionLabels: Record<string, string> = {
+        'N': 'Nord',
+        'NE': 'Nordøst',
+        'E': 'Øst',
+        'SE': 'Sydøst',
+        'S': 'Syd',
+        'SW': 'Sydvest',
+        'W': 'Vest',
+        'NW': 'Nordvest',
+      };
+      const windDirection = analyzeCategory(w => w?.windDirection, windDirectionLabels);
+
+      // Moon phase analysis
+      const moonPhaseLabels: Record<string, string> = {
+        'new': 'Nymåne',
+        'waxing_crescent': 'Tiltagende månesegl',
+        'first_quarter': 'Første kvarter',
+        'waxing_gibbous': 'Tiltagende måne',
+        'full': 'Fuldmåne',
+        'waning_gibbous': 'Aftagende måne',
+        'last_quarter': 'Sidste kvarter',
+        'waning_crescent': 'Aftagende månesegl',
+      };
+      const moonPhase = analyzeCategory(w => w?.moonPhase, moonPhaseLabels);
+
+      // Weather conditions analysis
+      const conditionsLabels: Record<string, string> = {
+        'clear': 'Klart vejr',
+        'sunny': 'Sol',
+        'partly_cloudy': 'Delvist skyet',
+        'cloudy': 'Overskyet',
+        'overcast': 'Gråvejr',
+        'rainy': 'Regn',
+        'drizzle': 'Støvregn',
+        'stormy': 'Storm',
+        'foggy': 'Tåge',
+        'snowy': 'Sne',
+      };
+      const conditions = analyzeCategory(w => w?.conditions, conditionsLabels);
+
+      // Tide state analysis
+      const tideStateLabels: Record<string, string> = {
+        'high': 'Højvande',
+        'low': 'Lavvande',
+        'rising': 'Stigende',
+        'falling': 'Faldende',
+      };
+      const tideState = analyzeCategory(w => w?.tideState, tideStateLabels);
+
+      // Temperature range analysis
+      const temperatureRanges = new Map<string, { count: number; min: number; max: number; totalWeight: number; totalLength: number }>();
+      const tempRangeLabels: Record<string, string> = {
+        'freezing': 'Under 0°C',
+        'cold': '0-5°C',
+        'cool': '5-10°C',
+        'mild': '10-15°C',
+        'warm': '15-20°C',
+        'hot': '20-25°C',
+        'very_hot': 'Over 25°C',
+      };
+
+      catchesWithWeather.forEach(c => {
+        const temp = c.weatherData?.temperature;
+        if (temp !== null && temp !== undefined) {
+          let range: string;
+          if (temp < 0) range = 'freezing';
+          else if (temp < 5) range = 'cold';
+          else if (temp < 10) range = 'cool';
+          else if (temp < 15) range = 'mild';
+          else if (temp < 20) range = 'warm';
+          else if (temp < 25) range = 'hot';
+          else range = 'very_hot';
+
+          if (!temperatureRanges.has(range)) {
+            temperatureRanges.set(range, { count: 0, min: temp, max: temp, totalWeight: 0, totalLength: 0 });
+          }
+          const data = temperatureRanges.get(range)!;
+          data.count += 1;
+          data.min = Math.min(data.min, temp);
+          data.max = Math.max(data.max, temp);
+          if (c.weightKg) data.totalWeight += c.weightKg;
+          if (c.lengthCm) data.totalLength += c.lengthCm;
+        }
+      });
+
+      const temperatureResults = Array.from(temperatureRanges.entries())
+        .map(([range, data]) => ({
+          value: range,
+          label: tempRangeLabels[range],
+          count: data.count,
+          percentage: Math.round((data.count / catchesWithWeather.length) * 100),
+          tempRange: `${Math.round(data.min)}°C - ${Math.round(data.max)}°C`,
+          avgWeight: data.totalWeight > 0 ? Math.round((data.totalWeight / data.count) * 100) / 100 : null,
+          avgLength: data.totalLength > 0 ? Math.round((data.totalLength / data.count) * 10) / 10 : null,
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      const temperature = {
+        best: temperatureResults[0] || null,
+        data: temperatureResults,
+      };
+
+      // Pressure range analysis
+      const pressureRanges = new Map<string, { count: number; min: number; max: number; totalWeight: number; totalLength: number }>();
+      const pressureRangeLabels: Record<string, string> = {
+        'very_low': 'Meget lavt (<1000 hPa)',
+        'low': 'Lavt (1000-1010 hPa)',
+        'normal': 'Normalt (1010-1020 hPa)',
+        'high': 'Højt (1020-1030 hPa)',
+        'very_high': 'Meget højt (>1030 hPa)',
+      };
+
+      catchesWithWeather.forEach(c => {
+        const pressure = c.weatherData?.pressure;
+        if (pressure !== null && pressure !== undefined) {
+          let range: string;
+          if (pressure < 1000) range = 'very_low';
+          else if (pressure < 1010) range = 'low';
+          else if (pressure < 1020) range = 'normal';
+          else if (pressure < 1030) range = 'high';
+          else range = 'very_high';
+
+          if (!pressureRanges.has(range)) {
+            pressureRanges.set(range, { count: 0, min: pressure, max: pressure, totalWeight: 0, totalLength: 0 });
+          }
+          const data = pressureRanges.get(range)!;
+          data.count += 1;
+          data.min = Math.min(data.min, pressure);
+          data.max = Math.max(data.max, pressure);
+          if (c.weightKg) data.totalWeight += c.weightKg;
+          if (c.lengthCm) data.totalLength += c.lengthCm;
+        }
+      });
+
+      const pressureResults = Array.from(pressureRanges.entries())
+        .map(([range, data]) => ({
+          value: range,
+          label: pressureRangeLabels[range],
+          count: data.count,
+          percentage: Math.round((data.count / catchesWithWeather.length) * 100),
+          pressureRange: `${Math.round(data.min)}-${Math.round(data.max)} hPa`,
+          avgWeight: data.totalWeight > 0 ? Math.round((data.totalWeight / data.count) * 100) / 100 : null,
+          avgLength: data.totalLength > 0 ? Math.round((data.totalLength / data.count) * 10) / 10 : null,
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      const pressure = {
+        best: pressureResults[0] || null,
+        data: pressureResults,
+      };
+
+      // Generate insights
+      const insights: string[] = [];
+
+      if (windDirection.best) {
+        insights.push(`Du fanger flest fisk med ${windDirection.best.label.toLowerCase()} vind (${windDirection.best.percentage}% af fangster)`);
+      }
+
+      if (moonPhase.best) {
+        insights.push(`${moonPhase.best.label} er din bedste månefase med ${moonPhase.best.count} fangster`);
+      }
+
+      if (conditions.best) {
+        insights.push(`${conditions.best.label} giver dig de bedste resultater (${conditions.best.percentage}% af fangster)`);
+      }
+
+      if (temperature.best) {
+        insights.push(`Du fanger mest ved ${temperature.best.label.toLowerCase()} (${temperature.best.percentage}% af fangster)`);
+      }
+
+      if (pressure.best) {
+        const pressureLabel = pressure.best.label.toLowerCase().replace('(', '').replace(')', '');
+        insights.push(`${pressureLabel} lufttryk er optimalt for dine fangster`);
+      }
+
+      if (tideState.best && tideState.data.length > 1) {
+        insights.push(`${tideState.best.label} tidevand giver ${tideState.best.percentage}% af dine fangster`);
+      }
+
+      // Find if bigger fish are caught under specific conditions
+      const windWithBiggestFish = windDirection.data.filter(d => d.avgLength).sort((a, b) => (b.avgLength || 0) - (a.avgLength || 0))[0];
+      if (windWithBiggestFish && windWithBiggestFish.avgLength && windDirection.best && windWithBiggestFish.value !== windDirection.best.value) {
+        insights.push(`Tip: Med ${windDirectionLabels[windWithBiggestFish.value] || windWithBiggestFish.value} vind fanger du de største fisk (gns. ${windWithBiggestFish.avgLength} cm)`);
+      }
+
+      return {
+        success: true,
+        hasData: true,
+        totalCatchesAnalyzed: catchesWithWeather.length,
+        windDirection,
+        moonPhase,
+        conditions,
+        temperature,
+        pressure,
+        tideState,
+        insights,
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.code(500);
+      return { error: 'Failed to fetch weather analytics' };
+    }
   });
 }

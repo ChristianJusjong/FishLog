@@ -14,9 +14,10 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+import { API_URL } from '@/config/api';
 
 const useStyles = () => {
   const { colors } = useTheme();
@@ -26,6 +27,19 @@ const useStyles = () => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    logoGradient: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.glow,
+    },
+    loadingText: {
+      ...TYPOGRAPHY.styles.body,
+      color: colors.textSecondary,
+      marginTop: SPACING.md,
     },
     header: {
       flexDirection: 'row',
@@ -296,7 +310,7 @@ export default function NotificationsScreen() {
   };
 
   const getNotificationColor = (type: string) => {
-    const colors: { [key: string]: string } = {
+    const notificationColors: { [key: string]: string } = {
       challenge_invite: colors.accent,
       new_message: colors.primary,
       personal_best: '#F59E0B',
@@ -304,7 +318,7 @@ export default function NotificationsScreen() {
       event_reminder: colors.info,
       badge_earned: '#8B5CF6',
     };
-    return colors[type] || colors.primary;
+    return notificationColors[type] || colors.primary;
   };
 
   const formatTime = (dateString: string) => {
@@ -323,9 +337,18 @@ export default function NotificationsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark || '#D4880F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoGradient}
+          >
+            <Ionicons name="notifications" size={40} color={colors.primary} />
+          </LinearGradient>
+          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
+          <Text style={styles.loadingText}>Indlæser notifikationer...</Text>
         </View>
       </SafeAreaView>
     );

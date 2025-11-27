@@ -408,13 +408,13 @@ export default function EventDetailsScreen() {
             <Text style={styles.infoText}>📅 Start: {formatDate(event.startAt)}</Text>
             <Text style={styles.infoText}>🏁 Slut: {formatDate(event.endAt)}</Text>
             {event.venue && (
-              <Text style={styles.infoText}>📍 Sted: {event.venue}</Text>
+              <Text style={styles.infoText}>Sted: {event.venue}</Text>
             )}
             <Text style={styles.infoText}>
               👤 Arrangør: {event.owner.name}
             </Text>
             <Text style={styles.infoText}>
-              👥 {event.participantCount} deltagere
+               {event.participantCount} deltagere
             </Text>
           </View>
         </View>

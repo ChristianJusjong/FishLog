@@ -1,7 +1,7 @@
+import { prisma } from "../lib/prisma";
 import { FastifyPluginAsync } from 'fastify';
 import { PrismaClient, AdType, AdStatus } from '@prisma/client';
 
-const prisma = new PrismaClient();
 
 // Helper function to check if user should see ads
 async function shouldShowAds(userId: string): Promise<boolean> {

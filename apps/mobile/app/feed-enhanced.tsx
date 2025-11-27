@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
-import { TYPOGRAPHY, SPACING, RADIUS, SHADOW } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import NavigationFloatingMenu from '../components/NavigationFloatingMenu';
@@ -124,7 +124,7 @@ const useStyles = () => {
       marginHorizontal: SPACING.lg,
       marginVertical: SPACING.sm,
       borderRadius: RADIUS.lg,
-      ...SHADOW.small,
+      ...SHADOWS.sm,
       overflow: 'hidden',
     },
     cardHeader: {

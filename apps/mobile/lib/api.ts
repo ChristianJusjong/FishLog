@@ -1,5 +1,5 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, setTokens, clearTokens, TOKEN_KEYS } from './secureStorage';
 
 // Use environment variable for API URL (falls back to production if not set)
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
@@ -14,7 +14,7 @@ export const api = axios.create({
 
 // Add token to requests
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('accessToken');
+  const token = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -26,19 +26,18 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      const refreshToken = await getSecureItem(TOKEN_KEYS.REFRESH_TOKEN);
       if (refreshToken) {
         try {
           const { data } = await axios.post(`${API_URL}/auth/refresh`, {
             refreshToken,
           });
-          await AsyncStorage.setItem('accessToken', data.accessToken);
-          await AsyncStorage.setItem('refreshToken', data.refreshToken);
+          await setTokens(data.accessToken, data.refreshToken);
           error.config.headers.Authorization = `Bearer ${data.accessToken}`;
           return axios(error.config);
         } catch {
           // Refresh failed, logout
-          await AsyncStorage.multiRemove(['accessToken', 'refreshToken']);
+          await clearTokens();
         }
       }
     }
@@ -48,11 +47,11 @@ api.interceptors.response.use(
 
 export const authService = {
   getProfile: () => api.get('/users/me'),
-  updateProfile: (data: { name?: string; avatar?: string }) =>
+  updateProfile: (data: { name?: string; avatar?: string; groqApiKey?: string }) =>
     api.patch('/users/me', data),
   logout: async () => {
-    const refreshToken = await AsyncStorage.getItem('refreshToken');
+    const refreshToken = await getSecureItem(TOKEN_KEYS.REFRESH_TOKEN);
     await api.post('/auth/logout', { refreshToken });
-    await AsyncStorage.multiRemove(['accessToken', 'refreshToken']);
+    await clearTokens();
   },
 };

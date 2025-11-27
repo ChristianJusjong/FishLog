@@ -1,23 +1,66 @@
 /**
- * Hook App - Modern Design System
+ * Hook App - Premium Design System
  * Consolidated theme with consistent spacing, colors, typography, and components
  */
 
-import { TextStyle, ViewStyle } from 'react-native';
-import { COLORS, DARK_COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from './branding';
+import { TextStyle, ViewStyle, Platform } from 'react-native';
+import {
+  COLORS,
+  DARK_COLORS,
+  TYPOGRAPHY,
+  SPACING,
+  RADIUS,
+  SHADOWS,
+  GRADIENTS,
+  GLASS,
+  ANIMATION,
+  ICON_SIZES,
+  CARD_STYLES,
+  INPUT_STYLES,
+  BADGE_STYLES,
+  AVATAR_SIZES,
+  FAB,
+} from './branding';
 
-// Re-export branding constants
-export { COLORS, DARK_COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS };
+// Re-export all branding constants
+export {
+  COLORS,
+  DARK_COLORS,
+  TYPOGRAPHY,
+  SPACING,
+  RADIUS,
+  SHADOWS,
+  GRADIENTS,
+  GLASS,
+  ANIMATION,
+  ICON_SIZES,
+  CARD_STYLES as PREMIUM_CARD_STYLES,
+  INPUT_STYLES as PREMIUM_INPUT_STYLES,
+  BADGE_STYLES as PREMIUM_BADGE_STYLES,
+  AVATAR_SIZES as PREMIUM_AVATAR_SIZES,
+  FAB as FAB_CONFIG,
+};
 
 /**
- * Common Card Style - Used across all screens
+ * Premium Card Style - Used across all screens
  */
 export const CARD_STYLE: ViewStyle = {
   backgroundColor: COLORS.surface,
-  borderRadius: RADIUS.lg,
+  borderRadius: RADIUS.xl,
   padding: SPACING.lg,
-  marginBottom: SPACING.md,
-  ...SHADOWS.md,
+  marginBottom: SPACING.base,
+  ...SHADOWS.card,
+};
+
+/**
+ * Premium Card Elevated Style
+ */
+export const CARD_ELEVATED: ViewStyle = {
+  backgroundColor: COLORS.surface,
+  borderRadius: RADIUS.xl,
+  padding: SPACING.lg,
+  marginBottom: SPACING.base,
+  ...SHADOWS.lg,
 };
 
 /**
@@ -36,16 +79,27 @@ export const CONTENT_CONTAINER: ViewStyle = {
 };
 
 /**
- * Button Styles - Primary, Secondary, Outline, Ghost
+ * Premium Header Style
+ */
+export const HEADER_STYLE: ViewStyle = {
+  paddingHorizontal: SPACING.lg,
+  paddingVertical: SPACING.xl,
+  backgroundColor: COLORS.primary,
+};
+
+/**
+ * Premium Button Styles - Primary, Secondary, Accent, Outline, Ghost, Glass
  */
 export const BUTTON_STYLES = {
   primary: {
     container: {
       backgroundColor: COLORS.primary,
-      borderRadius: RADIUS.md,
-      padding: SPACING.md,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
+      minHeight: 48,
       ...SHADOWS.sm,
     },
     text: {
@@ -56,24 +110,28 @@ export const BUTTON_STYLES = {
   accent: {
     container: {
       backgroundColor: COLORS.accent,
-      borderRadius: RADIUS.md,
-      padding: SPACING.md,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
-      ...SHADOWS.sm,
+      minHeight: 48,
+      ...SHADOWS.glow,
     },
     text: {
       ...TYPOGRAPHY.styles.button,
-      color: COLORS.white,
+      color: COLORS.primary,
     },
   },
   secondary: {
     container: {
       backgroundColor: COLORS.secondary,
-      borderRadius: RADIUS.md,
-      padding: SPACING.md,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
+      minHeight: 48,
       ...SHADOWS.sm,
     },
     text: {
@@ -84,42 +142,105 @@ export const BUTTON_STYLES = {
   outline: {
     container: {
       backgroundColor: 'transparent',
-      borderWidth: 2,
+      borderWidth: 1.5,
       borderColor: COLORS.primary,
-      borderRadius: RADIUS.md,
-      padding: SPACING.md,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
+      minHeight: 48,
     },
     text: {
       ...TYPOGRAPHY.styles.button,
       color: COLORS.primary,
+    },
+  },
+  outlineAccent: {
+    container: {
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: COLORS.accent,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      minHeight: 48,
+    },
+    text: {
+      ...TYPOGRAPHY.styles.button,
+      color: COLORS.accent,
     },
   },
   ghost: {
     container: {
       backgroundColor: 'transparent',
-      borderRadius: RADIUS.md,
-      padding: SPACING.md,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
+      minHeight: 48,
     },
     text: {
       ...TYPOGRAPHY.styles.button,
       color: COLORS.primary,
     },
   },
+  glass: {
+    container: {
+      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.2)',
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      minHeight: 48,
+    },
+    text: {
+      ...TYPOGRAPHY.styles.button,
+      color: COLORS.white,
+    },
+  },
+  small: {
+    container: {
+      backgroundColor: COLORS.primary,
+      borderRadius: RADIUS.md,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.base,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      minHeight: 36,
+    },
+    text: {
+      fontSize: TYPOGRAPHY.fontSize.sm,
+      fontWeight: TYPOGRAPHY.fontWeight.semibold,
+      color: COLORS.white,
+    },
+  },
 };
 
 /**
- * Input Field Style
+ * Premium Input Field Style
+ * Note: fontSize and color should be applied separately as TextStyle on TextInput
  */
 export const INPUT_STYLE: ViewStyle = {
   borderWidth: 1,
   borderColor: COLORS.border,
-  borderRadius: RADIUS.md,
-  padding: SPACING.md,
-  backgroundColor: COLORS.surface,
+  borderRadius: RADIUS.lg,
+  paddingVertical: SPACING.md,
+  paddingHorizontal: SPACING.base,
+  backgroundColor: COLORS.gray50,
+  minHeight: 48,
+};
+
+/**
+ * Input Text Style (for TextInput styling)
+ */
+export const INPUT_TEXT_STYLE: TextStyle = {
   fontSize: TYPOGRAPHY.fontSize.base,
   color: COLORS.text,
 };
@@ -128,10 +249,12 @@ export const INPUT_STYLE: ViewStyle = {
  * Input Label Style
  */
 export const LABEL_STYLE: TextStyle = {
-  ...TYPOGRAPHY.styles.small,
+  fontSize: TYPOGRAPHY.fontSize.xs,
   fontWeight: TYPOGRAPHY.fontWeight.semibold,
-  marginBottom: SPACING.xs,
-  color: COLORS.textPrimary,
+  letterSpacing: TYPOGRAPHY.letterSpacing.caps,
+  textTransform: 'uppercase',
+  marginBottom: SPACING.sm,
+  color: COLORS.textTertiary,
 };
 
 /**
@@ -139,24 +262,29 @@ export const LABEL_STYLE: TextStyle = {
  */
 export const SECTION_HEADER: TextStyle = {
   ...TYPOGRAPHY.styles.h2,
-  marginTop: SPACING.lg,
-  marginBottom: SPACING.md,
-  color: COLORS.textPrimary,
+  marginTop: SPACING.xl,
+  marginBottom: SPACING.base,
+  color: COLORS.text,
 };
 
 /**
- * Divider Style
+ * Premium Divider Style
  */
 export const DIVIDER: ViewStyle = {
   height: 1,
   backgroundColor: COLORS.border,
-  marginVertical: SPACING.md,
+  marginVertical: SPACING.base,
 };
 
 /**
  * Avatar Styles
  */
 export const AVATAR_STYLES = {
+  xs: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
   small: {
     width: 32,
     height: 32,
@@ -168,11 +296,16 @@ export const AVATAR_STYLES = {
     borderRadius: 24,
   },
   large: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  xlarge: {
     width: 80,
     height: 80,
     borderRadius: 40,
   },
-  xlarge: {
+  xxlarge: {
     width: 120,
     height: 120,
     borderRadius: 60,
@@ -180,25 +313,26 @@ export const AVATAR_STYLES = {
 };
 
 /**
- * Badge/Chip Style
+ * Premium Badge/Chip Style
  */
 export const BADGE_STYLE: ViewStyle = {
-  backgroundColor: COLORS.primaryLight,
+  backgroundColor: COLORS.accent,
   borderRadius: RADIUS.full,
   paddingHorizontal: SPACING.sm,
-  paddingVertical: SPACING.xs,
+  paddingVertical: SPACING.xxs,
   alignSelf: 'flex-start' as const,
 };
 
 /**
- * Tab Bar Style
+ * Premium Tab Bar Style
  */
 export const TAB_BAR_STYLE: ViewStyle = {
   backgroundColor: COLORS.surface,
-  borderTopWidth: 1,
-  borderTopColor: COLORS.border,
-  paddingBottom: SPACING.xs,
-  ...SHADOWS.sm,
+  borderTopWidth: 0,
+  paddingBottom: SPACING.sm,
+  borderRadius: RADIUS['3xl'],
+  marginHorizontal: SPACING.base,
+  ...SHADOWS.lg,
 };
 
 /**
@@ -206,21 +340,32 @@ export const TAB_BAR_STYLE: ViewStyle = {
  */
 export const MODAL_BACKDROP: ViewStyle = {
   flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  backgroundColor: COLORS.overlay || 'rgba(10, 37, 64, 0.5)',
   justifyContent: 'center',
   alignItems: 'center',
 };
 
 /**
- * Modal Container Style
+ * Premium Modal Container Style
  */
 export const MODAL_CONTAINER: ViewStyle = {
   backgroundColor: COLORS.surface,
-  borderRadius: RADIUS.xl,
+  borderRadius: RADIUS['2xl'],
   padding: SPACING.xl,
   width: '90%',
   maxWidth: 400,
   ...SHADOWS.xl,
+};
+
+/**
+ * Premium Bottom Sheet Style
+ */
+export const BOTTOM_SHEET: ViewStyle = {
+  backgroundColor: COLORS.surface,
+  borderTopLeftRadius: RADIUS['3xl'],
+  borderTopRightRadius: RADIUS['3xl'],
+  paddingTop: SPACING.sm,
+  ...SHADOWS['2xl'],
 };
 
 /**
@@ -230,7 +375,7 @@ export const EMPTY_STATE: ViewStyle = {
   flex: 1,
   justifyContent: 'center',
   alignItems: 'center',
-  padding: SPACING.xl,
+  padding: SPACING['2xl'],
 };
 
 /**
@@ -241,6 +386,32 @@ export const LOADING_CONTAINER: ViewStyle = {
   justifyContent: 'center',
   alignItems: 'center',
   backgroundColor: COLORS.background,
+};
+
+/**
+ * Premium List Item Style
+ */
+export const LIST_ITEM: ViewStyle = {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: SPACING.md,
+  paddingHorizontal: SPACING.base,
+  backgroundColor: COLORS.surface,
+  borderRadius: RADIUS.lg,
+  marginBottom: SPACING.sm,
+};
+
+/**
+ * Premium Stat Card
+ */
+export const STAT_CARD: ViewStyle = {
+  backgroundColor: COLORS.surface,
+  borderRadius: RADIUS.xl,
+  padding: SPACING.lg,
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: 100,
+  ...SHADOWS.card,
 };
 
 /**
@@ -283,27 +454,47 @@ export const paddings = {
 
 /**
  * Floating Action Button (FAB) Constants
- * Consistent positioning across all screens
+ * Premium positioned above bottom navigation
  */
-export const FAB = {
-  // Bottom navigation bar is 60px, so 100px above = 160px from bottom
-  BOTTOM_POSITION: 160,
-  SIZE: 56,
-  ICON_SIZE: 28,
+export const FAB_CONSTANTS = {
+  BOTTOM_POSITION: 100,
+  SIZE: 60,
+  ICON_SIZE: 26,
 };
 
 /**
- * FAB Style - Floating Action Button
+ * Premium FAB Style - Floating Action Button
  */
 export const FAB_STYLE: ViewStyle = {
   position: 'absolute',
-  bottom: FAB.BOTTOM_POSITION,
+  bottom: FAB_CONSTANTS.BOTTOM_POSITION,
   right: SPACING.lg,
-  width: FAB.SIZE,
-  height: FAB.SIZE,
-  borderRadius: FAB.SIZE / 2,
+  width: FAB_CONSTANTS.SIZE,
+  height: FAB_CONSTANTS.SIZE,
+  borderRadius: FAB_CONSTANTS.SIZE / 2,
   justifyContent: 'center',
   alignItems: 'center',
-  ...SHADOWS.lg,
-  elevation: 8,
+  backgroundColor: COLORS.accent,
+  ...SHADOWS.glow,
 };
+
+/**
+ * Premium Header Gradient Config
+ */
+export const HEADER_GRADIENT = {
+  colors: GRADIENTS.ocean.colors,
+  start: GRADIENTS.ocean.start,
+  end: GRADIENTS.ocean.end,
+};
+
+/**
+ * Premium Accent Gradient Config
+ */
+export const ACCENT_GRADIENT = {
+  colors: GRADIENTS.gold.colors,
+  start: GRADIENTS.gold.start,
+  end: GRADIENTS.gold.end,
+};
+
+// For backward compatibility with FAB import
+export { FAB_CONSTANTS as FAB };

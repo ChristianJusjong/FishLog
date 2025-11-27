@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwipeableScreen from '../components/SwipeableScreen';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import PageLayout from '../components/PageLayout';
 import XPProgressBar from '../components/XPProgressBar';
-import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, AVATAR_STYLES } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, AVATAR_STYLES, GRADIENTS } from '@/constants/theme';
 import { api } from '../lib/api';
 import i18n from '../i18n';
 import { logger } from '../utils/logger';
@@ -60,13 +61,14 @@ const useStyles = () => {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoContainer: {
+  logoGradient: {
     width: 80,
     height: 80,
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS['2xl'],
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.glow,
   },
   loader: {
     marginBottom: SPACING.md,
@@ -128,15 +130,18 @@ const useStyles = () => {
     width: 1,
     marginHorizontal: SPACING.sm,
   },
+  primaryButtonWrapper: {
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    marginBottom: SPACING.md,
+    ...SHADOWS.glow,
+  },
   primaryButton: {
-    backgroundColor: colors.accent,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.lg,
     padding: SPACING.md,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    ...SHADOWS.sm,
     flexDirection: 'row',
-    marginBottom: SPACING.md,
     minHeight: 52,
   },
   primaryButtonText: {
@@ -433,9 +438,14 @@ export default function ProfileScreen() {
   if (loading || !user) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <View style={[styles.logoContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-          <Ionicons name="person" size={48} color={colors.primary} />
-        </View>
+        <LinearGradient
+          colors={[colors.accent, colors.accentDark || '#D4880F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoGradient}
+        >
+          <Ionicons name="person" size={40} color={colors.primary} />
+        </LinearGradient>
         <ActivityIndicator size="large" color={colors.accent} style={styles.loader} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Indlæser profil...</Text>
       </View>
@@ -448,7 +458,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SwipeableScreen currentScreen="/profile">
+    <SwipeableScreen>
       <PageLayout>
         <View style={[styles.safeArea, { backgroundColor: colors.backgroundLight }]}>
           {/* Weather & Location Card */}
@@ -608,18 +618,25 @@ export default function ProfileScreen() {
 
         {/* Action Buttons */}
         <TouchableOpacity
-          style={styles.primaryButton}
           onPress={() => router.push('/edit-profile')}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
+          style={styles.primaryButtonWrapper}
         >
-          <Ionicons name="create-outline" size={20} color={colors.white} style={styles.buttonIcon} />
-          <Text style={styles.primaryButtonText}>{i18n.t('profile.editProfile')}</Text>
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark || '#D4880F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.primaryButton}
+          >
+            <Ionicons name="create-outline" size={20} color={colors.primary} style={styles.buttonIcon} />
+            <Text style={[styles.primaryButtonText, { color: colors.primary }]}>{i18n.t('profile.editProfile')}</Text>
+          </LinearGradient>
         </TouchableOpacity>
 
         <View style={styles.secondaryButtonsRow}>
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() => router.push('/sessions')}
+            onPress={() => router.push('/sessions' as any)}
             activeOpacity={0.8}
           >
             <Ionicons name="map-outline" size={20} color={colors.primary} style={styles.buttonIcon} />

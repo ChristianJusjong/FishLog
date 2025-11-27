@@ -2,13 +2,12 @@
  * XP & Level System API Routes
  */
 
+import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
 import { authenticateToken } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
 import { getLevelFromXP, getRankForLevel } from '../utils/xp-system.js';
 import { getLeaderboard } from '../services/xp-service.js';
 
-const prisma = new PrismaClient();
 
 export default async function xpRoutes(fastify: FastifyInstance) {
   // Get user's XP and level data

@@ -21,7 +21,6 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     const unsubscribeNetwork = NetInfo.addEventListener((state) => {
       const online = state.isConnected === true && state.isInternetReachable !== false;
       setIsOnline(online);
-      console.log('Network status changed:', online ? 'online' : 'offline');
     });
 
     // Listen to sync status changes
@@ -50,7 +49,6 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
 
   const forceSyncNow = async () => {
     if (!isOnline) {
-      console.log('Cannot sync while offline');
       return;
     }
 

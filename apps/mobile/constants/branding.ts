@@ -110,6 +110,8 @@ export const COLORS = {
   dusk: '#7C4DFF',              // Dusk purple
   kelp: '#2E7D32',              // Kelp green
   coral: '#FF7043',             // Coral
+  forest: '#1B4332',            // Deep forest green
+  water: '#1E88E5',             // Clear water blue
 
   // ═══════════════════════════════════════════════════════════════
   // SEMANTIC - Status colors with ocean twist
@@ -135,6 +137,11 @@ export const COLORS = {
   borderDark: '#CBD5E1',        // Darker border
   borderFocus: '#0EA5A5',       // Focus state - teal
   borderAccent: '#F5A623',      // Accent border - golden
+
+  // ═══════════════════════════════════════════════════════════════
+  // OVERLAY
+  // ═══════════════════════════════════════════════════════════════
+  overlay: 'rgba(10, 37, 64, 0.5)' as string,  // Modal/backdrop overlay
 
   // ═══════════════════════════════════════════════════════════════
   // GRADIENTS (as string values for StyleSheet)
@@ -221,6 +228,8 @@ export const DARK_COLORS = {
   dusk: '#9575CD',
   kelp: '#4CAF50',
   coral: '#FF8A65',
+  forest: '#2D5A3D',            // Forest green (dark mode)
+  water: '#42A5F5',             // Water blue (dark mode)
 
   // Semantic
   success: '#34D399',
@@ -242,6 +251,9 @@ export const DARK_COLORS = {
   borderDark: '#334155',
   borderFocus: '#14D9D9',
   borderAccent: '#FFD93D',
+
+  // Overlay
+  overlay: 'rgba(0, 0, 0, 0.7)' as string,  // Dark mode overlay
 
   // Gradients
   gradientPrimary: ['#030D18', '#0A2540'],
@@ -398,6 +410,14 @@ export const TYPOGRAPHY = {
       fontWeight: '500' as const,
       lineHeight: 14,
       letterSpacing: 0.25,
+      color: '#7A94B0',
+    },
+
+    // Tiny - Very small text (badges)
+    tiny: {
+      fontSize: 10,
+      fontWeight: '600' as const,
+      lineHeight: 12,
       color: '#7A94B0',
     },
 

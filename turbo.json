@@ -8,10 +8,38 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "build/**"]
+      "inputs": [
+        "src/**",
+        "prisma/**",
+        "tsconfig.json",
+        "package.json"
+      ],
+      "outputs": ["dist/**", ".next/**", "build/**"],
+      "outputLogs": "new-only"
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "inputs": [
+        "src/**",
+        "app/**",
+        "components/**",
+        ".eslintrc*",
+        "eslint.config.*",
+        "package.json"
+      ],
+      "outputs": [],
+      "cache": true
+    },
+    "test": {
+      "inputs": [
+        "src/**",
+        "app/**",
+        "components/**",
+        "__tests__/**",
+        "jest.config.*",
+        "package.json"
+      ],
+      "outputs": ["coverage/**"],
+      "cache": true
     },
     "clean": {
       "cache": false

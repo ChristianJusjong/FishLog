@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../lib/prisma";
 import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
 
-const prisma = new PrismaClient();
 const expo = new Expo();
 
 interface PushNotificationData {
@@ -92,7 +91,6 @@ class PushNotificationService {
     try {
       const tokens = await this.getUserTokens(userId);
       if (tokens.length === 0) {
-        console.log(`No push tokens found for user ${userId}`);
         return;
       }
 
@@ -115,7 +113,6 @@ class PushNotificationService {
       }
 
       if (allTokens.length === 0) {
-        console.log('No push tokens found for any users');
         return;
       }
 
@@ -134,7 +131,6 @@ class PushNotificationService {
       const validTokens = tokens.filter((token) => Expo.isExpoPushToken(token));
 
       if (validTokens.length === 0) {
-        console.log('No valid push tokens to send to');
         return;
       }
 
@@ -176,7 +172,6 @@ class PushNotificationService {
         }
       }
 
-      console.log(`Sent ${tickets.length} push notifications`);
     } catch (error) {
       console.error('Error sending push notifications:', error);
     }

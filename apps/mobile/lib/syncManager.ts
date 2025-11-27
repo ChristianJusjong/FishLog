@@ -51,7 +51,6 @@ class SyncManager {
       const isConnected = state.isConnected === true && state.isInternetReachable !== false;
 
       if (isConnected && !this.isSyncing) {
-        console.log('Network connected - starting sync');
         this.syncAll();
       }
     });
@@ -64,14 +63,12 @@ class SyncManager {
    */
   async syncAll(): Promise<SyncResult> {
     if (this.isSyncing) {
-      console.log('Sync already in progress');
       return { success: false, synced: 0, failed: 0, errors: ['Sync already in progress'] };
     }
 
     // Check if online
     const online = await this.isOnline();
     if (!online) {
-      console.log('Device is offline - skipping sync');
       return { success: false, synced: 0, failed: 0, errors: ['Device is offline'] };
     }
 
@@ -88,8 +85,6 @@ class SyncManager {
     try {
       // Get sync queue
       const queue = await offlineStorage.getSyncQueue();
-      console.log(`Starting sync: ${queue.length} operations in queue`);
-
       // Process each operation
       for (const operation of queue) {
         try {
@@ -106,7 +101,6 @@ class SyncManager {
 
           // Remove if too many retries
           if (operation.retries >= 3) {
-            console.log(`Removing operation ${operation.id} after 3 failed attempts`);
             await offlineStorage.removeFromSyncQueue(operation.id);
           }
         }
@@ -121,7 +115,6 @@ class SyncManager {
       // Mark as successful if at least one operation synced
       result.success = result.synced > 0 || queue.length === 0;
 
-      console.log(`Sync complete: ${result.synced} synced, ${result.failed} failed`);
       this.notifyListeners(result.failed > 0 ? 'error' : 'success', result);
 
       return result;
@@ -140,8 +133,6 @@ class SyncManager {
    * Process a single sync operation
    */
   private async processOperation(operation: SyncOperation): Promise<void> {
-    console.log(`Processing operation: ${operation.type}`);
-
     switch (operation.type) {
       case 'create_catch':
         await this.syncCreateCatch(operation.data);
@@ -191,7 +182,6 @@ class SyncManager {
       // Mark catch as synced
       await offlineStorage.markCatchSynced(data.id);
 
-      console.log(`Catch ${data.id} synced successfully`);
     } catch (error) {
       console.error('Error syncing create catch:', error);
       throw error;
@@ -204,7 +194,6 @@ class SyncManager {
   private async syncUpdateCatch(data: { id: string; updates: Partial<OfflineCatch> }): Promise<void> {
     try {
       await api.put(`/catches/${data.id}`, data.updates);
-      console.log(`Catch ${data.id} update synced successfully`);
     } catch (error) {
       console.error('Error syncing update catch:', error);
       throw error;
@@ -218,7 +207,6 @@ class SyncManager {
     try {
       await api.delete(`/catches/${data.id}`);
       await offlineStorage.deleteCatch(data.id);
-      console.log(`Catch ${data.id} deletion synced successfully`);
     } catch (error) {
       console.error('Error syncing delete catch:', error);
       throw error;
@@ -231,7 +219,6 @@ class SyncManager {
   private async syncLikeCatch(data: { catchId: string }): Promise<void> {
     try {
       await api.post(`/catches/${data.catchId}/like`);
-      console.log(`Like on catch ${data.catchId} synced successfully`);
     } catch (error) {
       console.error('Error syncing like catch:', error);
       throw error;
@@ -244,7 +231,6 @@ class SyncManager {
   private async syncCommentCatch(data: { catchId: string; text: string }): Promise<void> {
     try {
       await api.post(`/catches/${data.catchId}/comments`, { text: data.text });
-      console.log(`Comment on catch ${data.catchId} synced successfully`);
     } catch (error) {
       console.error('Error syncing comment catch:', error);
       throw error;
@@ -255,7 +241,6 @@ class SyncManager {
    * Force sync now (manual trigger)
    */
   async forceSyncNow(): Promise<SyncResult> {
-    console.log('Force sync triggered');
     return await this.syncAll();
   }
 

@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
-import { TYPOGRAPHY, SPACING, RADIUS, SHADOW } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -87,7 +87,7 @@ const useStyles = () => {
       backgroundColor: colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
-      ...SHADOW.medium,
+      ...SHADOWS.md,
     },
     mapContainer: {
       height: SCREEN_HEIGHT * 0.35,

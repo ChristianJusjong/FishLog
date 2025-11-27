@@ -33,7 +33,7 @@ export function WebSocketProvider({ children }: Props) {
   const [connected, setConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const ws = useRef<WebSocket | null>(null);
-  const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventHandlers = useRef<Map<string, Set<(data: any) => void>>>(new Map());
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
@@ -57,12 +57,9 @@ export function WebSocketProvider({ children }: Props) {
 
     try {
       const wsUrl = getWsUrl();
-      console.log('Connecting to WebSocket:', wsUrl.replace(token!, '[TOKEN]'));
-
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        console.log('WebSocket connected');
         setConnected(true);
         reconnectAttempts.current = 0;
       };
@@ -70,8 +67,6 @@ export function WebSocketProvider({ children }: Props) {
       ws.current.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          console.log('WebSocket message received:', message.event);
-
           setLastMessage(message);
 
           // Call event-specific handlers
@@ -107,21 +102,17 @@ export function WebSocketProvider({ children }: Props) {
       };
 
       ws.current.onclose = () => {
-        console.log('WebSocket disconnected');
         setConnected(false);
         ws.current = null;
 
         // Attempt to reconnect
         if (reconnectAttempts.current < maxReconnectAttempts) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
-          console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts})`);
-
           reconnectTimeout.current = setTimeout(() => {
             reconnectAttempts.current++;
             connect();
           }, delay);
         } else {
-          console.log('Max reconnection attempts reached');
         }
       };
     } catch (error) {
@@ -194,7 +185,6 @@ export function WebSocketProvider({ children }: Props) {
       if (nextAppState === 'active') {
         // App came to foreground, reconnect if needed
         if (!connected && token && user) {
-          console.log('App foregrounded, reconnecting WebSocket');
           connect();
         }
       } else if (nextAppState === 'background') {

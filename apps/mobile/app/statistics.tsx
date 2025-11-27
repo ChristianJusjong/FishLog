@@ -41,7 +41,6 @@ const getBaitIcon = (baitName: string): string => {
       case 'live': return 'bug';
       case 'natural': return 'leaf';
       case 'prepared': return 'cube';
-      case 'artificial': return 'color-palette';
       default: return 'fish';
     }
   }
@@ -51,8 +50,8 @@ const getBaitIcon = (baitName: string): string => {
     switch (lure.category) {
       case 'spinner': return 'sync';
       case 'spoon': return 'ellipse';
-      case 'softbait': return 'water';
-      case 'hardbait': return 'cube';
+      case 'softlure': return 'water';
+      case 'hardlure': return 'cube';
       case 'jig': return 'arrow-down';
       case 'fly': return 'airplane';
       default: return 'flash';
@@ -735,17 +734,17 @@ export default function StatisticsScreen() {
   // Timeline chart data
   const timelineChartData = {
     labels: selectedPeriod === 'week'
-      ? timeline.daily.slice(-7).map(d => new Date(d.date).getDate().toString())
-      : timeline.monthly.slice(-6).map(m => m.month.split('-')[1]),
+      ? (timeline?.daily || []).slice(-7).map(d => new Date(d.date).getDate().toString())
+      : (timeline?.monthly || []).slice(-6).map(m => m.month.split('-')[1]),
     datasets: [{
       data: selectedPeriod === 'week'
-        ? timeline.daily.slice(-7).map(d => d.count)
-        : timeline.monthly.slice(-6).map(m => m.count),
+        ? (timeline?.daily || []).slice(-7).map(d => d.count)
+        : (timeline?.monthly || []).slice(-6).map(m => m.count),
     }],
   };
 
   // Species pie chart data
-  const pieChartData = overview.speciesBreakdown.slice(0, 5).map((item, index) => ({
+  const pieChartData = (overview?.speciesBreakdown || []).slice(0, 5).map((item, index) => ({
     name: item.species,
     population: item.count,
     color: [
@@ -846,25 +845,25 @@ export default function StatisticsScreen() {
         <View style={styles.overviewGrid}>
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Ionicons name="fish" size={32} color={colors.primary} />
-            <Text style={[styles.statValue, { color: colors.text }]}>{overview.totalCatches}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{overview?.totalCatches || 0}</Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Fangster</Text>
           </View>
 
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Ionicons name="color-filter" size={32} color={colors.accent} />
-            <Text style={[styles.statValue, { color: colors.text }]}>{overview.speciesBreakdown.length}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{overview?.speciesBreakdown?.length || 0}</Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Arter</Text>
           </View>
 
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Ionicons name="resize" size={32} color="#10B981" />
-            <Text style={[styles.statValue, { color: colors.text }]}>{overview.averages.length}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{overview?.averages?.length || 0}</Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Gns. cm</Text>
           </View>
 
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Ionicons name="scale" size={32} color="#F59E0B" />
-            <Text style={[styles.statValue, { color: colors.text }]}>{Math.round(overview.averages.weight * 1000)}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{Math.round((overview?.averages?.weight || 0) * 1000)}</Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Gns. g</Text>
           </View>
         </View>
@@ -876,42 +875,42 @@ export default function StatisticsScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Personlige Rekorder</Text>
           </View>
 
-          {overview.records.biggest && (
+          {overview?.records?.biggest && (
             <View style={[styles.recordCard, { backgroundColor: colors.background }]}>
               <View style={styles.recordHeader}>
                 <Ionicons name="resize-outline" size={20} color={colors.primary} />
                 <Text style={[styles.recordTitle, { color: colors.text }]}>Største Fisk</Text>
               </View>
-              <Text style={[styles.recordSpecies, { color: colors.text }]}>{overview.records.biggest.species}</Text>
-              <Text style={[styles.recordValue, { color: colors.primary }]}>{overview.records.biggest.lengthCm} cm</Text>
-              {overview.records.biggest.weightKg && (
+              <Text style={[styles.recordSpecies, { color: colors.text }]}>{overview?.records?.biggest?.species}</Text>
+              <Text style={[styles.recordValue, { color: colors.primary }]}>{overview?.records?.biggest?.lengthCm} cm</Text>
+              {overview?.records?.biggest?.weightKg && (
                 <Text style={[styles.recordDetail, { color: colors.textSecondary }]}>
-                  {Math.round(overview.records.biggest.weightKg * 1000)} g
+                  {Math.round((overview?.records?.biggest?.weightKg || 0) * 1000)} g
                 </Text>
               )}
               <Text style={[styles.recordDate, { color: colors.textSecondary }]}>
-                {new Date(overview.records.biggest.date).toLocaleDateString('da-DK')}
+                {overview?.records?.biggest?.date && new Date(overview.records.biggest.date).toLocaleDateString('da-DK')}
               </Text>
             </View>
           )}
 
-          {overview.records.heaviest && (
+          {overview?.records?.heaviest && (
             <View style={[styles.recordCard, { backgroundColor: colors.background }]}>
               <View style={styles.recordHeader}>
                 <Ionicons name="scale-outline" size={20} color={colors.accent} />
                 <Text style={[styles.recordTitle, { color: colors.text }]}>Tungeste Fisk</Text>
               </View>
-              <Text style={[styles.recordSpecies, { color: colors.text }]}>{overview.records.heaviest.species}</Text>
+              <Text style={[styles.recordSpecies, { color: colors.text }]}>{overview?.records?.heaviest?.species}</Text>
               <Text style={[styles.recordValue, { color: colors.accent }]}>
-                {Math.round(overview.records.heaviest.weightKg! * 1000)} g
+                {Math.round((overview?.records?.heaviest?.weightKg || 0) * 1000)} g
               </Text>
-              {overview.records.heaviest.lengthCm && (
+              {overview?.records?.heaviest?.lengthCm && (
                 <Text style={[styles.recordDetail, { color: colors.textSecondary }]}>
-                  {overview.records.heaviest.lengthCm} cm
+                  {overview?.records?.heaviest?.lengthCm} cm
                 </Text>
               )}
               <Text style={[styles.recordDate, { color: colors.textSecondary }]}>
-                {new Date(overview.records.heaviest.date).toLocaleDateString('da-DK')}
+                {overview?.records?.heaviest?.date && new Date(overview.records.heaviest.date).toLocaleDateString('da-DK')}
               </Text>
             </View>
           )}
@@ -1108,7 +1107,7 @@ export default function StatisticsScreen() {
             />
 
             <View style={styles.speciesList}>
-              {overview.speciesBreakdown.slice(0, 5).map((item, index) => (
+              {(overview?.speciesBreakdown || []).slice(0, 5).map((item, index) => (
                 <View key={item.species} style={styles.speciesItem}>
                   <View style={[styles.speciesColor, { backgroundColor: pieChartData[index]?.color }]} />
                   <Text style={[styles.speciesName, { color: colors.text }]}>{item.species}</Text>
