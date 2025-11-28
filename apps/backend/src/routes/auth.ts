@@ -17,6 +17,10 @@ const FACEBOOK_TOKEN_URL = 'https://graph.facebook.com/v12.0/oauth/access_token'
 const authCodeStore = new Map<string, { userId: string; expiresAt: number }>();
 const AUTH_CODE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
+// Store mobile redirect URIs temporarily during OAuth flow
+const mobileRedirectStore = new Map<string, { redirectUri: string; expiresAt: number }>();
+const MOBILE_REDIRECT_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+
 function generateAuthCode(userId: string): string {
   const code = crypto.randomBytes(32).toString('hex');
   authCodeStore.set(code, {
@@ -40,6 +44,12 @@ function cleanupExpiredCodes(): void {
   for (const [code, entry] of authCodeStore.entries()) {
     if (now > entry.expiresAt) {
       authCodeStore.delete(code);
+    }
+  }
+  // Also cleanup mobile redirect store
+  for (const [state, entry] of mobileRedirectStore.entries()) {
+    if (now > entry.expiresAt) {
+      mobileRedirectStore.delete(state);
     }
   }
 }
@@ -66,13 +76,63 @@ export async function authRoutes(fastify: FastifyInstance) {
     return reply.redirect(authUrl);
   });
 
+  // Google OAuth for mobile - uses custom redirect URI
+  fastify.get('/auth/google/mobile', async (request, reply) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const { redirect_uri } = request.query as { redirect_uri?: string };
+
+    if (!clientId) {
+      return reply.code(500).send({ error: 'Google OAuth not configured' });
+    }
+
+    if (!redirect_uri) {
+      return reply.code(400).send({ error: 'redirect_uri is required' });
+    }
+
+    // Generate state to track this mobile OAuth flow
+    const state = crypto.randomBytes(16).toString('hex');
+    mobileRedirectStore.set(state, {
+      redirectUri: redirect_uri,
+      expiresAt: Date.now() + MOBILE_REDIRECT_EXPIRY_MS,
+    });
+    cleanupExpiredCodes();
+
+    // Use backend callback URL for Google (registered in Google Console)
+    const backendCallbackUrl = process.env.GOOGLE_CALLBACK_URL;
+
+    const authUrl = `${GOOGLE_AUTH_URL}?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: backendCallbackUrl || '',
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'offline',
+      prompt: 'consent',
+      state: `mobile:${state}`, // Prefix to identify mobile flow
+    })}`;
+
+    return reply.redirect(authUrl);
+  });
+
   // Google OAuth callback
   fastify.get('/auth/google/callback', async (request, reply) => {
     try {
-      const { code } = request.query as { code?: string };
+      const { code, state } = request.query as { code?: string; state?: string };
 
       if (!code) {
         return reply.code(400).send({ error: 'Authorization code missing' });
+      }
+
+      // Check if this is a mobile OAuth flow
+      const isMobileFlow = state?.startsWith('mobile:');
+      let mobileRedirectUri: string | null = null;
+
+      if (isMobileFlow && state) {
+        const mobileState = state.replace('mobile:', '');
+        const storedData = mobileRedirectStore.get(mobileState);
+        if (storedData && Date.now() < storedData.expiresAt) {
+          mobileRedirectUri = storedData.redirectUri;
+          mobileRedirectStore.delete(mobileState);
+        }
       }
 
       // Exchange code for access token
@@ -135,13 +195,29 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Generate short-lived auth code instead of sending tokens in URL
       const authCode = generateAuthCode(user.id);
 
-      // Redirect to frontend with auth code (not tokens!)
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
-      return reply.redirect(
-        `${frontendUrl}/auth/callback?code=${authCode}&provider=google`
-      );
+      // Redirect to appropriate URL based on flow type
+      if (mobileRedirectUri) {
+        // Mobile flow: redirect to app's custom scheme
+        return reply.redirect(`${mobileRedirectUri}?code=${authCode}&provider=google`);
+      } else {
+        // Web flow: redirect to frontend URL
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
+        return reply.redirect(`${frontendUrl}/auth/callback?code=${authCode}&provider=google`);
+      }
     } catch (error) {
       fastify.log.error(error);
+
+      // Handle error redirect based on flow type
+      const { state } = request.query as { state?: string };
+      if (state?.startsWith('mobile:')) {
+        const mobileState = state.replace('mobile:', '');
+        const storedData = mobileRedirectStore.get(mobileState);
+        if (storedData) {
+          mobileRedirectStore.delete(mobileState);
+          return reply.redirect(`${storedData.redirectUri}?error=authentication_failed`);
+        }
+      }
+
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
       return reply.redirect(`${frontendUrl}/auth/callback?error=authentication_failed`);
     }
@@ -166,13 +242,61 @@ export async function authRoutes(fastify: FastifyInstance) {
     return reply.redirect(authUrl);
   });
 
+  // Facebook OAuth for mobile - uses custom redirect URI
+  fastify.get('/auth/facebook/mobile', async (request, reply) => {
+    const clientId = process.env.FACEBOOK_APP_ID;
+    const { redirect_uri } = request.query as { redirect_uri?: string };
+
+    if (!clientId) {
+      return reply.code(500).send({ error: 'Facebook OAuth not configured' });
+    }
+
+    if (!redirect_uri) {
+      return reply.code(400).send({ error: 'redirect_uri is required' });
+    }
+
+    // Generate state to track this mobile OAuth flow
+    const state = crypto.randomBytes(16).toString('hex');
+    mobileRedirectStore.set(state, {
+      redirectUri: redirect_uri,
+      expiresAt: Date.now() + MOBILE_REDIRECT_EXPIRY_MS,
+    });
+    cleanupExpiredCodes();
+
+    // Use backend callback URL for Facebook (registered in Facebook Console)
+    const backendCallbackUrl = process.env.FACEBOOK_CALLBACK_URL;
+
+    const authUrl = `${FACEBOOK_AUTH_URL}?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: backendCallbackUrl || '',
+      response_type: 'code',
+      scope: 'email,public_profile',
+      state: `mobile:${state}`, // Prefix to identify mobile flow
+    })}`;
+
+    return reply.redirect(authUrl);
+  });
+
   // Facebook OAuth callback
   fastify.get('/auth/facebook/callback', async (request, reply) => {
     try {
-      const { code } = request.query as { code?: string };
+      const { code, state } = request.query as { code?: string; state?: string };
 
       if (!code) {
         return reply.code(400).send({ error: 'Authorization code missing' });
+      }
+
+      // Check if this is a mobile OAuth flow
+      const isMobileFlow = state?.startsWith('mobile:');
+      let mobileRedirectUri: string | null = null;
+
+      if (isMobileFlow && state) {
+        const mobileState = state.replace('mobile:', '');
+        const storedData = mobileRedirectStore.get(mobileState);
+        if (storedData && Date.now() < storedData.expiresAt) {
+          mobileRedirectUri = storedData.redirectUri;
+          mobileRedirectStore.delete(mobileState);
+        }
       }
 
       // Exchange code for access token
@@ -228,13 +352,29 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Generate short-lived auth code instead of sending tokens in URL
       const authCode = generateAuthCode(user.id);
 
-      // Redirect to frontend with auth code (not tokens!)
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
-      return reply.redirect(
-        `${frontendUrl}/auth/callback?code=${authCode}&provider=facebook`
-      );
+      // Redirect to appropriate URL based on flow type
+      if (mobileRedirectUri) {
+        // Mobile flow: redirect to app's custom scheme
+        return reply.redirect(`${mobileRedirectUri}?code=${authCode}&provider=facebook`);
+      } else {
+        // Web flow: redirect to frontend URL
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
+        return reply.redirect(`${frontendUrl}/auth/callback?code=${authCode}&provider=facebook`);
+      }
     } catch (error) {
       fastify.log.error(error);
+
+      // Handle error redirect based on flow type
+      const { state } = request.query as { state?: string };
+      if (state?.startsWith('mobile:')) {
+        const mobileState = state.replace('mobile:', '');
+        const storedData = mobileRedirectStore.get(mobileState);
+        if (storedData) {
+          mobileRedirectStore.delete(mobileState);
+          return reply.redirect(`${storedData.redirectUri}?error=authentication_failed`);
+        }
+      }
+
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
       return reply.redirect(`${frontendUrl}/auth/callback?error=authentication_failed`);
     }
