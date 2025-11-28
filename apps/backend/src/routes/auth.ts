@@ -200,9 +200,9 @@ export async function authRoutes(fastify: FastifyInstance) {
         // Mobile flow: redirect to app's custom scheme
         return reply.redirect(`${mobileRedirectUri}?code=${authCode}&provider=google`);
       } else {
-        // Web flow: redirect to frontend URL
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
-        return reply.redirect(`${frontendUrl}/auth/callback?code=${authCode}&provider=google`);
+        // Always redirect to app's custom scheme for mobile
+        // This works with both Expo Go and standalone builds
+        return reply.redirect(`hook://auth/callback?code=${authCode}&provider=google`);
       }
     } catch (error) {
       fastify.log.error(error);
@@ -218,8 +218,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
-      return reply.redirect(`${frontendUrl}/auth/callback?error=authentication_failed`);
+      return reply.redirect(`hook://auth/callback?error=authentication_failed`);
     }
   });
 
@@ -357,9 +356,8 @@ export async function authRoutes(fastify: FastifyInstance) {
         // Mobile flow: redirect to app's custom scheme
         return reply.redirect(`${mobileRedirectUri}?code=${authCode}&provider=facebook`);
       } else {
-        // Web flow: redirect to frontend URL
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
-        return reply.redirect(`${frontendUrl}/auth/callback?code=${authCode}&provider=facebook`);
+        // Always redirect to app's custom scheme for mobile
+        return reply.redirect(`hook://auth/callback?code=${authCode}&provider=facebook`);
       }
     } catch (error) {
       fastify.log.error(error);
@@ -375,8 +373,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8083';
-      return reply.redirect(`${frontendUrl}/auth/callback?error=authentication_failed`);
+      return reply.redirect(`hook://auth/callback?error=authentication_failed`);
     }
   });
 

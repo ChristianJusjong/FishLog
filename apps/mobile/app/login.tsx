@@ -1,30 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { api } from '../lib/api';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GRADIENTS } from '@/constants/theme';
 
-// Ensure web browser redirects are handled properly
-WebBrowser.maybeCompleteAuthSession();
-
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
-
-// OAuth configuration
-const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID;
-
-// Create redirect URI that works with Expo
-const redirectUri = AuthSession.makeRedirectUri({
-  scheme: 'hook',
-  path: 'auth/callback',
-});
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -77,38 +63,11 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-
-      // Use backend OAuth flow with proper redirect URI
-      const authUrl = `${API_URL}/auth/google/mobile?redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        redirectUri
-      );
-
-      if (result.type === 'success' && result.url) {
-        // Parse the callback URL to get the auth code
-        const url = new URL(result.url);
-        const code = url.searchParams.get('code');
-        const error = url.searchParams.get('error');
-
-        if (error) {
-          Alert.alert('Login fejlede', 'Google login blev afbrudt');
-          return;
-        }
-
-        if (code) {
-          // Exchange auth code for tokens
-          const response = await api.post('/auth/exchange', { code });
-          const { accessToken, refreshToken } = response.data;
-          await login(accessToken, refreshToken);
-          router.replace('/feed');
-        }
-      }
+      // Open Google OAuth in browser - will redirect back to app via deep link
+      await Linking.openURL(`${API_URL}/auth/google`);
     } catch (error: any) {
       console.error('Google login error:', error);
-      Alert.alert('Login fejlede', 'Kunne ikke logge ind med Google');
-    } finally {
+      Alert.alert('Login fejlede', 'Kunne ikke åbne Google login');
       setLoading(false);
     }
   };
@@ -116,38 +75,11 @@ export default function LoginScreen() {
   const handleFacebookLogin = async () => {
     try {
       setLoading(true);
-
-      // Use backend OAuth flow with proper redirect URI
-      const authUrl = `${API_URL}/auth/facebook/mobile?redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        redirectUri
-      );
-
-      if (result.type === 'success' && result.url) {
-        // Parse the callback URL to get the auth code
-        const url = new URL(result.url);
-        const code = url.searchParams.get('code');
-        const error = url.searchParams.get('error');
-
-        if (error) {
-          Alert.alert('Login fejlede', 'Facebook login blev afbrudt');
-          return;
-        }
-
-        if (code) {
-          // Exchange auth code for tokens
-          const response = await api.post('/auth/exchange', { code });
-          const { accessToken, refreshToken } = response.data;
-          await login(accessToken, refreshToken);
-          router.replace('/feed');
-        }
-      }
+      // Open Facebook OAuth in browser - will redirect back to app via deep link
+      await Linking.openURL(`${API_URL}/auth/facebook`);
     } catch (error: any) {
       console.error('Facebook login error:', error);
-      Alert.alert('Login fejlede', 'Kunne ikke logge ind med Facebook');
-    } finally {
+      Alert.alert('Login fejlede', 'Kunne ikke åbne Facebook login');
       setLoading(false);
     }
   };
