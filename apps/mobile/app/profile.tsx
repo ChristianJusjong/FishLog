@@ -627,6 +627,17 @@ export default function ProfileScreen() {
 
         <View style={styles.secondaryButtonsRow}>
           <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: 'rgba(0, 212, 178, 0.12)', borderColor: '#00D4B2', borderWidth: 1 }]}
+            onPress={() => router.push('/personal-heatmap' as any)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="flame" size={20} color="#00D4B2" style={styles.buttonIcon} />
+            <Text style={[styles.secondaryButtonText, { color: '#00D4B2', fontWeight: '800' }]}>Mit Fiske-Heatmap 🗺️</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.secondaryButtonsRow}>
+          <TouchableOpacity
             style={styles.secondaryButton}
             onPress={() => router.push('/sessions' as any)}
             activeOpacity={0.8}

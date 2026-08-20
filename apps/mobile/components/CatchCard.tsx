@@ -77,6 +77,7 @@ export default function CatchCard({ catchItem, colors, styles }: CatchCardProps)
     }, [catchItem.latitude, catchItem.longitude]);
 
     const handleToggleLike = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
         toggleLikeMutation.mutate({ catchId: catchItem.id, isLikedByMe: catchItem.isLikedByMe });
     };
 
@@ -95,18 +96,18 @@ export default function CatchCard({ catchItem, colors, styles }: CatchCardProps)
         const now = Date.now();
         const DOUBLE_TAP_DELAY = 300;
         if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-            // Trigger Like if not already liked
+            // Trigger Hug if not already hugged
             if (!catchItem.isLikedByMe) {
                 toggleLikeMutation.mutate({ catchId: catchItem.id, isLikedByMe: false });
             }
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
-            // Animate floating heart
+            // Animate floating spark
             heartScale.setValue(0.5);
             heartOpacity.setValue(1);
             Animated.parallel([
                 Animated.spring(heartScale, {
-                    toValue: 1.4,
+                    toValue: 1.5,
                     friction: 3,
                     useNativeDriver: true,
                 }),
@@ -236,19 +237,27 @@ export default function CatchCard({ catchItem, colors, styles }: CatchCardProps)
 
             <View style={styles.actions}>
                 <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: colors.backgroundLight }]}
+                    style={[
+                        styles.actionButton,
+                        {
+                            backgroundColor: catchItem.isLikedByMe ? 'rgba(245, 166, 35, 0.15)' : colors.backgroundLight,
+                            borderColor: catchItem.isLikedByMe ? '#F5A623' : 'transparent',
+                            borderWidth: catchItem.isLikedByMe ? 1 : 0,
+                        }
+                    ]}
                     onPress={handleToggleLike}
                     accessible={true}
-                    accessibilityLabel={catchItem.isLikedByMe ? `Fjern like. ${catchItem.likesCount} likes` : `Like fangst. ${catchItem.likesCount} likes`}
+                    accessibilityLabel={catchItem.isLikedByMe ? `Fjern hug. ${catchItem.likesCount} hug` : `Giv hug! ${catchItem.likesCount} hug`}
                     accessibilityRole="button"
+                    activeOpacity={0.75}
                 >
                     <Ionicons
-                        name={catchItem.isLikedByMe ? "heart" : "heart-outline"}
-                        size={22}
-                        color={catchItem.isLikedByMe ? colors.error : colors.iconDefault}
+                        name={catchItem.isLikedByMe ? "flash" : "flash-outline"}
+                        size={18}
+                        color={catchItem.isLikedByMe ? "#F5A623" : colors.iconDefault}
                     />
-                    <Text style={[styles.actionText, { color: catchItem.isLikedByMe ? colors.text : colors.textSecondary }]}>
-                        {catchItem.likesCount}
+                    <Text style={[styles.actionText, { color: catchItem.isLikedByMe ? '#F5A623' : colors.textSecondary, fontWeight: catchItem.isLikedByMe ? '800' : '600' }]}>
+                        {catchItem.likesCount > 0 ? `${catchItem.likesCount} Hug` : 'Giv Hug ⚡'}
                     </Text>
                 </TouchableOpacity>
 
