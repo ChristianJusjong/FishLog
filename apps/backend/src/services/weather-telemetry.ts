@@ -132,7 +132,7 @@ export class WeatherTelemetryService {
         return {};
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as any;
       const current = data.current || {};
 
       const airTemp = current.temperature_2m ?? null;
@@ -150,7 +150,7 @@ export class WeatherTelemetryService {
         const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=sea_water_temperature`;
         const marineRes = await fetch(marineUrl);
         if (marineRes.ok) {
-          const marineData = await marineRes.json();
+          const marineData = (await marineRes.json()) as any;
           if (marineData.current?.sea_water_temperature !== undefined) {
             waterTemp = marineData.current.sea_water_temperature;
           }
