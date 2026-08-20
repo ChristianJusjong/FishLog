@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authenticateToken } from '../middleware/auth';
+import { calculateBiteAlarmsForUser } from '../services/bite-alarm';
 
 
 export async function notificationsRoutes(fastify: FastifyInstance) {
@@ -199,6 +200,20 @@ export async function notificationsRoutes(fastify: FastifyInstance) {
     } catch (error) {
       request.log.error(error);
       reply.code(500).send({ error: 'Kunne ikke oprette notifikation' });
+    }
+  });
+
+  // Get predictive bite alarms for user's favorite spots
+  fastify.get('/notifications/bite-alarms', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const userId = (request.user as any).userId;
+      const alarms = await calculateBiteAlarmsForUser(userId);
+      reply.code(200).send(alarms);
+    } catch (error) {
+      request.log.error(error);
+      reply.code(500).send({ error: 'Kunne ikke beregne bide-alarmer' });
     }
   });
 }

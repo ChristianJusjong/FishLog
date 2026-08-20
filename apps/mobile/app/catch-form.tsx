@@ -23,6 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { extractCatchMetadataFromImage } from '../lib/exifExtractor';
+import { compressCatchPhoto } from '../lib/imageCompressor';
 import { LoadingBar } from '../components/LoadingBar';
 import ScreenLoading from '../components/ScreenLoading';
 import SpeciesUnlockModal from '../components/SpeciesUnlockModal';
@@ -466,7 +467,8 @@ export default function CatchFormScreen() {
       });
       if (!result.canceled && result.assets[0]) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-        setCatch((prev: any) => ({ ...(prev || {}), photoUrl: result.assets[0].uri }));
+        const compressed = await compressCatchPhoto(result.assets[0].uri);
+        setCatch((prev: any) => ({ ...(prev || {}), photoUrl: compressed.uri }));
       }
     } catch {
       Alert.alert('Fejl', 'Kunne ikke åbne kamera');
@@ -489,7 +491,8 @@ export default function CatchFormScreen() {
       });
       if (!result.canceled && result.assets[0]) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-        setCatch((prev: any) => ({ ...(prev || {}), photoUrl: result.assets[0].uri }));
+        const compressed = await compressCatchPhoto(result.assets[0].uri);
+        setCatch((prev: any) => ({ ...(prev || {}), photoUrl: compressed.uri }));
         const meta = await extractCatchMetadataFromImage(result.assets[0]);
         if (meta.latitude && meta.longitude) {
           setCatch((prev: any) => ({ ...prev, latitude: meta.latitude, longitude: meta.longitude }));

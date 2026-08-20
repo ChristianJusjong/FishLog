@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
-
+import BiteAlarmBanner from '../components/BiteAlarmBanner';
 import { API_URL } from '@/config/api';
 
 const useStyles = () => {
@@ -395,6 +395,8 @@ export default function NotificationsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
           }
         >
+          <BiteAlarmBanner />
+
           {notifications.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="notifications-off-outline" size={64} color={colors.textTertiary} />
