@@ -320,3 +320,150 @@ export function checkCatchRegulation(
       : ' Ingen mindstemålsbegrænsning.',
   };
 }
+
+/**
+ * Officielle Danske Fredningsbælter ved Å-udløb (Fiskeristyrelsen)
+ * Standard radius er 500m fra udløb/munding.
+ */
+export interface ProtectedZone {
+  id: string;
+  name: string;
+  waterway: string;
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  isAllYear: boolean;
+  periodText: string;
+}
+
+export const DANISH_PROTECTED_ZONES: ProtectedZone[] = [
+  {
+    id: 'guden-udlob',
+    name: 'Gudenåens udløb i Randers Fjord',
+    waterway: 'Gudenåen',
+    latitude: 56.463,
+    longitude: 10.054,
+    radiusMeters: 500,
+    isAllYear: true,
+    periodText: 'Helårsfredet (500m zone)',
+  },
+  {
+    id: 'skjern-udlob',
+    name: 'Skjern Å udløb i Ringkøbing Fjord',
+    waterway: 'Skjern Å',
+    latitude: 55.918,
+    longitude: 8.412,
+    radiusMeters: 500,
+    isAllYear: true,
+    periodText: 'Helårsfredet (500m zone)',
+  },
+  {
+    id: 'kolding-udlob',
+    name: 'Kolding Å udløb i Kolding Fjord',
+    waterway: 'Kolding Å',
+    latitude: 55.492,
+    longitude: 9.487,
+    radiusMeters: 500,
+    isAllYear: true,
+    periodText: 'Helårsfredet (500m zone)',
+  },
+  {
+    id: 'tryggevælde-udlob',
+    name: 'Tryggevælde Å udløb (Køge Bugt)',
+    waterway: 'Tryggevælde Å',
+    latitude: 55.405,
+    longitude: 12.218,
+    radiusMeters: 500,
+    isAllYear: true,
+    periodText: 'Helårsfredet (500m zone)',
+  },
+  {
+    id: 'tuse-udlob',
+    name: 'Tuse Å udløb i Holbæk Fjord',
+    waterway: 'Tuse Å',
+    latitude: 55.728,
+    longitude: 11.668,
+    radiusMeters: 500,
+    isAllYear: true,
+    periodText: 'Helårsfredet (500m zone)',
+  },
+  {
+    id: 'odense-udlob',
+    name: 'Odense Å udløb i Odense Fjord',
+    waterway: 'Odense Å',
+    latitude: 55.441,
+    longitude: 10.428,
+    radiusMeters: 500,
+    isAllYear: true,
+    periodText: 'Helårsfredet (500m zone)',
+  },
+  {
+    id: 'karup-udlob',
+    name: 'Karup Å udløb i Skive Fjord',
+    waterway: 'Karup Å',
+    latitude: 56.571,
+    longitude: 9.048,
+    radiusMeters: 500,
+    isAllYear: true,
+    periodText: 'Helårsfredet (500m zone)',
+  },
+  {
+    id: 'susaa-udlob',
+    name: 'Suså udløb ved Karrebæksminde',
+    waterway: 'Susåen',
+    latitude: 55.185,
+    longitude: 11.652,
+    radiusMeters: 500,
+    isAllYear: true,
+    periodText: 'Helårsfredet (500m zone)',
+  },
+  {
+    id: 'esrum-udlob',
+    name: 'Esrum Å udløb ved Dronningmølle',
+    waterway: 'Esrum Å',
+    latitude: 56.101,
+    longitude: 12.392,
+    radiusMeters: 500,
+    isAllYear: true,
+    periodText: 'Helårsfredet (500m zone)',
+  },
+];
+
+/**
+ * Calculates Haversine distance in meters between two GPS coordinates
+ */
+function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3; // Earth radius in meters
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+/**
+ * Checks if current GPS position is within or near any official Danish protected river mouth
+ */
+export function checkNearbyProtectedZone(
+  latitude: number,
+  longitude: number,
+  warningThresholdMeters = 1000
+): { zone: ProtectedZone; distanceMeters: number; isInside: boolean } | null {
+  for (const zone of DANISH_PROTECTED_ZONES) {
+    const dist = getDistanceMeters(latitude, longitude, zone.latitude, zone.longitude);
+    if (dist <= warningThresholdMeters) {
+      return {
+        zone,
+        distanceMeters: Math.round(dist),
+        isInside: dist <= zone.radiusMeters,
+      };
+    }
+  }
+  return null;
+}

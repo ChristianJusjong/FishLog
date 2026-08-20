@@ -20,6 +20,7 @@ import CatchCardSkeleton from '../components/CatchCardSkeleton';
 import ScreenLoading from '../components/ScreenLoading';
 import DailyChallengesWidget from '../components/DailyChallengesWidget';
 import AnglerJourneyWidget from '../components/AnglerJourneyWidget';
+import LiveCatchRadar from '../components/LiveCatchRadar';
 import { useCatchesFeed, FeedCatch } from '../hooks/useCatches';
 
 interface User {
@@ -390,6 +391,7 @@ export default function FeedScreen() {
             keyExtractor={(item) => item.id}
             ListHeaderComponent={
               <View>
+                <LiveCatchRadar />
                 <AnglerJourneyWidget />
                 <DailyChallengesWidget />
               </View>

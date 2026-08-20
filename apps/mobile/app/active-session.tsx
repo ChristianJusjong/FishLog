@@ -27,6 +27,7 @@ import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../lib/api';
 import { findLocationsInRadius, getWaterTypeLabel, FishingLocation } from '../data/fishingLocations';
+import { checkNearbyProtectedZone } from '../data/fishingRegulations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -66,6 +67,12 @@ export default function ActiveSessionScreen() {
   const nearbyKnownSpots = useMemo(() => {
     if (!userLocation) return [];
     return findLocationsInRadius(userLocation.latitude, userLocation.longitude, 25).slice(0, 10);
+  }, [userLocation]);
+
+  // Realtime geofence check for Danish river mouth protected zones
+  const nearbyProtectedZone = useMemo(() => {
+    if (!userLocation) return null;
+    return checkNearbyProtectedZone(userLocation.latitude, userLocation.longitude, 1200);
   }, [userLocation]);
 
   // Update elapsed time every second
@@ -469,6 +476,34 @@ export default function ActiveSessionScreen() {
           {/* Page 1: Dashboard */}
           <ScrollView style={[styles.page, { width: SCREEN_WIDTH }]}>
             <View style={styles.pageContent}>
+              {/* Geofence Protected River Mouth Warning */}
+              {nearbyProtectedZone && (
+                <View style={{
+                  backgroundColor: nearbyProtectedZone.isInside ? 'rgba(239, 68, 68, 0.95)' : 'rgba(245, 158, 11, 0.95)',
+                  padding: 12,
+                  borderRadius: 14,
+                  marginBottom: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}>
+                  <Ionicons name={nearbyProtectedZone.isInside ? 'ban' : 'warning'} size={24} color="#FFFFFF" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 13 }}>
+                      {nearbyProtectedZone.isInside ? '🚨 DU ER I ET FREDNINGSBÆLTE!' : `⚠️ FREDNINGSZONE: ${nearbyProtectedZone.distanceMeters}m`}
+                    </Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 11, marginTop: 1 }}>
+                      {nearbyProtectedZone.zone.name} ({nearbyProtectedZone.zone.periodText})
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               {/* Trolling & Drift Velocity Cockpit HUD */}
               <View style={[styles.card, { backgroundColor: colors.surface, borderColor: '#00D4B2', borderWidth: 1 }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>

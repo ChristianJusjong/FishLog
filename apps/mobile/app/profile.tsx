@@ -632,7 +632,16 @@ export default function ProfileScreen() {
             activeOpacity={0.8}
           >
             <Ionicons name="flame" size={20} color="#00D4B2" style={styles.buttonIcon} />
-            <Text style={[styles.secondaryButtonText, { color: '#00D4B2', fontWeight: '800' }]}>Mit Fiske-Heatmap 🗺️</Text>
+            <Text style={[styles.secondaryButtonText, { color: '#00D4B2', fontWeight: '800' }]}>Heatmap 🗺️</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: 'rgba(168, 85, 247, 0.12)', borderColor: '#A855F7', borderWidth: 1 }]}
+            onPress={() => router.push('/angler-wrapped' as any)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="sparkles" size={20} color="#A855F7" style={styles.buttonIcon} />
+            <Text style={[styles.secondaryButtonText, { color: '#A855F7', fontWeight: '800' }]}>År Wrapped 🎬</Text>
           </TouchableOpacity>
         </View>
 
