@@ -41,8 +41,7 @@ import HotSpotModal from '../components/map/HotSpotModal';
 import FishingSpotModal from '../components/map/FishingSpotModal';
 import DepthInfoCard from '../components/map/DepthInfoCard';
 import CreateFavoriteSpotModal from '../components/map/CreateFavoriteSpotModal';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+import { API_URL } from '../config/api';
 
 type Species = {
   id: string;

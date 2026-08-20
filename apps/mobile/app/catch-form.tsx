@@ -47,8 +47,7 @@ import {
   type TechniqueType,
 } from '../data/fishingGear';
 import { checkCatchRegulation, type RegulationCheckResult } from '../data/fishingRegulations';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+import { API_URL } from '../config/api';
 
 const useStyles = () => {
   const { colors } = useTheme();

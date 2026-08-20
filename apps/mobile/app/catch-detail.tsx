@@ -13,8 +13,7 @@ import ScreenLoading from '../components/ScreenLoading';
 import StoryCardModal from '../components/StoryCardModal';
 import { shareCatchToSocial, shareViaDialog } from '@/lib/socialShare';
 import { checkCatchRegulation } from '../data/fishingRegulations';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+import { API_URL } from '../config/api';
 
 const useStyles = () => {
   const { colors } = useTheme();

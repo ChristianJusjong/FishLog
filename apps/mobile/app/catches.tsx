@@ -12,8 +12,7 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, EMPTY_STATE, LOADING_CONTAINER, G
 import { useTheme } from '../contexts/ThemeContext';
 import { exportCatchesToPDF, exportCatchesToCSV } from '@/lib/exportUtils';
 import { generateAndShareYearbookPDF } from '@/lib/pdfYearbookGenerator';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+import { API_URL } from '../config/api';
 
 const useStyles = () => {
   const { colors } = useTheme();

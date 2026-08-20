@@ -1,8 +1,6 @@
 import axios from 'axios';
 import { getSecureItem, setTokens, clearTokens, TOKEN_KEYS } from './secureStorage';
-
-// Use environment variable for API URL (falls back to production if not set)
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+import { API_URL } from '../config/api';
 
 export const api = axios.create({
   baseURL: API_URL,

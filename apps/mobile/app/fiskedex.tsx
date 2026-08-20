@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { useTheme } from '../contexts/ThemeContext';
 import ScreenLoading from '../components/ScreenLoading';
+import { API_URL } from '../config/api';
 import PageLayout from '../components/PageLayout';
 import FishSpeciesIcon from '../components/FishSpeciesIcon';
 import {
@@ -54,8 +55,6 @@ const speciesNameToId: Record<string, string> = {
   'Sild': 'sild',
   'Multe': 'multe',
 };
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
 type Species = {
   name: string;
