@@ -15,6 +15,7 @@ import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { useTheme } from '../contexts/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -359,6 +360,74 @@ export default function CatchFormScreen() {
   const [visibility, setVisibility] = useState('private');
   const [released, setReleased] = useState(params.released === 'false' ? false : true); // Default to Catch & Release
 
+  // Auto-save draft whenever form fields change
+  useEffect(() => {
+    if (isNew === 'true' && (species || lengthCm || weightKg || notes || bait || lure)) {
+      const draftData = {
+        species,
+        lengthCm,
+        weightKg,
+        waterTemp,
+        bait,
+        lure,
+        rig,
+        technique,
+        notes,
+        visibility,
+        released,
+        photoUrl: catch_?.photoUrl,
+        timestamp: Date.now(),
+      };
+      AsyncStorage.setItem('@hook_catch_draft', JSON.stringify(draftData)).catch(() => {});
+    }
+  }, [species, lengthCm, weightKg, waterTemp, bait, lure, rig, technique, notes, visibility, released, catch_?.photoUrl, isNew]);
+
+  // Check for existing draft on mount if form opened blank
+  useEffect(() => {
+    if (isNew === 'true' && !params.species && !params.length && !params.notes) {
+      AsyncStorage.getItem('@hook_catch_draft').then(draftJson => {
+        if (draftJson) {
+          try {
+            const draft = JSON.parse(draftJson);
+            if (draft && Date.now() - (draft.timestamp || 0) < 24 * 60 * 60 * 1000) {
+              Alert.alert(
+                'Gendan kladde?',
+                `Du har en igangværende fangstkladde (${draft.species || 'Ikke navngivet'}). Vil du gendanne den?`,
+                [
+                  {
+                    text: 'Gendan',
+                    onPress: () => {
+                      if (draft.species) setSpecies(draft.species);
+                      if (draft.lengthCm) setLengthCm(draft.lengthCm);
+                      if (draft.weightKg) setWeightKg(draft.weightKg);
+                      if (draft.waterTemp) setWaterTemp(draft.waterTemp);
+                      if (draft.bait) setBait(draft.bait);
+                      if (draft.lure) setLure(draft.lure);
+                      if (draft.rig) setRig(draft.rig);
+                      if (draft.technique) setTechnique(draft.technique);
+                      if (draft.notes) setNotes(draft.notes);
+                      if (draft.visibility) setVisibility(draft.visibility);
+                      if (draft.released !== undefined) setReleased(draft.released);
+                      if (draft.photoUrl) setCatch((prev: any) => ({ ...(prev || {}), photoUrl: draft.photoUrl }));
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+                    },
+                  },
+                  {
+                    text: 'Slet kladde',
+                    style: 'destructive',
+                    onPress: () => {
+                      AsyncStorage.removeItem('@hook_catch_draft').catch(() => {});
+                    },
+                  },
+                ]
+              );
+            }
+          } catch {}
+        }
+      });
+    }
+  }, [isNew]);
+
   const handleApplyVoiceCatch = (data: ParsedVoiceCatch) => {
     if (data.species) setSpecies(data.species);
     if (data.lengthCm) setLengthCm(String(data.lengthCm));
@@ -667,6 +736,7 @@ export default function CatchFormScreen() {
       });
 
       if (completeResponse.ok) {
+        AsyncStorage.removeItem('@hook_catch_draft').catch(() => {});
         const result = await completeResponse.json();
 
         if (result.fiskedexUnlock || result.isFirstOfSpecies) {

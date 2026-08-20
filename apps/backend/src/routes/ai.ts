@@ -221,12 +221,18 @@ Empirisk fangsttelemetri fra FishLog AI Databasen:
 - Mest effektive fangstteknik: ${telemetryStats.bestTechnique || 'Spin'}
 Brug disse empiriske telemetridata til at kalibrere dine forudsigelser og sandsynligheder med maksimal præcision.` : '';
 
-        // Build prompt for Gemini
-        const prompt = `Du er en erfaren dansk fiskeriekspert og AI-fangstbiolog. Giv professionelle, knivskarpe fiskerianbefalinger for arten ${payload.species} på placering ${payload.latitude}, ${payload.longitude} i sæsonen ${season} på tidspunktet ${timeOfDay}.
-        
+        // Build prompt for Gemini with specialized Danish angling expertise
+        const prompt = `Du er Danmarks førende lystfiskeriekspert, havbiolog og kystguide.
+Giv professionelle, hyper-præcise taktiske anbefalinger for arten "${payload.species}" på koordinaterne ${payload.latitude}, ${payload.longitude} i sæsonen "${season}" på tidspunktet "${timeOfDay}".
+
 Vejrforhold: Barometertryk ${currentPressure || '1013'} hPa, Vind ${currentWind || 'ukendt'} m/s, lufttemperatur ${currentAirTemp || 'ukendt'}°C.
-Vandforhold: Dybde ${payload.depth || 'ukendt'}m, vandtemperatur ${currentWaterTemp || 'ukendt'}°C.
+Vandforhold: Dybde ${payload.depth || 'ukendt'}m, vandtemperatur ${currentWaterTemp || 'ukendt'}°C, bundtype ${payload.bottom_type || 'blandet/leopardbund'}.
 ${telemetryContext}
+
+Taktiske retningslinjer for Danmark:
+- Havørred på kysten: Analysér leopardbund, revlesystemer, badekar, strømrender og tangskove. I foråret: børsteormesværmning, tobistræk og tanglopper. I sommernatten: skumfluer, overfladeagn og hurtig indspinning. I vinteren: lavvandede fjorde, kobber/pink farver og langsom indspinning med spinstop.
+- Gedde & Aborre i sø/å: Sivkanter, skrænter, åkandebælter, dybe huller i koldt vejr. Gedder: store shads med spinstop. Aborre: jigs, dropshot og spinner rigs.
+- Farvevalg efter sigt: Klart vand + sol = naturlige farver/kobber/sølv. Grumset vand / overskyet = UV, hvid/grøn, pink, orange (Glimmer/Fluo).
 
 Du SKAL returnere svaret KUN som valid JSON (uden markdown code blocks) med følgende struktur:
 {

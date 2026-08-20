@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from "@/constants/branding";
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from "../contexts/ThemeContext";
 import { api } from "../lib/api";
 import PageLayout from "../components/PageLayout";
@@ -1036,10 +1037,25 @@ export default function AIGuideScreen() {
         }),
       };
 
+      const cacheKey = `@hook_ai_rec_${selectedLocation.name}_${selectedSpeciesId}_${formatDateForAPI(selectedDate)}`;
       const response = await api.post("/ai/recommendations", payload);
       setRecommendations(response.data);
+      AsyncStorage.setItem(cacheKey, JSON.stringify({ data: response.data, savedAt: Date.now() })).catch(() => {});
     } catch (error: any) {
       console.error("AI recommendations error:", error);
+      // Try offline cache fallback on network error
+      const cacheKey = `@hook_ai_rec_${selectedLocation.name}_${selectedSpeciesId}_${formatDateForAPI(selectedDate)}`;
+      const cached = await AsyncStorage.getItem(cacheKey).catch(() => null);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.data) {
+            setRecommendations(parsed.data);
+            Alert.alert("Offline råd indlæst", "Viser tidligere genereret AI-taktik for dette spot (gemt lokalt).");
+            return;
+          }
+        } catch {}
+      }
       Alert.alert(
         "Fejl",
         error.response?.data?.error ||
