@@ -27,6 +27,7 @@ import { LoadingBar } from '../components/LoadingBar';
 import ScreenLoading from '../components/ScreenLoading';
 import SpeciesUnlockModal from '../components/SpeciesUnlockModal';
 import VoiceCatchModal from '../components/VoiceCatchModal';
+import FishSpeciesIcon from '../components/FishSpeciesIcon';
 import { ParsedVoiceCatch } from '../lib/voiceCatchParser';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import {
@@ -336,7 +337,7 @@ const FISH_SPECIES = [
 
 export default function CatchFormScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useStyles();
   const params = useLocalSearchParams();
   const { catchId, isNew } = params;
@@ -361,6 +362,18 @@ export default function CatchFormScreen() {
   const [notes, setNotes] = useState(typeof params.notes === 'string' ? params.notes : '');
   const [visibility, setVisibility] = useState('private');
   const [released, setReleased] = useState(params.released === 'false' ? false : true); // Default to Catch & Release
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const POPULAR_BEGINNER_SPECIES = [
+    { id: 'havorred', name: 'Havørred' },
+    { id: 'aborre', name: 'Aborre' },
+    { id: 'gedde', name: 'Gedde' },
+    { id: 'sandart', name: 'Sandart' },
+    { id: 'hornfisk', name: 'Hornfisk' },
+    { id: 'skalle', name: 'Skalle' },
+    { id: 'torsk', name: 'Torsk' },
+    { id: 'makrel', name: 'Makrel' },
+  ];
 
   // Auto-save draft whenever form fields change
   useEffect(() => {
@@ -1056,6 +1069,46 @@ export default function CatchFormScreen() {
             </View>
           )}
 
+          {/* Quick Beginner Species Selector */}
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 }}>
+            Hurtig-vælger (populære danske arter):
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
+            {POPULAR_BEGINNER_SPECIES.map((sp) => {
+              const isSelected = species.toLowerCase() === sp.name.toLowerCase();
+              return (
+                <TouchableOpacity
+                  key={sp.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 14,
+                    backgroundColor: isSelected ? 'rgba(0, 212, 178, 0.18)' : colors.surface,
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? '#00D4B2' : colors.border,
+                  }}
+                  onPress={() => {
+                    Haptics.selectionAsync().catch(() => {});
+                    setSpecies(sp.name);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <FishSpeciesIcon speciesId={sp.id} size={20} color={isSelected ? '#00D4B2' : colors.textSecondary} />
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: isSelected ? '800' : '600',
+                    color: isSelected ? '#00D4B2' : colors.text,
+                  }}>
+                    {sp.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
           <View style={styles.pickerContainer}>
             <Picker
               selectedValue={species}
@@ -1204,40 +1257,6 @@ export default function CatchFormScreen() {
           </View>
         )}
 
-        {/* Water Temperature & Automated AI Telemetry */}
-        <View style={styles.fieldGroup}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="water-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
-              <Text style={styles.label}>Målt Vandtemperatur (°C)</Text>
-            </View>
-            <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.secondary }}>
-              Valgfri (auto-beregnes ellers)
-            </Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={waterTemp}
-            onChangeText={setWaterTemp}
-            placeholder="f.eks. 12.5"
-            keyboardType="decimal-pad"
-          />
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: colors.primaryLight + '15',
-            padding: SPACING.sm,
-            borderRadius: RADIUS.md,
-            marginTop: SPACING.xs,
-            gap: SPACING.xs
-          }}>
-            <Ionicons name="hardware-chip-outline" size={16} color={colors.primary} />
-            <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.textSecondary, flex: 1 }}>
-              Lufttryk, vind, vejr og marin temperatur logges automatisk i FishLog AI Telemetri Dataset til præcise fangstprognoser.
-            </Text>
-          </View>
-        </View>
-
         {/* Bait (Agn) Picker */}
         <View style={styles.fieldGroup}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1251,6 +1270,9 @@ export default function CatchFormScreen() {
               </Text>
             )}
           </View>
+          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>
+            Hvad bed fisken på? (F.eks. regnorm, majs, brød, flue eller blink)
+          </Text>
           <View style={styles.pickerContainer}>
             <Picker
               selectedValue={bait}
@@ -1282,7 +1304,7 @@ export default function CatchFormScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="fish-outline" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
-              <Text style={styles.label}>Wobler/Spin</Text>
+              <Text style={styles.label}>Endegrej (Blink, Spinner, Flue)</Text>
             </View>
             {speciesId && lureOptions.suggested.length > 0 && (
               <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.success }}>
@@ -1290,6 +1312,9 @@ export default function CatchFormScreen() {
               </Text>
             )}
           </View>
+          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>
+            Type af kunstagn (F.eks. gennemløber, spinner, softbait eller flue)
+          </Text>
           <View style={styles.pickerContainer}>
             <Picker
               selectedValue={lure}
@@ -1297,7 +1322,7 @@ export default function CatchFormScreen() {
               style={styles.picker}
               dropdownIconColor={colors.primary}
             >
-              <Picker.Item label="Vælg agn/lokkemad..." value="" color={colors.textSecondary} />
+              <Picker.Item label="Vælg endegrej..." value="" color={colors.textSecondary} />
               {speciesId && lureOptions.suggested.length > 0 && (
                 <Picker.Item label="── Anbefalet ──" value="" enabled={false} color={colors.success} />
               )}
@@ -1316,58 +1341,123 @@ export default function CatchFormScreen() {
           </View>
         </View>
 
-        {/* Rig (Grej) - keep as text input for flexibility */}
-        <View style={styles.fieldGroup}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="construct" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
-            <Text style={styles.label}>Grej</Text>
+        {/* Collapsible Advanced Section for Beginners vs Pros */}
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+            padding: 14,
+            borderRadius: 14,
+            marginVertical: 10,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+          }}
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {});
+            setShowAdvanced(!showAdvanced);
+          }}
+          activeOpacity={0.8}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name={showAdvanced ? 'options' : 'options-outline'} size={18} color="#00D4B2" />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>
+              {showAdvanced ? 'Skjul avancerede felter' : 'Avancerede fiskedata (valgfrit)'}
+            </Text>
           </View>
-          <TextInput
-            style={styles.input}
-            value={rig}
-            onChangeText={setRig}
-            placeholder="f.eks. kastestang 2.7m, 10-30g"
-          />
-        </View>
+          <Ionicons name={showAdvanced ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
 
-        {/* Technique Picker */}
-        <View style={styles.fieldGroup}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="flag" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
-              <Text style={styles.label}>Teknik</Text>
+        {showAdvanced && (
+          <View style={{
+            backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
+            borderRadius: 14,
+            padding: 12,
+            marginBottom: 12,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(255,255,255,0.05)' : '#E2E8F0',
+          }}>
+            {/* Water Temperature & Automated AI Telemetry */}
+            <View style={styles.fieldGroup}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="water-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
+                  <Text style={styles.label}>Vandtemperatur (°C)</Text>
+                </View>
+                <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.secondary }}>
+                  Valgfri
+                </Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                value={waterTemp}
+                onChangeText={setWaterTemp}
+                placeholder="f.eks. 12.5"
+                keyboardType="decimal-pad"
+              />
             </View>
-            {speciesId && techniqueOptions.suggested.length > 0 && (
-              <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.success }}>
-                {techniqueOptions.suggested.length} anbefalinger
+
+            {/* Rig (Forfang/Grej) */}
+            <View style={styles.fieldGroup}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="construct" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                <Text style={styles.label}>Forfang / Linemontage</Text>
+              </View>
+              <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>
+                F.eks. flåd/prop, bundsnøre, bombarda eller alm. spinnestang
               </Text>
-            )}
+              <TextInput
+                style={styles.input}
+                value={rig}
+                onChangeText={setRig}
+                placeholder="f.eks. Flåd med regnorm, 2m dybde"
+              />
+            </View>
+
+            {/* Technique Picker */}
+            <View style={styles.fieldGroup}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="flag" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                  <Text style={styles.label}>Fisketeknik</Text>
+                </View>
+                {speciesId && techniqueOptions.suggested.length > 0 && (
+                  <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.success }}>
+                    {techniqueOptions.suggested.length} anbefalinger
+                  </Text>
+                )}
+              </View>
+              <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>
+                F.eks. spinnefiskeri, medefiskeri, fluefiskeri eller dørgefiskeri
+              </Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={technique}
+                  onValueChange={(value) => setTechnique(value)}
+                  style={styles.picker}
+                  dropdownIconColor={colors.primary}
+                >
+                  <Picker.Item label="Vælg teknik..." value="" color={colors.textSecondary} />
+                  {speciesId && techniqueOptions.suggested.length > 0 && (
+                    <Picker.Item label="── Anbefalet ──" value="" enabled={false} color={colors.success} />
+                  )}
+                  {techniqueOptions.suggested.map((t) => (
+                    <Picker.Item key={t.id} label={`★ ${t.nameDa}`} value={t.nameDa} />
+                  ))}
+                  {techniqueOptions.others.length > 0 && (
+                    <Picker.Item label="── Alle teknikker ──" value="" enabled={false} color={colors.textSecondary} />
+                  )}
+                  {techniqueOptions.others.map((t) => (
+                    <Picker.Item key={t.id} label={t.nameDa} value={t.nameDa} />
+                  ))}
+                  <Picker.Item label="── Andet ──" value="" enabled={false} color={colors.textSecondary} />
+                  <Picker.Item label="Andet (skriv i noter)" value="Andet" />
+                </Picker>
+              </View>
+            </View>
           </View>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={technique}
-              onValueChange={(value) => setTechnique(value)}
-              style={styles.picker}
-              dropdownIconColor={colors.primary}
-            >
-              <Picker.Item label="Vælg teknik..." value="" color={colors.textSecondary} />
-              {speciesId && techniqueOptions.suggested.length > 0 && (
-                <Picker.Item label="── Anbefalet ──" value="" enabled={false} color={colors.success} />
-              )}
-              {techniqueOptions.suggested.map((t) => (
-                <Picker.Item key={t.id} label={`★ ${t.nameDa}`} value={t.nameDa} />
-              ))}
-              {techniqueOptions.others.length > 0 && (
-                <Picker.Item label="── Alle teknikker ──" value="" enabled={false} color={colors.textSecondary} />
-              )}
-              {techniqueOptions.others.map((t) => (
-                <Picker.Item key={t.id} label={t.nameDa} value={t.nameDa} />
-              ))}
-              <Picker.Item label="── Andet ──" value="" enabled={false} color={colors.textSecondary} />
-              <Picker.Item label="Andet (skriv i noter)" value="Andet" />
-            </Picker>
-          </View>
-        </View>
+        )}
 
         {/* Notes */}
         <View style={styles.fieldGroup}>
