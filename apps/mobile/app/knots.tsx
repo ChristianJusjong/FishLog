@@ -13,11 +13,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../contexts/ThemeContext';
+import { useOnboardingJourney } from '../contexts/OnboardingJourneyContext';
 import PageLayout from '../components/PageLayout';
 import { FISHING_KNOTS, FishingKnot } from '../data/knotsDatabase';
 
 export default function KnotsScreen() {
   const { colors, isDark } = useTheme();
+  const { completeMilestone } = useOnboardingJourney();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeKnot, setActiveKnot] = useState<FishingKnot | null>(null);
@@ -47,6 +49,7 @@ export default function KnotsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setActiveKnot(knot);
     setCurrentStepIndex(0);
+    completeMilestone('learn_knot');
   };
 
   const handleNextStep = () => {

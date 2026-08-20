@@ -14,11 +14,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../contexts/ThemeContext';
+import { useOnboardingJourney } from '../contexts/OnboardingJourneyContext';
 import PageLayout from '../components/PageLayout';
 import { useTackleBox } from '../contexts/TackleBoxContext';
 
 export default function TackleBoxScreen() {
   const { colors, isDark } = useTheme();
+  const { completeMilestone } = useOnboardingJourney();
   const { rods, reels, lures, addRod, deleteRod, addReel, deleteReel, addLure, deleteLure } = useTackleBox();
 
   const [activeTab, setActiveTab] = useState<'rods' | 'reels' | 'lures'>('rods');
@@ -70,6 +72,7 @@ export default function TackleBoxScreen() {
     setDetail1('');
     setDetail2('');
     setShowAddModal(false);
+    completeMilestone('add_tackle');
   };
 
   const handleDelete = (id: string, itemName: string, type: 'rod' | 'reel' | 'lure') => {

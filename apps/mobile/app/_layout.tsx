@@ -14,6 +14,8 @@ import { OfflineProvider } from '../contexts/OfflineContext';
 import { WebSocketProvider } from '../contexts/WebSocketContext';
 import { initDeepLinking } from '../lib/deepLinking';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { OnboardingJourneyProvider } from '../contexts/OnboardingJourneyContext';
+import MilestoneUnlockedModal from '../components/MilestoneUnlockedModal';
 import OfflineBanner from '../components/OfflineBanner';
 import CustomizeNavModal from '../components/CustomizeNavModal';
 import AppPreloader from '../components/AppPreloader';
@@ -51,33 +53,36 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <AuthProvider>
-              <NavConfigProvider>
-                <TackleBoxProvider>
-                  <OfflineProvider>
-                    <SessionProvider>
-                      <WebSocketProvider>
-                        <PushNotificationProvider>
-                          <WeatherLocationProvider>
-                            <StatusBar style="auto" />
-                            <OfflineBanner />
-                            <Stack
-                              screenOptions={{
-                                headerShown: false,
-                                animation: 'slide_from_right',
-                                animationDuration: 220,
-                              }}
-                            />
-                            <CustomizeNavModal />
-                            {!isPreloaded && (
-                              <AppPreloader onComplete={() => setIsPreloaded(true)} />
-                            )}
-                          </WeatherLocationProvider>
-                        </PushNotificationProvider>
-                      </WebSocketProvider>
-                    </SessionProvider>
-                  </OfflineProvider>
-                </TackleBoxProvider>
-              </NavConfigProvider>
+              <OnboardingJourneyProvider>
+                <NavConfigProvider>
+                  <TackleBoxProvider>
+                    <OfflineProvider>
+                      <SessionProvider>
+                        <WebSocketProvider>
+                          <PushNotificationProvider>
+                            <WeatherLocationProvider>
+                              <StatusBar style="auto" />
+                              <OfflineBanner />
+                              <Stack
+                                screenOptions={{
+                                  headerShown: false,
+                                  animation: 'slide_from_right',
+                                  animationDuration: 220,
+                                }}
+                              />
+                              <CustomizeNavModal />
+                              <MilestoneUnlockedModal />
+                              {!isPreloaded && (
+                                <AppPreloader onComplete={() => setIsPreloaded(true)} />
+                              )}
+                            </WeatherLocationProvider>
+                          </PushNotificationProvider>
+                        </WebSocketProvider>
+                      </SessionProvider>
+                    </OfflineProvider>
+                  </TackleBoxProvider>
+                </NavConfigProvider>
+              </OnboardingJourneyProvider>
             </AuthProvider>
           </ThemeProvider>
         </QueryClientProvider>

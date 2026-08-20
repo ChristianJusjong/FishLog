@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useOnboardingJourney } from '../contexts/OnboardingJourneyContext';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import MapPicker from '../components/MapPicker';
 import PageLayout from '../components/PageLayout';
@@ -334,6 +335,7 @@ interface Catch {
 export default function CatchDetailScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { completeMilestone } = useOnboardingJourney();
   const styles = useStyles();
   const params = useLocalSearchParams();
   const catchId = params.id as string;
@@ -764,7 +766,10 @@ export default function CatchDetailScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: '#E1306C' }]}
-            onPress={() => setShowStoryModal(true)}
+            onPress={() => {
+              setShowStoryModal(true);
+              completeMilestone('share_story_card');
+            }}
           >
             <Ionicons name="logo-instagram" size={20} color={colors.white} style={{ marginRight: 6 }} />
             <Text style={styles.buttonText}>Story (9:16)</Text>

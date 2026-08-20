@@ -21,6 +21,7 @@ import * as Location from 'expo-location';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import { useTheme } from '../contexts/ThemeContext';
+import { useOnboardingJourney } from '../contexts/OnboardingJourneyContext';
 import { SPACING, SHADOWS } from '@/constants/branding';
 import { api } from '../lib/api';
 import {
@@ -105,8 +106,13 @@ export default function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { completeMilestone } = useOnboardingJourney();
   const styles = useStyles();
   const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    completeMilestone('explore_map');
+  }, []);
   const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
   const [selectedSeason, setSelectedSeason] = useState('');
   const [showSpeciesModal, setShowSpeciesModal] = useState(false);

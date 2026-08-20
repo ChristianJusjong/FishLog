@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { useTheme } from '../contexts/ThemeContext';
+import { useOnboardingJourney } from '../contexts/OnboardingJourneyContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -339,6 +340,7 @@ export default function CatchFormScreen() {
   const styles = useStyles();
   const params = useLocalSearchParams();
   const { catchId, isNew } = params;
+  const { completeMilestone } = useOnboardingJourney();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -737,6 +739,15 @@ export default function CatchFormScreen() {
 
       if (completeResponse.ok) {
         AsyncStorage.removeItem('@hook_catch_draft').catch(() => {});
+        
+        // Trigger Journey Milestones
+        completeMilestone('log_first_catch');
+        completeMilestone('catch_two_fish');
+        const hour = new Date().getHours();
+        if (hour < 7) {
+          completeMilestone('sunrise_fishing');
+        }
+
         const result = await completeResponse.json();
 
         if (result.fiskedexUnlock || result.isFirstOfSpecies) {

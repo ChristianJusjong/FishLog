@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { useTheme } from '../contexts/ThemeContext';
+import { useOnboardingJourney } from '../contexts/OnboardingJourneyContext';
 import { SPACING, RADIUS, SHADOWS, FAB_STYLE, FAB, GRADIENTS } from '@/constants/theme';
 import { API_URL } from '../config/api';
 import PageLayout from '../components/PageLayout';
@@ -433,6 +434,7 @@ const useStyles = () => {
 export default function ChallengesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { completeMilestone } = useOnboardingJourney();
   const styles = useStyles();
   const params = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
@@ -619,6 +621,7 @@ export default function ChallengesScreen() {
       });
 
       if (response.ok) {
+        completeMilestone('join_challenge');
         Alert.alert('Success', 'Du er nu tilmeldt udfordringen!');
         fetchChallenges();
       } else {
@@ -657,6 +660,7 @@ export default function ChallengesScreen() {
       });
 
       if (response.ok) {
+        completeMilestone('create_challenge');
         const createdChallenge = await response.json();
 
         if (selectedFriends.length > 0) {

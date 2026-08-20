@@ -18,6 +18,7 @@ import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from "@/constants/branding";
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from "../contexts/ThemeContext";
+import { useOnboardingJourney } from "../contexts/OnboardingJourneyContext";
 import { api } from "../lib/api";
 import PageLayout from "../components/PageLayout";
 import WeatherLocationCard from "../components/WeatherLocationCard";
@@ -819,6 +820,7 @@ const useStyles = () => {
 
 export default function AIGuideScreen() {
   const { colors } = useTheme();
+  const { completeMilestone } = useOnboardingJourney();
   const styles = useStyles();
   const router = useRouter();
   const [selectedSpeciesId, setSelectedSpeciesId] = useState("gedde");
@@ -1041,6 +1043,7 @@ export default function AIGuideScreen() {
       const response = await api.post("/ai/recommendations", payload);
       setRecommendations(response.data);
       AsyncStorage.setItem(cacheKey, JSON.stringify({ data: response.data, savedAt: Date.now() })).catch(() => {});
+      completeMilestone('use_ai_guide');
     } catch (error: any) {
       console.error("AI recommendations error:", error);
       // Try offline cache fallback on network error
