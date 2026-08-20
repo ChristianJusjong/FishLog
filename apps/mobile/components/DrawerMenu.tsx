@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNavConfig } from '../contexts/NavConfigContext';
+import { Logo } from './Logo';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GRADIENTS } from '@/constants/theme';
 
 interface DrawerMenuProps {
@@ -41,6 +43,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { setIsModalOpen } = useNavConfig();
   const slideAnim = React.useRef(new Animated.Value(DRAWER_WIDTH)).current;
 
   React.useEffect(() => {
@@ -87,8 +90,10 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
       ],
     },
     {
-      title: 'MIN FISKEBOG',
+      title: 'GREJ & GUIDE',
       items: [
+        { icon: 'git-branch', label: 'Knob & Rigs', route: '/knots' },
+        { icon: 'briefcase', label: 'Digital Grejboks', route: '/tackle-box' },
         { icon: 'document-text', label: 'Kladder', route: '/drafts' },
       ],
     },
@@ -140,17 +145,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
           style={styles.headerGradient}
         >
           <View style={styles.headerContent}>
-            <View style={styles.headerLogo}>
-              <LinearGradient
-                colors={[colors.accent, colors.accentDark || '#D4880F']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoIcon}
-              >
-                <Ionicons name="fish" size={24} color={colors.primary} />
-              </LinearGradient>
-              <Text style={styles.headerTitle}>Hook</Text>
-            </View>
+            <Logo size={36} variant="light" layout="horizontal" subtitle="MENU" />
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={28} color="rgba(255,255,255,0.9)" />
             </TouchableOpacity>
@@ -182,6 +177,35 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
+          {/* Customize Bottom Nav Bar Button */}
+          <TouchableOpacity
+            style={[
+              styles.profileSection,
+              {
+                backgroundColor: colors.accent + '15',
+                borderColor: colors.accent + '30',
+                borderWidth: 1,
+                marginTop: 4,
+                marginBottom: 8,
+              },
+            ]}
+            onPress={() => {
+              onClose();
+              setTimeout(() => setIsModalOpen(true), 250);
+            }}
+          >
+            <Ionicons name="options" size={32} color={colors.accent} />
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: colors.accent, fontWeight: '700' }]}>
+                Tilpas Menulinje
+              </Text>
+              <Text style={[styles.profileSubtext, { color: colors.textSecondary }]}>
+                Vælg dine 4 foretrukne knapper
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.accent} />
+          </TouchableOpacity>
+
           {/* Menu Sections */}
           {menuSections.map((section, sectionIndex) => (
             <View key={sectionIndex} style={styles.section}>
@@ -196,22 +220,32 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                     style={[
                       styles.menuItem,
                       active && {
-                        backgroundColor: colors.accent + '10',
+                        backgroundColor: colors.accent + '12',
                         borderLeftColor: colors.accent,
                         borderLeftWidth: 3,
                       },
                     ]}
                     onPress={() => handleNavigate(item.route)}
                   >
-                    <Ionicons
-                      name={item.icon}
-                      size={22}
-                      color={active ? colors.accent : colors.textSecondary}
-                    />
+                    <View
+                      style={[
+                        styles.menuIconContainer,
+                        {
+                          backgroundColor: active ? colors.accent + '25' : colors.primaryLight + '12',
+                          borderColor: active ? colors.accent : colors.primaryLight + '25',
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.icon}
+                        size={20}
+                        color={active ? colors.accent : colors.textPrimary}
+                      />
+                    </View>
                     <Text
                       style={[
                         styles.menuItemText,
-                        { color: active ? colors.accent : colors.textPrimary },
+                        { color: active ? colors.accent : colors.textPrimary, fontWeight: active ? '700' : '600' },
                       ]}
                     >
                       {item.label}
@@ -223,8 +257,8 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                     )}
                     <Ionicons
                       name="chevron-forward"
-                      size={18}
-                      color={colors.textTertiary}
+                      size={16}
+                      color={active ? colors.accent : colors.textTertiary}
                     />
                   </TouchableOpacity>
                 );
@@ -337,8 +371,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingVertical: 10,
     gap: SPACING.md,
+  },
+  menuIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuItemText: {
     ...TYPOGRAPHY.styles.body,

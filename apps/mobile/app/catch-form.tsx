@@ -14,10 +14,18 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { useTheme } from '../contexts/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { extractCatchMetadataFromImage } from '../lib/exifExtractor';
+import { LoadingBar } from '../components/LoadingBar';
+import ScreenLoading from '../components/ScreenLoading';
+import SpeciesUnlockModal from '../components/SpeciesUnlockModal';
+import VoiceCatchModal from '../components/VoiceCatchModal';
+import { ParsedVoiceCatch } from '../lib/voiceCatchParser';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import {
   findNearestFishingLocation,
@@ -35,6 +43,7 @@ import {
   type BaitType,
   type TechniqueType,
 } from '../data/fishingGear';
+import { checkCatchRegulation, type RegulationCheckResult } from '../data/fishingRegulations';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -327,23 +336,92 @@ export default function CatchFormScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useStyles();
-  const { catchId, isNew } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const { catchId, isNew } = params;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [catch_, setCatch] = useState<any>(null);
   const [identifyingSpecies, setIdentifyingSpecies] = useState(false);
+  const [unlockInfo, setUnlockInfo] = useState<{ species: string; rarity?: string; xp?: number } | null>(null);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
 
-  // Form state
-  const [species, setSpecies] = useState('');
-  const [lengthCm, setLengthCm] = useState('');
-  const [weightKg, setWeightKg] = useState('');
-  const [bait, setBait] = useState('');
+  // Form state - prefilled with params if available
+  const [species, setSpecies] = useState(typeof params.species === 'string' ? params.species : '');
+  const [lengthCm, setLengthCm] = useState(typeof params.length === 'string' ? params.length : '');
+  const [weightKg, setWeightKg] = useState(typeof params.weight === 'string' ? params.weight : '');
+  const [waterTemp, setWaterTemp] = useState('');
+  const [bait, setBait] = useState(typeof params.bait === 'string' ? params.bait : '');
   const [lure, setLure] = useState('');
   const [rig, setRig] = useState('');
   const [technique, setTechnique] = useState('');
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(typeof params.notes === 'string' ? params.notes : '');
   const [visibility, setVisibility] = useState('private');
+  const [released, setReleased] = useState(params.released === 'false' ? false : true); // Default to Catch & Release
+
+  const handleApplyVoiceCatch = (data: ParsedVoiceCatch) => {
+    if (data.species) setSpecies(data.species);
+    if (data.lengthCm) setLengthCm(String(data.lengthCm));
+    if (data.weightKg) setWeightKg(String(data.weightKg));
+    if (data.bait) setBait(data.bait);
+    if (data.released !== undefined) setReleased(data.released);
+    if (data.notes) setNotes(prev => prev ? `${prev}\n${data.notes}` : data.notes || '');
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Kamera tilladelse', 'Giv venligst tilladelse til kameraet for at tage foto');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets[0]) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        setCatch((prev: any) => ({ ...(prev || {}), photoUrl: result.assets[0].uri }));
+      }
+    } catch {
+      Alert.alert('Fejl', 'Kunne ikke åbne kamera');
+    }
+  };
+
+  const handlePickGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Galleri tilladelse', 'Giv venligst tilladelse til billeder');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.85,
+        exif: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        setCatch((prev: any) => ({ ...(prev || {}), photoUrl: result.assets[0].uri }));
+        const meta = await extractCatchMetadataFromImage(result.assets[0]);
+        if (meta.latitude && meta.longitude) {
+          setCatch((prev: any) => ({ ...prev, latitude: meta.latitude, longitude: meta.longitude }));
+        }
+      }
+    } catch {
+      Alert.alert('Fejl', 'Kunne ikke hente billede');
+    }
+  };
+
+  // Danish fishing regulations check
+  const regulationCheck = useMemo(() => {
+    if (!species) return null;
+    return checkCatchRegulation(species, lengthCm);
+  }, [species, lengthCm]);
 
   // Find nearest known fishing location based on catch coordinates
   const nearestLocation = useMemo(() => {
@@ -413,7 +491,7 @@ export default function CatchFormScreen() {
 
   const fetchCatch = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/catches/${catchId}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -450,18 +528,20 @@ export default function CatchFormScreen() {
   const saveDraft = async () => {
     setSaving(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const updateData = {
         species: species || undefined,
         lengthCm: lengthCm ? parseFloat(lengthCm) : undefined,
         weightKg: weightKg ? parseFloat(weightKg) : undefined,
+        waterTemp: waterTemp ? parseFloat(waterTemp) : undefined,
         bait: bait || undefined,
         lure: lure || undefined,
         rig: rig || undefined,
         technique: technique || undefined,
         notes: notes || undefined,
         visibility,
+        released,
       };
 
       const response = await fetch(`${API_URL}/catches/${catchId}`, {
@@ -495,7 +575,7 @@ export default function CatchFormScreen() {
 
     setIdentifyingSpecies(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/ai/identify-species`, {
         method: 'POST',
         headers: {
@@ -548,19 +628,21 @@ export default function CatchFormScreen() {
 
     setSaving(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       // First update all data
       const updateData = {
         species,
         lengthCm: lengthCm ? parseFloat(lengthCm) : undefined,
         weightKg: weightKg ? parseFloat(weightKg) : undefined,
+        waterTemp: waterTemp ? parseFloat(waterTemp) : undefined,
         bait: bait || undefined,
         lure: lure || undefined,
         rig: rig || undefined,
         technique: technique || undefined,
         notes: notes || undefined,
         visibility,
+        released,
       };
 
       const updateResponse = await fetch(`${API_URL}/catches/${catchId}`, {
@@ -586,6 +668,15 @@ export default function CatchFormScreen() {
 
       if (completeResponse.ok) {
         const result = await completeResponse.json();
+
+        if (result.fiskedexUnlock || result.isFirstOfSpecies) {
+          setUnlockInfo({
+            species: result.fiskedexUnlock?.species || species,
+            rarity: result.fiskedexUnlock?.rarity || 'Ny Art Oplåst',
+            xp: result.xp?.earnedXP || 150,
+          });
+          return;
+        }
 
         if (result.badges && result.badges.length > 0) {
           Alert.alert(
@@ -642,14 +733,66 @@ export default function CatchFormScreen() {
           </Text>
         </View>
 
-        {/* Locked photo preview */}
-        {catch_?.photoUrl && (
+        {/* Photo section */}
+        {catch_?.photoUrl ? (
           <View style={styles.photoContainer}>
             <Image source={{ uri: catch_.photoUrl }} style={styles.photo} resizeMode="cover" />
-            <View style={styles.lockedBadge}>
-              <Ionicons name="lock-closed" size={14} color={colors.white} style={{ marginRight: 4 }} />
-              <Text style={styles.lockedText}>Billede låst</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.lockedBadge}
+              onPress={handleTakePhoto}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="camera" size={14} color={colors.white} style={{ marginRight: 4 }} />
+              <Text style={styles.lockedText}>Skift foto</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={{
+            flexDirection: 'row',
+            gap: 10,
+            marginBottom: SPACING.md,
+          }}>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surface,
+                borderWidth: 1.5,
+                borderStyle: 'dashed',
+                borderColor: '#00D4B2',
+                borderRadius: 14,
+                paddingVertical: 14,
+                gap: 8,
+              }}
+              onPress={handleTakePhoto}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="camera" size={22} color="#00D4B2" />
+              <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>Tag Foto</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surface,
+                borderWidth: 1.5,
+                borderStyle: 'dashed',
+                borderColor: colors.accent,
+                borderRadius: 14,
+                paddingVertical: 14,
+                gap: 8,
+              }}
+              onPress={handlePickGallery}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="images" size={22} color={colors.accent} />
+              <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>Fra Galleri</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -705,14 +848,30 @@ export default function CatchFormScreen() {
               </View>
             )}
 
-            <Text style={[styles.locationInfoLabel, { marginTop: SPACING.xs, marginBottom: 2 }]}>
-              Almindelige arter på dette sted:
+            <Text style={[styles.locationInfoLabel, { marginTop: SPACING.xs, marginBottom: 4 }]}>
+              Almindelige arter her (tryk for at vælge):
             </Text>
             <View style={styles.speciesChipsContainer}>
               {nearestLocation.location.species.slice(0, 6).map((speciesId) => (
-                <View key={speciesId} style={styles.speciesChip}>
-                  <Text style={styles.speciesChipText}>{getSpeciesName(speciesId)}</Text>
-                </View>
+                <TouchableOpacity
+                  key={speciesId}
+                  style={[
+                    styles.speciesChip,
+                    species === getSpeciesName(speciesId) && { backgroundColor: colors.accent, borderColor: '#FFD93D' }
+                  ]}
+                  onPress={() => {
+                    Haptics.selectionAsync().catch(() => {});
+                    setSpecies(getSpeciesName(speciesId));
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.speciesChipText,
+                    species === getSpeciesName(speciesId) && { color: '#FFFFFF', fontWeight: '700' }
+                  ]}>
+                    {getSpeciesName(speciesId)}
+                  </Text>
+                </TouchableOpacity>
               ))}
               {nearestLocation.location.species.length > 6 && (
                 <View style={[styles.speciesChip, { backgroundColor: colors.border }]}>
@@ -722,6 +881,33 @@ export default function CatchFormScreen() {
                 </View>
               )}
             </View>
+
+            {/* Auto-Snap Apply Button */}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0, 212, 178, 0.15)',
+                borderWidth: 1,
+                borderColor: '#00D4B2',
+                borderRadius: 8,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                marginTop: 10,
+                gap: 6,
+              }}
+              onPress={() => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+                setNotes(prev => prev ? `${prev}\nFisket ved ${nearestLocation.location.name} (${nearestLocation.location.waterType})` : `Fisket ved ${nearestLocation.location.name} (${nearestLocation.location.waterType})`);
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="checkmark-circle" size={16} color="#00D4B2" />
+              <Text style={{ color: '#00D4B2', fontWeight: '700', fontSize: 12 }}>
+                Anvend {nearestLocation.location.name} i noter
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -732,23 +918,44 @@ export default function CatchFormScreen() {
               <Ionicons name="fish" size={18} color={colors.primary} style={{ marginRight: 4 }} />
               <Text style={styles.label}>Art *</Text>
             </View>
-            {catch_?.photoUrl && (
+            <View style={{ flexDirection: 'row', gap: 6 }}>
               <TouchableOpacity
-                style={styles.aiButton}
-                onPress={identifySpeciesWithAI}
-                disabled={identifyingSpecies}
+                style={[styles.aiButton, { backgroundColor: colors.secondary }]}
+                onPress={() => setShowVoiceModal(true)}
               >
-                {identifyingSpecies ? (
-                  <ActivityIndicator size="small" color={colors.white} />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles" size={16} color={colors.white} />
-                    <Text style={styles.aiButtonText}>AI Genkend</Text>
-                  </>
-                )}
+                <Ionicons name="mic" size={16} color={colors.white} />
+                <Text style={styles.aiButtonText}>Tale-Log</Text>
               </TouchableOpacity>
-            )}
+              {catch_?.photoUrl && (
+                <TouchableOpacity
+                  style={styles.aiButton}
+                  onPress={identifySpeciesWithAI}
+                  disabled={identifyingSpecies}
+                >
+                  {identifyingSpecies ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={16} color={colors.white} />
+                      <Text style={styles.aiButtonText}>AI Genkend</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
+
+          {identifyingSpecies && (
+            <View style={{ marginBottom: 10 }}>
+              <LoadingBar
+                height={3}
+                glow={true}
+                colors={['#00D4B2', '#FFB800', '#F97316']}
+                label="Google Gemini scanner fangstfoto for fiskeart..."
+              />
+            </View>
+          )}
+
           <View style={styles.pickerContainer}>
             <Picker
               selectedValue={species}
@@ -764,7 +971,7 @@ export default function CatchFormScreen() {
           </View>
         </View>
 
-        {/* Length and Weight */}
+        {/* Length, Weight and Water Temp */}
         <View style={styles.row}>
           <View style={styles.halfField}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -792,6 +999,142 @@ export default function CatchFormScreen() {
               placeholder="f.eks. 1.5"
               keyboardType="decimal-pad"
             />
+          </View>
+        </View>
+
+        {/* Mindstemål & Fredningsvogter Badge & Notice */}
+        {regulationCheck && (
+          <View style={{
+            backgroundColor:
+              regulationCheck.badgeType === 'warning_undersize' ? '#FFFBEB' :
+              regulationCheck.badgeType === 'warning_closed_season' ? '#FEF2F2' :
+              regulationCheck.badgeType === 'protected' ? '#FEF2F2' : '#F0FDF4',
+            borderWidth: 1,
+            borderColor:
+              regulationCheck.badgeType === 'warning_undersize' ? '#F59E0B' :
+              regulationCheck.badgeType === 'warning_closed_season' ? '#EF4444' :
+              regulationCheck.badgeType === 'protected' ? '#EF4444' : '#10B981',
+            borderRadius: RADIUS.md,
+            padding: SPACING.md,
+            marginBottom: SPACING.md,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons
+                  name={
+                    regulationCheck.badgeType === 'legal' ? 'shield-checkmark' :
+                    regulationCheck.badgeType === 'protected' ? 'close-circle' : 'warning'
+                  }
+                  size={18}
+                  color={
+                    regulationCheck.badgeType === 'warning_undersize' ? '#D97706' :
+                    regulationCheck.badgeType === 'warning_closed_season' ? '#DC2626' :
+                    regulationCheck.badgeType === 'protected' ? '#DC2626' : '#059669'
+                  }
+                />
+                <Text style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color:
+                    regulationCheck.badgeType === 'warning_undersize' ? '#92400E' :
+                    regulationCheck.badgeType === 'warning_closed_season' ? '#991B1B' :
+                    regulationCheck.badgeType === 'protected' ? '#991B1B' : '#065F46',
+                }}>
+                  Fiskeristyrelsen Mindstemål & Fredning
+                </Text>
+              </View>
+              {regulationCheck.minimumSizeCm && (
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>
+                  Min. {regulationCheck.minimumSizeCm} cm
+                </Text>
+              )}
+            </View>
+            <Text style={{
+              fontSize: 12,
+              color: colors.text,
+              lineHeight: 16,
+            }}>
+              {regulationCheck.message}
+            </Text>
+
+            {/* Catch & Release Selector */}
+            <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => setReleased(true)}
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  paddingVertical: 8,
+                  borderRadius: RADIUS.md,
+                  backgroundColor: released ? '#10B981' : colors.surface,
+                  borderWidth: 1,
+                  borderColor: released ? '#10B981' : colors.border,
+                }}
+              >
+                <Ionicons name="repeat" size={16} color={released ? '#FFFFFF' : colors.textSecondary} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: released ? '#FFFFFF' : colors.text }}>
+                  Genudsat (C&R)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setReleased(false)}
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  paddingVertical: 8,
+                  borderRadius: RADIUS.md,
+                  backgroundColor: !released ? colors.primary : colors.surface,
+                  borderWidth: 1,
+                  borderColor: !released ? colors.primary : colors.border,
+                }}
+              >
+                <Ionicons name="basket" size={16} color={!released ? '#FFFFFF' : colors.textSecondary} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: !released ? '#FFFFFF' : colors.text }}>
+                  Hjemtaget
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Water Temperature & Automated AI Telemetry */}
+        <View style={styles.fieldGroup}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="water-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
+              <Text style={styles.label}>Målt Vandtemperatur (°C)</Text>
+            </View>
+            <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.secondary }}>
+              Valgfri (auto-beregnes ellers)
+            </Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={waterTemp}
+            onChangeText={setWaterTemp}
+            placeholder="f.eks. 12.5"
+            keyboardType="decimal-pad"
+          />
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.primaryLight + '15',
+            padding: SPACING.sm,
+            borderRadius: RADIUS.md,
+            marginTop: SPACING.xs,
+            gap: SPACING.xs
+          }}>
+            <Ionicons name="hardware-chip-outline" size={16} color={colors.primary} />
+            <Text style={{ ...TYPOGRAPHY.styles.small, color: colors.textSecondary, flex: 1 }}>
+              Lufttryk, vind, vejr og marin temperatur logges automatisk i FishLog AI Telemetri Dataset til præcise fangstprognoser.
+            </Text>
           </View>
         </View>
 
@@ -1014,6 +1357,25 @@ export default function CatchFormScreen() {
           <Text style={styles.cancelText}>Annuller</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Celebratory Species Unlock Modal */}
+      <SpeciesUnlockModal
+        visible={!!unlockInfo}
+        speciesName={unlockInfo?.species || ''}
+        rarity={unlockInfo?.rarity}
+        xpEarned={unlockInfo?.xp}
+        onClose={() => {
+          setUnlockInfo(null);
+          router.back();
+        }}
+      />
+
+      {/* Voice Catch Modal */}
+      <VoiceCatchModal
+        visible={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
+        onApplyParsedData={handleApplyVoiceCatch}
+      />
     </SafeAreaView>
   );
 }

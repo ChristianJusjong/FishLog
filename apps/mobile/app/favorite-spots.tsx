@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { API_URL } from '../config/api';
@@ -173,7 +174,7 @@ export default function FavoriteSpotsScreen() {
 
   const fetchSpots = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/favorite-spots`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -205,7 +206,7 @@ export default function FavoriteSpotsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const accessToken = await AsyncStorage.getItem('accessToken');
+              const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
               const response = await fetch(`${API_URL}/favorite-spots/${id}`, {
                 method: 'DELETE',
                 headers: {

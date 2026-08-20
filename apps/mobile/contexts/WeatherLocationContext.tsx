@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import * as Location from 'expo-location';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '../lib/secureStorage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -34,7 +34,7 @@ export function WeatherLocationProvider({ children }: { children: ReactNode }) {
 
   const fetchUnreadNotifications = useCallback(async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/notifications/unread-count`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,

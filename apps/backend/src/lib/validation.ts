@@ -26,6 +26,26 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });
 
+export const authExchangeSchema = z.object({
+  code: z.string().min(1, 'Authorization code required'),
+});
+
+export const facebookDeletionSchema = z.object({
+  signed_request: z.string().min(1, 'Missing signed_request'),
+});
+
+export const appleNativeAuthSchema = z.object({
+  identityToken: z.string().min(1, 'Identity token is required'),
+  user: z.object({
+    name: z.object({
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+    }).optional(),
+    email: z.string().email().optional(),
+  }).optional(),
+  authorizationCode: z.string().optional(),
+});
+
 // Catch schemas
 export const createCatchSchema = z.object({
   species: z.string().min(1, 'Species is required'),
@@ -49,6 +69,7 @@ export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   avatar: z.string().url().optional(),
   groqApiKey: z.string().optional(),
+  geminiApiKey: z.string().optional(),
 });
 
 // Event schemas
@@ -65,8 +86,7 @@ export const createEventSchema = z.object({
 });
 
 // Helper function to validate request body
-export function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): 
-  { success: true; data: T } | { success: false; error: string } {
+export function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): { success: true; data: T } | { success: false; error: string } {
   const result = schema.safeParse(body);
   if (result.success) {
     return { success: true, data: result.data };

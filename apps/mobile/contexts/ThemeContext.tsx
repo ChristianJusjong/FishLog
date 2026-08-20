@@ -4,6 +4,7 @@ import { StatusBar, Platform } from 'react-native';
 import {
   COLORS,
   DARK_COLORS,
+  NIGHT_VISION_COLORS,
   GRADIENTS,
   SHADOWS,
   GLASS,
@@ -13,7 +14,7 @@ import {
   ANIMATION
 } from '@/constants/branding';
 
-export type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'nightVision';
 
 // Extended theme colors type with all premium features
 type ThemeColors = typeof COLORS & {
@@ -27,8 +28,10 @@ type ThemeColors = typeof COLORS & {
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  setThemeMode: (mode: Theme) => Promise<void>;
   colors: ThemeColors;
   isDark: boolean;
+  isNightVision: boolean;
   // Premium design utilities
   gradients: typeof GRADIENTS;
   shadows: typeof SHADOWS;
@@ -40,7 +43,7 @@ interface ThemeContextType {
 }
 
 // Extend colors with computed convenience values
-const extendColors = (baseColors: typeof COLORS | typeof DARK_COLORS, isDark: boolean): any => ({
+const extendColors = (baseColors: any, isDark: boolean): any => ({
   ...baseColors,
   cardBackground: baseColors.surface,
   inputBackground: isDark ? baseColors.surfaceVariant : baseColors.gray50,
@@ -52,8 +55,10 @@ const extendColors = (baseColors: typeof COLORS | typeof DARK_COLORS, isDark: bo
 const ThemeContext = createContext<ThemeContextType>({
   theme: 'light',
   toggleTheme: () => {},
+  setThemeMode: async () => {},
   colors: extendColors(COLORS, false) as ThemeColors,
   isDark: false,
+  isNightVision: false,
   gradients: GRADIENTS,
   shadows: SHADOWS,
   glass: GLASS,
@@ -87,18 +92,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Update StatusBar when theme changes
   useEffect(() => {
     if (Platform.OS === 'ios') {
-      StatusBar.setBarStyle(theme === 'dark' ? 'light-content' : 'dark-content', true);
+      StatusBar.setBarStyle(theme === 'light' ? 'dark-content' : 'light-content', true);
     } else {
-      StatusBar.setBarStyle(theme === 'dark' ? 'light-content' : 'dark-content');
-      StatusBar.setBackgroundColor(theme === 'dark' ? '#030D18' : '#F8FAFC');
+      StatusBar.setBarStyle(theme === 'light' ? 'dark-content' : 'light-content');
+      StatusBar.setBackgroundColor(
+        theme === 'nightVision' ? '#000000' : theme === 'dark' ? '#030D18' : '#F8FAFC'
+      );
     }
   }, [theme]);
 
   const loadSavedTheme = async () => {
     try {
       const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-      if (savedTheme === 'dark' || savedTheme === 'light') {
-        setTheme(savedTheme);
+      if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'nightVision') {
+        setTheme(savedTheme as Theme);
       }
     } catch (error) {
       console.error('Failed to load theme:', error);
@@ -106,6 +113,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsLoading(false);
     }
   };
+
+  const setThemeMode = useCallback(async (mode: Theme) => {
+    try {
+      setTheme(mode);
+      await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
+    } catch (error) {
+      console.error('Failed to save theme:', error);
+    }
+  }, []);
 
   const toggleTheme = useCallback(async () => {
     try {
@@ -117,15 +133,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [theme]);
 
-  const isDark = theme === 'dark';
-  const baseColors = isDark ? DARK_COLORS : COLORS;
+  const isDark = theme === 'dark' || theme === 'nightVision';
+  const isNightVision = theme === 'nightVision';
+  const baseColors = isNightVision
+    ? NIGHT_VISION_COLORS
+    : isDark
+    ? DARK_COLORS
+    : COLORS;
+
   const colors = useMemo(() => extendColors(baseColors, isDark), [baseColors, isDark]);
 
   const value = useMemo(() => ({
     theme,
     toggleTheme,
+    setThemeMode,
     colors,
     isDark,
+    isNightVision,
     gradients: GRADIENTS,
     shadows: SHADOWS,
     glass: GLASS,
@@ -133,7 +157,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     radius: RADIUS,
     typography: TYPOGRAPHY,
     animation: ANIMATION,
-  }), [theme, toggleTheme, colors, isDark]);
+  }), [theme, toggleTheme, setThemeMode, colors, isDark, isNightVision]);
 
   // Don't render children until theme is loaded
   if (isLoading) {

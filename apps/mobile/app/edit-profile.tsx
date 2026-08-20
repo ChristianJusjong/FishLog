@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import * as ImagePicker from 'expo-image-picker';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -158,12 +159,12 @@ export default function EditProfileScreen() {
 
   const [name, setName] = useState(user?.name || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
-  const [groqApiKey, setGroqApiKey] = useState(user?.groqApiKey || '');
+  const [geminiApiKey, setGeminiApiKey] = useState(user?.geminiApiKey || user?.groqApiKey || '');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Check if any changes have been made
-  const hasChanges = name !== (user?.name || '') || avatar !== (user?.avatar || '') || groqApiKey !== (user?.groqApiKey || '');
+  const hasChanges = name !== (user?.name || '') || avatar !== (user?.avatar || '') || geminiApiKey !== (user?.geminiApiKey || user?.groqApiKey || '');
 
   const handleImageUpload = async () => {
     if (Platform.OS === 'web') {
@@ -193,7 +194,7 @@ export default function EditProfileScreen() {
 
           setUploadingImage(true);
           try {
-            const accessToken = await AsyncStorage.getItem('accessToken');
+            const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
             // Create FormData
             const formData = new FormData();
             formData.append('file', file);
@@ -231,30 +232,64 @@ export default function EditProfileScreen() {
         Alert.alert('Fejl', 'Kunne ikke uploade billede');
       }
     } else {
-      // Mobile: Use expo-image-picker
-      try {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Tilladelse påkrævet', 'Vi har brug for adgang til dit billedbibliotek for at uploade billeder.');
-          return;
-        }
-
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 0.5, // Reduced quality to 50% to keep file size smaller
-          base64: true,
-        });
-
-        if (!result.canceled && result.assets[0]) {
-          const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
-          setAvatar(base64Image);
-        }
-      } catch (error) {
-        console.error('Image picker error:', error);
-        Alert.alert('Fejl', 'Kunne ikke vælge billede');
-      }
+      // Mobile: Give user choice between Camera and Gallery
+      Alert.alert(
+        'Vælg profilbillede',
+        'Vil du tage et nyt foto eller vælge fra dit galleri?',
+        [
+          {
+            text: '📸 Tag Foto',
+            onPress: async () => {
+              try {
+                const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                if (status !== 'granted') {
+                  Alert.alert('Kamera tilladelse', 'Giv venligst tilladelse til kameraet');
+                  return;
+                }
+                const result = await ImagePicker.launchCameraAsync({
+                  mediaTypes: ['images'],
+                  allowsEditing: true,
+                  aspect: [1, 1],
+                  quality: 0.6,
+                  base64: true,
+                });
+                if (!result.canceled && result.assets[0]) {
+                  setAvatar(`data:image/jpeg;base64,${result.assets[0].base64}`);
+                }
+              } catch (error) {
+                console.error('Camera avatar error:', error);
+                Alert.alert('Fejl', 'Kunne ikke åbne kamera');
+              }
+            },
+          },
+          {
+            text: '🖼️ Vælg fra Galleri',
+            onPress: async () => {
+              try {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== 'granted') {
+                  Alert.alert('Tilladelse påkrævet', 'Vi har brug for adgang til dit billedbibliotek.');
+                  return;
+                }
+                const result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: ['images'],
+                  allowsEditing: true,
+                  aspect: [1, 1],
+                  quality: 0.6,
+                  base64: true,
+                });
+                if (!result.canceled && result.assets[0]) {
+                  setAvatar(`data:image/jpeg;base64,${result.assets[0].base64}`);
+                }
+              } catch (error) {
+                console.error('Gallery avatar error:', error);
+                Alert.alert('Fejl', 'Kunne ikke vælge billede');
+              }
+            },
+          },
+          { text: 'Annuller', style: 'cancel' },
+        ]
+      );
     }
   };
 
@@ -266,7 +301,12 @@ export default function EditProfileScreen() {
 
     setLoading(true);
     try {
-      await authService.updateProfile({ name, avatar: avatar || '', groqApiKey: groqApiKey || '' });
+      await authService.updateProfile({
+        name,
+        avatar: avatar || '',
+        geminiApiKey: geminiApiKey || '',
+        groqApiKey: geminiApiKey || '',
+      });
       await refreshUser();
       Alert.alert('Succes', 'Profil opdateret!', [
         { text: 'OK', onPress: () => router.back() }
@@ -356,18 +396,18 @@ export default function EditProfileScreen() {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Groq API Key</Text>
+          <Text style={styles.label}>Google Gemini API Key</Text>
           <TextInput
             style={styles.input}
-            value={groqApiKey}
-            onChangeText={setGroqApiKey}
-            placeholder="gsk_..."
+            value={geminiApiKey}
+            onChangeText={setGeminiApiKey}
+            placeholder="AIzaSy..."
             secureTextEntry
             editable={!loading}
           />
           <Text style={styles.hint}>
-            Valgfri: Tilføj din egen Groq API key for AI-funktioner.{'\n'}
-            Få din gratis API key på: https://console.groq.com/keys
+            Valgfri: Tilføj din egen Google Gemini API key for AI-funktioner.{'\n'}
+            Få din gratis API key på: https://aistudio.google.com/app/apikey
           </Text>
         </View>
       </View>

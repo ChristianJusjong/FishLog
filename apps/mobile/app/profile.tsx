@@ -8,6 +8,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import SwipeableScreen from '../components/SwipeableScreen';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import PageLayout from '../components/PageLayout';
+import ScreenLoading from '../components/ScreenLoading';
 import XPProgressBar from '../components/XPProgressBar';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, AVATAR_STYLES, GRADIENTS } from '@/constants/theme';
 import { api } from '../lib/api';
@@ -437,18 +438,9 @@ export default function ProfileScreen() {
 
   if (loading || !user) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <LinearGradient
-          colors={[colors.accent, colors.accentDark || '#D4880F']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.logoGradient}
-        >
-          <Ionicons name="person" size={40} color={colors.primary} />
-        </LinearGradient>
-        <ActivityIndicator size="large" color={colors.accent} style={styles.loader} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Indlæser profil...</Text>
-      </View>
+      <PageLayout>
+        <ScreenLoading message="Indlæser din profil..." />
+      </PageLayout>
     );
   }
 

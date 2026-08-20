@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -201,7 +202,7 @@ export default function ChatScreen() {
 
   const fetchMessages = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/messages/${otherUserId}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -233,7 +234,7 @@ export default function ChatScreen() {
 
     setSending(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/messages`, {
         method: 'POST',
         headers: {

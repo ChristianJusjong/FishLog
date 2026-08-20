@@ -1,8 +1,8 @@
-# FishLog AI Service - Groq Integration Guide
+# FishLog AI Service - Google Gemini Integration Guide
 
 ## Overview
 
-The FishLog AI Service provides intelligent fishing recommendations using **Groq's high-performance LLM inference**. It analyzes environmental conditions, location, time, and species to provide:
+The FishLog AI Service provides intelligent fishing recommendations using **Google Gemini AI**. It analyzes environmental conditions, location, time, and species to provide:
 
 - Catch success probability
 - Recommended baits and lures
@@ -10,33 +10,34 @@ The FishLog AI Service provides intelligent fishing recommendations using **Groq
 - Weather impact analysis
 - Seasonal insights
 - Nearby successful fishing spots
-- **Species Identification** via Vision models
+- **Species Identification** via Gemini Multimodal Vision models
 
 ## Architecture
 
 ```
-┌──────────────┐      HTTP/REST      ┌──────────────┐      Groq API       ┌──────────┐
-│   Mobile     │ ────────────────────> │   Node.js    │ ────────────────────> │   Groq   │
-│   Frontend   │                       │   Backend    │                       │ Cloud AI │
-│  (React      │ <──────────────────── │  (Fastify)   │ <──────────────────── │  (LLM)   │
-│   Native)    │      JSON Response    │              │      AI Predictions   │          │
+┌──────────────┐      HTTP/REST      ┌──────────────┐      Gemini API     ┌──────────┐
+│   Mobile     │ ────────────────────> │   Node.js    │ ────────────────────> │  Google  │
+│   Frontend   │                       │   Backend    │                       │  Gemini  │
+│  (React      │ <──────────────────── │  (Fastify)   │ <──────────────────── │ Cloud AI │
+│   Native)    │      JSON Response    │              │      AI Predictions   │  (Flash) │
 └──────────────┘                       └──────────────┘                       └──────────┘
 ```
 
 ## Configuration
 
-### 1. Get Groq API Key
-1. Sign up at [console.groq.com](https://console.groq.com)
-2. Create a new API Key
+### 1. Get Google Gemini API Key
+1. Sign up at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+2. Create a new API Key in Google AI Studio
 
 ### 2. Configure Backend
-Add your Groq API key to `apps/backend/.env`:
+Add your Gemini API key to `apps/backend/.env`:
 
 ```env
-GROQ_API_KEY=gsk_...
+GEMINI_API_KEY=AIzaSy...
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
-The backend uses the `groq-sdk` to communicate directly with Groq's models (e.g., `llama-3.3-70b-versatile`).
+The backend uses `@google/generative-ai` to communicate directly with Google's Gemini models (`gemini-2.5-flash` / `gemini-2.0-flash`).
 
 ## API Endpoints
 
@@ -48,8 +49,8 @@ Authorization: Bearer <token>
 Response:
 {
   "status": "healthy",
-  "ai_service": "Groq",
-  "model": "llama-3.3-70b-versatile"
+  "ai_service": "Google Gemini",
+  "model": "gemini-2.5-flash"
 }
 ```
 
@@ -79,21 +80,15 @@ Authorization: Bearer <token>
 
 Request Body:
 {
-  "imageUrl": "https://example.com/fish-photo.jpg"
+  "imageUrl": "data:image/jpeg;base64,... or https://example.com/fish-photo.jpg"
 }
 ```
 
 ## Troubleshooting
 
-### "Groq API key not configured"
-- Ensure `GROQ_API_KEY` is set in your `.env` file or Railway environment variables.
-- Restart the backend server.
+### "Google Gemini API key is required"
+- Ensure `GEMINI_API_KEY` is set in your `.env` file or cloud deployment environment variables.
+- Or provide your personal Gemini key in Profile / Settings in the mobile app.
 
-### "Groq unreachable"
-- Check your internet connection.
-- Verify Groq system status.
-- Check if your API key is valid and has quota remaining.
-
-## Future Enhancements
-- **Caching**: Redis cache for common requests to save API tokens.
-- **Fine-tuning**: Fine-tune a Llama model on specific fishing data if needed.
+### Offline & Fallback Mode
+- If no Gemini API key is present or the device is offline, the backend automatically uses the built-in comprehensive Danish fishing rules engine to provide instant advice without failing.

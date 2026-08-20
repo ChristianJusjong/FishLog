@@ -2,16 +2,29 @@ import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
 import { authenticateToken } from '../middleware/auth';
 
-
-// Admin middleware - checks if user has admin role
-// TODO: Add admin role to User model and check here
-// For now, we'll allow authenticated users to access admin routes
+// Admin middleware - checks if authenticated user is an administrator
 const requireAdmin = async (request: any, reply: any) => {
-  // In production, check if user has admin role:
-  // const user = await prisma.user.findUnique({ where: { id: request.user.userId }});
-  // if (!user || user.role !== 'admin') {
-  //   return reply.code(403).send({ error: 'Admin access required' });
-  // }
+  if (!request.user?.userId) {
+    return reply.code(401).send({ error: 'Authentication required' });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: request.user.userId },
+    select: { id: true, email: true }
+  });
+
+  if (!user) {
+    return reply.code(401).send({ error: 'User not found' });
+  }
+
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  const isAdmin = adminEmails.length > 0
+    ? adminEmails.includes(user.email.toLowerCase())
+    : process.env.NODE_ENV !== 'production';
+
+  if (!isAdmin) {
+    return reply.code(403).send({ error: 'Admin access required' });
+  }
 };
 
 export async function adminRoutes(fastify: FastifyInstance) {

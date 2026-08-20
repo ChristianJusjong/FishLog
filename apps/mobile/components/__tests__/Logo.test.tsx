@@ -5,7 +5,7 @@ import { Logo, LogoIcon } from '../Logo';
 describe('Logo Component', () => {
   it('renders correctly with default props', () => {
     const { getByText } = render(<Logo />);
-    expect(getByText('FishLog')).toBeTruthy();
+    expect(getByText('HOOK')).toBeTruthy();
   });
 
   it('renders with custom size', () => {
@@ -15,28 +15,33 @@ describe('Logo Component', () => {
 
   it('renders without text when showText is false', () => {
     const { queryByText } = render(<Logo showText={false} />);
-    expect(queryByText('FishLog')).toBeNull();
+    expect(queryByText('HOOK')).toBeNull();
   });
 
   it('renders with light variant', () => {
     const { getByText } = render(<Logo variant="light" />);
-    expect(getByText('FishLog')).toBeTruthy();
+    expect(getByText('HOOK')).toBeTruthy();
   });
 
   it('renders with dark variant', () => {
     const { getByText } = render(<Logo variant="dark" />);
-    expect(getByText('FishLog')).toBeTruthy();
+    expect(getByText('HOOK')).toBeTruthy();
   });
 
   it('renders with color variant (default)', () => {
     const { getByText } = render(<Logo variant="color" />);
-    expect(getByText('FishLog')).toBeTruthy();
+    expect(getByText('HOOK')).toBeTruthy();
+  });
+
+  it('renders with horizontal layout', () => {
+    const { getByText } = render(<Logo layout="horizontal" />);
+    expect(getByText('HOOK')).toBeTruthy();
   });
 
   describe('LogoIcon Component', () => {
     it('renders without text', () => {
       const { queryByText } = render(<LogoIcon />);
-      expect(queryByText('FishLog')).toBeNull();
+      expect(queryByText('HOOK')).toBeNull();
     });
 
     it('renders with custom size', () => {
@@ -53,3 +58,4 @@ describe('Logo Component', () => {
     });
   });
 });
+

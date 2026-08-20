@@ -1,0 +1,1 @@
+{"version":3,"file":"BottomNavigation.d.ts","sourceRoot":"","sources":["../../components/BottomNavigation.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAS1B,UAAU,qBAAqB;IAC7B,WAAW,CAAC,EAAE,MAAM,IAAI,CAAC;CAC1B;AAED,MAAM,CAAC,OAAO,UAAU,gBAAgB,CAAC,EAAE,WAAW,EAAE,EAAE,qBAAqB,qBAyI9E"}

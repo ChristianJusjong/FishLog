@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl,
   Pressable,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,67 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 2 * SPACING.lg;
+
+const CustomBarChart = ({ data, colors }: { data: any; colors: any }) => {
+  const values = data.datasets[0].data as number[];
+  const labels = data.labels as string[];
+  const maxValue = Math.max(...values, 1);
+
+  return (
+    <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', height: 160, alignItems: 'flex-end', justifyContent: 'space-around', width: '100%', paddingHorizontal: 8 }}>
+        {values.map((val, idx) => {
+          const heightPct = (val / maxValue) * 100;
+          return (
+            <View key={idx} style={{ alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 10, color: colors.textSecondary, marginBottom: 4 }}>{val}</Text>
+              <View style={{
+                height: `${Math.max(heightPct, 5)}%`,
+                width: 24,
+                backgroundColor: colors.accent,
+                borderRadius: 4,
+                opacity: val === 0 ? 0.2 : 1
+              }} />
+            </View>
+          );
+        })}
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginTop: 8, paddingHorizontal: 8 }}>
+        {labels.map((label, idx) => (
+          <Text key={idx} style={{ fontSize: 10, color: colors.textSecondary, flex: 1, textAlign: 'center' }}>{label}</Text>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+const CustomSpeciesBreakdown = ({ data, colors }: { data: any[]; colors: any }) => {
+  const total = data.reduce((acc, curr) => acc + curr.population, 0);
+
+  return (
+    <View style={{ paddingVertical: 8, width: '100%' }}>
+      {data.map((item, idx) => {
+        const pct = total > 0 ? (item.population / total) * 100 : 0;
+        return (
+          <View key={idx} style={{ marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: item.color }} />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{item.name}</Text>
+              </View>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>
+                {item.population} stk. ({Math.round(pct)}%)
+              </Text>
+            </View>
+            <View style={{ height: 8, backgroundColor: colors.border || '#E5E7EB', borderRadius: 4, overflow: 'hidden' }}>
+              <View style={{ height: '100%', width: `${pct}%`, backgroundColor: item.color, borderRadius: 4 }} />
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
 
 // ============ Analytics Interfaces ============
 interface AnalyticsData {
@@ -840,16 +902,20 @@ export default function Analytics() {
               <Text style={styles.sectionTitle}>Trend</Text>
             </View>
             <View style={styles.chartContainer}>
-              <LineChart
-                data={timeSeriesData}
-                width={CHART_WIDTH}
-                height={220}
-                chartConfig={chartConfig}
-                bezier
-                style={{
-                  borderRadius: RADIUS.lg,
-                }}
-              />
+              {Platform.OS === 'android' ? (
+                <CustomBarChart data={timeSeriesData} colors={colors} />
+              ) : (
+                <LineChart
+                  data={timeSeriesData}
+                  width={CHART_WIDTH}
+                  height={220}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={{
+                    borderRadius: RADIUS.lg,
+                  }}
+                />
+              )}
             </View>
             {analytics.timeSeries.trend.direction !== 'stable' && (
               <View style={[styles.trendBadge, analytics.timeSeries.trend.direction === 'decreasing' && { backgroundColor: colors.error + '20' }]}>
@@ -872,16 +938,20 @@ export default function Analytics() {
                 <Text style={styles.sectionTitle}>Top arter</Text>
               </View>
               <View style={styles.chartContainer}>
-                <PieChart
-                  data={speciesData}
-                  width={CHART_WIDTH}
-                  height={200}
-                  chartConfig={chartConfig}
-                  accessor="population"
-                  backgroundColor="transparent"
-                  paddingLeft="0"
-                  absolute
-                />
+                {Platform.OS === 'android' ? (
+                  <CustomSpeciesBreakdown data={speciesData} colors={colors} />
+                ) : (
+                  <PieChart
+                    data={speciesData}
+                    width={CHART_WIDTH}
+                    height={200}
+                    chartConfig={chartConfig}
+                    accessor="population"
+                    backgroundColor="transparent"
+                    paddingLeft="0"
+                    absolute
+                  />
+                )}
               </View>
             </View>
           )}

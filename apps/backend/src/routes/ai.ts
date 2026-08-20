@@ -1,9 +1,11 @@
 import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../middleware/auth';
-import Groq from 'groq-sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { weatherTelemetryService } from '../services/weather-telemetry';
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 // Helper function to get season name in Danish
 function getSeason(date: Date): string {
@@ -24,12 +26,111 @@ function getTimeOfDay(date: Date): string {
   return 'nat';
 }
 
-function getGroqClient(userApiKey?: string): Groq {
-  const apiKey = userApiKey || GROQ_API_KEY;
-  if (!apiKey) {
-    throw new Error('Groq API key is required. Please add your Groq API key in your profile settings.');
+function getGeminiClient(userApiKey?: string): GoogleGenerativeAI {
+  const apiKey = userApiKey || GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'your_gemini_api_key_here' || apiKey === 'your_groq_api_key_here') {
+    throw new Error('Google Gemini API key is required. Please add your Gemini API key in your profile settings or server configuration.');
   }
-  return new Groq({ apiKey });
+  return new GoogleGenerativeAI(apiKey);
+}
+
+function getFallbackRecommendations(species: string, latitude: number, longitude: number): any {
+  const normSpecies = species.toLowerCase();
+  
+  const base = {
+    species,
+    model_used: 'fallback-rulesengine',
+  };
+
+  if (normSpecies.includes('gedde') || normSpecies.includes('pike')) {
+    return {
+      ...base,
+      success_probability: 0.75,
+      best_time: 'Morgen og sen eftermiddag (svagt lys)',
+      baits: [
+        { name: 'Skalle / Roach', type: 'Naturligt agn', confidence: 0.9, reason: 'Gedden foretrækker fed agnfisk i denne sæson.' }
+      ],
+      lures: [
+        { name: 'Savage Gear Shad', type: 'Soft Shad', color: 'Grøn/Guld (Pike)', size: '15-20cm', confidence: 0.85, reason: 'Naturtro bevægelse trigger geddens hugrefleks.' },
+        { name: 'Spoon / Blink', type: 'Blink', color: 'Sølv/Kobber', size: '12cm', confidence: 0.8, reason: 'Giver kraftige vibrationer og reflekterer lyset godt.' }
+      ],
+      techniques: [
+        { name: 'Spin fiskeri', description: 'Varieret indspinning med pludselige spinstop.', confidence: 0.85, tips: ['Gedder hugger ofte i spinstoppet.', 'Brug altid stålforfang!'] }
+      ],
+      nearby_spots: [
+        { latitude: latitude + 0.002, longitude: longitude - 0.001, distance_km: 0.4, success_rate: 0.7, recent_catches: 3, reason: 'Masser af siv og lavvandede vige med skjul.' }
+      ],
+      weather_impact: 'Det nuværende skydække reducerer refleksioner i vandet, hvilket øger chancerne.',
+      seasonal_notes: 'Efter gydningen (forår) er gedden meget aggressiv og søgt føde på lavt vand.',
+      confidence_score: 0.8
+    };
+  } else if (normSpecies.includes('aborre') || normSpecies.includes('perch')) {
+    return {
+      ...base,
+      success_probability: 0.8,
+      best_time: 'Midt på dagen (højt sollys)',
+      baits: [
+        { name: 'Regnorm', type: 'Naturligt agn', confidence: 0.95, reason: 'Klassisk og uimodståeligt agn til aborre under alle forhold.' }
+      ],
+      lures: [
+        { name: 'Jighead / Jig', type: 'Jig', color: 'Motorolie/Chartreuse', size: '7-10cm', confidence: 0.85, reason: 'Jigs danser forførende langs bunden.' },
+        { name: 'Spinner', type: 'Spinner', color: 'Kobber med prikker', size: 'Maks 10g', confidence: 0.8, reason: 'Vibrationerne tiltrækker nysgerrige aborrer.' }
+      ],
+      techniques: [
+        { name: 'Jigfiskeri', description: 'Små hop langs bunden.', confidence: 0.9, tips: ['Hold linen stram under faldet.', 'Fisk tæt på strukturer som sten og broer.'] }
+      ],
+      nearby_spots: [
+        { latitude: latitude - 0.001, longitude: longitude + 0.002, distance_km: 0.3, success_rate: 0.75, recent_catches: 8, reason: 'Stensætning og skrænter hvor aborren søger skjul i stimer.' }
+      ],
+      weather_impact: 'Moderat vind skaber strøm i vandet, hvilket aktiverer aborrens jagtadfærd.',
+      seasonal_notes: 'Sommer og det tidlige efterår er absolut højsæson for aborrefiskeri.',
+      confidence_score: 0.85
+    };
+  } else if (normSpecies.includes('ørred') || normSpecies.includes('trout') || normSpecies.includes('havørred')) {
+    return {
+      ...base,
+      success_probability: 0.65,
+      best_time: 'Tidlig morgen og skumring',
+      baits: [
+        { name: 'Børsteorm', type: 'Naturligt agn', confidence: 0.85, reason: 'Yndlingsføde for havørreder i de kystnære områder.' }
+      ],
+      lures: [
+        { name: 'Gennemløber blink', type: 'Blink', color: 'Hvid/Grøn eller Hvid/Lyserød', size: '15-20g', confidence: 0.85, reason: 'Imiterer tobis eller hundestejler perfekt.' },
+        { name: 'Flue', type: 'Flue', color: 'Pattegrisen (Pink)', size: 'krog 4-8', confidence: 0.8, reason: 'Meget effektiv kystflue, der ligner en reje.' }
+      ],
+      techniques: [
+        { name: 'Aktivt spinfiskeri', description: 'Hurtig indspinning med hyppige spin-stop på 1-2 sekunder.', confidence: 0.85, tips: ['Spin-stop er afgørende - havørreden hugger ofte her.', 'Affisk vandet i vifteform.'] }
+      ],
+      nearby_spots: [
+        { latitude: latitude + 0.005, longitude: longitude + 0.004, distance_km: 0.7, success_rate: 0.6, recent_catches: 2, reason: 'Badekar og "blandt bund" med sten og tang (karbade).' }
+      ],
+      weather_impact: 'Let krusning på overfladen maskerer din tilstedeværelse og gør ørreden modigere.',
+      seasonal_notes: 'Forår og efterår er bedst på kysten. Sommerfiskeri foregår bedst om natten.',
+      confidence_score: 0.75
+    };
+  } else {
+    // Default fallback
+    return {
+      ...base,
+      success_probability: 0.7,
+      best_time: 'Tidlig morgen og aften',
+      baits: [
+        { name: 'Regnorm eller Brød', type: 'Naturligt agn', confidence: 0.8, reason: 'Universelt spiseligt for de fleste ferskvands- og saltvandsfisk.' }
+      ],
+      lures: [
+        { name: 'Klassisk Spinnestang / Spinner', type: 'Spinner', color: 'Sølv/Rød', size: '8-12g', confidence: 0.75, reason: 'Enkel og alsidig agn der tiltrækker mange rovfisk.' }
+      ],
+      techniques: [
+        { name: 'Varieret spinfiskeri', description: 'Indspinning i forskellige dybder.', confidence: 0.8, tips: ['Afprøv forskellige dybder for at finde fisken.', 'Hold øje med aktivitet på overfladen.'] }
+      ],
+      nearby_spots: [
+        { latitude: latitude + 0.001, longitude: longitude + 0.001, distance_km: 0.2, success_rate: 0.65, recent_catches: 4, reason: 'Varieret bundstruktur og dybdekurver.' }
+      ],
+      weather_impact: 'De nuværende vejrforhold er rimelige til en alsidig fisketur.',
+      seasonal_notes: 'Generelt aktivt fiskeri. Tilpas hastigheden efter vandtemperaturen.',
+      confidence_score: 0.7
+    };
+  }
 }
 
 export async function aiRoutes(fastify: FastifyInstance) {
@@ -76,104 +177,137 @@ export async function aiRoutes(fastify: FastifyInstance) {
           pressure?: number;
         };
 
-        fastify.log.info(`Generating AI recommendations for ${payload.species}`);
+        fastify.log.info(`Generating Google Gemini recommendations for ${payload.species}`);
 
-        // Get user's Groq API key from profile
+        // Get user's Gemini/Google API key from profile
         const user = await prisma.user.findUnique({
           where: { id: request.user?.userId || '' },
-          select: { groqApiKey: true },
+          select: { geminiApiKey: true, groqApiKey: true },
         });
 
-        const userApiKey = user?.groqApiKey || undefined;
+        const userApiKey = user?.geminiApiKey || user?.groqApiKey || undefined;
 
         // Parse timestamp to get season and time of day
         const timestamp = payload.timestamp ? new Date(payload.timestamp) : new Date();
         const season = getSeason(timestamp);
         const timeOfDay = getTimeOfDay(timestamp);
 
-        // Build context for AI with location, weather, and water conditions
-        let context = `Du er en erfaren dansk fiskeriekspert med omfattende viden om fiskeri i Danmark.
+        // Fetch real-time meteorological metrics if missing
+        let currentPressure = payload.pressure;
+        let currentWind = payload.wind_speed;
+        let currentAirTemp = payload.air_temp;
+        let currentWaterTemp = payload.water_temp;
 
-Jeg planlægger at fiske efter ${payload.species}.
-
-Baseret på LOKATION, VEJR, VANDFORHOLD og din VIDEN OM FARVANDET i dette område, skal du give mig professionelle anbefalinger.
-
-LOKATION:
-Placering: ${payload.latitude} nord, ${payload.longitude} øst
-Tidspunkt: ${timeOfDay}
-Sæson: ${season}
-`;
-
-        // Add weather conditions if available
-        if (payload.air_temp !== undefined || payload.wind_speed !== undefined ||
-            payload.cloud_cover !== undefined || payload.precipitation !== undefined ||
-            payload.pressure !== undefined) {
-          context += `\nVEJRFORHOLD:\n`;
-          if (payload.air_temp !== undefined) context += `- Lufttemperatur: ${payload.air_temp}°C\n`;
-          if (payload.wind_speed !== undefined) context += `- Vindhastighed: ${payload.wind_speed} m/s\n`;
-          if (payload.cloud_cover !== undefined) context += `- Skydække: ${payload.cloud_cover}%\n`;
-          if (payload.precipitation !== undefined) context += `- Nedbør: ${payload.precipitation}mm\n`;
-          if (payload.pressure !== undefined) context += `- Lufttryk: ${payload.pressure} hPa\n`;
+        if (!currentPressure || !currentWind || !currentAirTemp) {
+          try {
+            const apiWeather = await weatherTelemetryService.fetchWeatherData(payload.latitude, payload.longitude);
+            if (apiWeather.pressureHpa && !currentPressure) currentPressure = apiWeather.pressureHpa;
+            if (apiWeather.windSpeedMps && !currentWind) currentWind = apiWeather.windSpeedMps;
+            if (apiWeather.airTemp && !currentAirTemp) currentAirTemp = apiWeather.airTemp;
+            if (apiWeather.waterTemp && !currentWaterTemp) currentWaterTemp = apiWeather.waterTemp;
+          } catch (e) {
+            fastify.log.warn(e, 'Failed to fetch background weather for AI prompt');
+          }
         }
 
-        // Add water conditions if available
-        if (payload.water_temp !== undefined || payload.depth !== undefined || payload.bottom_type) {
-          context += `\nVANDFORHOLD:\n`;
-          if (payload.water_temp !== undefined) context += `- Vandtemperatur: ${payload.water_temp}°C\n`;
-          if (payload.depth !== undefined) context += `- Dybde: ${payload.depth}m\n`;
-          if (payload.bottom_type) context += `- Bundtype: ${payload.bottom_type}\n`;
-        }
+        // Fetch empirical telemetry foundation from AiCatchTelemetry dataset
+        const telemetryStats = await weatherTelemetryService.getSpeciesTelemetryStats(payload.species);
+        const telemetryContext = telemetryStats ? `
+Empirisk fangsttelemetri fra FishLog AI Databasen:
+- Baseret på ${telemetryStats.sampleSize} verificerede fangster af ${payload.species}
+- Gennemsnitligt barometertryk ved succesfulde fangster: ${telemetryStats.avgPressure || '1013'} hPa
+- Gennemsnitlig vandtemperatur ved fangst: ${telemetryStats.avgWaterTemp !== null ? telemetryStats.avgWaterTemp + '°C' : 'Varierende'}
+- Mest givende tidspunkt på døgnet: ${telemetryStats.bestTimeOfDay}
+- Mest effektive fangstteknik: ${telemetryStats.bestTechnique || 'Spin'}
+Brug disse empiriske telemetridata til at kalibrere dine forudsigelser og sandsynligheder med maksimal præcision.` : '';
 
-        context += `\nVIGTIGT: Brug data fra fishbase.se og din viden om danske farvande til at give nøjagtige anbefalinger. Kombinér lokationen, vejrforholdene, vandforholdene og din viden om farvandet i dette område til at give de bedst mulige råd.
+        // Build prompt for Gemini
+        const prompt = `Du er en erfaren dansk fiskeriekspert og AI-fangstbiolog. Giv professionelle, knivskarpe fiskerianbefalinger for arten ${payload.species} på placering ${payload.latitude}, ${payload.longitude} i sæsonen ${season} på tidspunktet ${timeOfDay}.
+        
+Vejrforhold: Barometertryk ${currentPressure || '1013'} hPa, Vind ${currentWind || 'ukendt'} m/s, lufttemperatur ${currentAirTemp || 'ukendt'}°C.
+Vandforhold: Dybde ${payload.depth || 'ukendt'}m, vandtemperatur ${currentWaterTemp || 'ukendt'}°C.
+${telemetryContext}
 
-Giv konkrete og anvendelige anbefalinger om:
-1. Er dette område egnet til ${payload.species}? (brug fishbase.se og din viden om danske farvande)
-2. Hvilke andre fiskearter findes typisk på denne lokation?
-3. ${payload.species} - biologisk adfærd, foretrukne levesteder, og aktivitetsmønstre (brug fishbase.se data)
-4. Bedste tidspunkt på ${timeOfDay} at fiske (baseret på artens naturlige adfærd)
-5. Agn - både naturligt agn og kunstige lokkemidler der virker godt for denne art og lokation
-6. Fiskeudstyr - stang, hjul, line (konkrete specifikationer for denne art)
-7. Fisketeknik og indspilningsmetode der passer til lokationen og arten
-8. Hvor i området man skal fiske (dybde, strukturer, hotspots baseret på artens levested)
-9. Sæsonmæssige noter for ${season} - hvordan påvirker det fiskeriet?
-10. Ekstra tips og tricks baseret på denne specifikke lokation og fiskeart
+Du SKAL returnere svaret KUN som valid JSON (uden markdown code blocks) med følgende struktur:
+{
+  "success_probability": 0.75,
+  "best_time": "kort beskrivelse af bedste tidspunkt på dagen",
+  "baits": [
+    {
+      "name": "navn på agn",
+      "type": "type agn (f.eks. Naturlig)",
+      "confidence": 0.9,
+      "reason": "begrundelse på dansk"
+    }
+  ],
+  "lures": [
+    {
+      "name": "navn på wobbler/blink",
+      "type": "type (f.eks. Spoon, Soft Shad)",
+      "color": "farveanbefaling",
+      "size": "størrelse",
+      "confidence": 0.85,
+      "reason": "begrundelse på dansk"
+    }
+  ],
+  "techniques": [
+    {
+      "name": "teknik navn",
+      "description": "beskrivelse på dansk",
+      "confidence": 0.85,
+      "tips": ["tip 1", "tip 2"]
+    }
+  ],
+  "nearby_spots": [
+    {
+      "latitude": ${payload.latitude + 0.002},
+      "longitude": ${payload.longitude - 0.001},
+      "distance_km": 0.4,
+      "success_rate": 0.7,
+      "recent_catches": 3,
+      "reason": "beskrivelse af spottet"
+    }
+  ],
+  "weather_impact": "beskrivelse af vejrets påvirkning på dansk",
+  "seasonal_notes": "sæsonmæssige noter på dansk",
+  "confidence_score": 0.8
+}`;
 
-Vær meget konkret og specifik. Basér dine anbefalinger på biologisk korrekt information fra fishbase.se og din ekspertviden om danske fiskevande. Giv praktiske råd til netop denne lokation.`;
-
-        const groq = getGroqClient(userApiKey);
-        const completion = await groq.chat.completions.create({
-          messages: [
-            {
-              role: 'user',
-              content: context,
+        let responseData;
+        try {
+          const genAI = getGeminiClient(userApiKey);
+          const model = genAI.getGenerativeModel({
+            model: GEMINI_MODEL,
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.7,
             },
-          ],
-          model: 'llama-3.3-70b-versatile',
-          temperature: 0.8,
-          max_tokens: 2500,
-        });
+          });
 
-        const aiAdvice = completion.choices[0]?.message?.content || 'Ingen anbefalinger tilgængelige.';
+          const result = await model.generateContent(prompt);
+          const rawText = result.response.text();
+          const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanJson);
 
-        // Return structured response
-        return {
-          species: payload.species,
-          location: {
-            latitude: payload.latitude,
-            longitude: payload.longitude,
-          },
-          conditions: {
-            season,
-            timeOfDay,
-            waterTemp: payload.water_temp,
-            airTemp: payload.air_temp,
-            windSpeed: payload.wind_speed,
-            depth: payload.depth,
-            bottomType: payload.bottom_type,
-          },
-          advice: aiAdvice,
-          timestamp: timestamp.toISOString(),
-        };
+          responseData = {
+            species: payload.species,
+            success_probability: typeof parsed.success_probability === 'number' ? parsed.success_probability : 0.7,
+            best_time: parsed.best_time || 'Tidlig morgen og aften',
+            baits: Array.isArray(parsed.baits) ? parsed.baits : [],
+            lures: Array.isArray(parsed.lures) ? parsed.lures : [],
+            techniques: Array.isArray(parsed.techniques) ? parsed.techniques : [],
+            nearby_spots: Array.isArray(parsed.nearby_spots) ? parsed.nearby_spots : [],
+            weather_impact: parsed.weather_impact || 'Stabil vandtemperatur og moderat vind giver gode betingelser.',
+            seasonal_notes: parsed.seasonal_notes || 'Sæsonen er generelt gunstig.',
+            confidence_score: typeof parsed.confidence_score === 'number' ? parsed.confidence_score : 0.8,
+            model_used: GEMINI_MODEL,
+          };
+        } catch (geminiError) {
+          fastify.log.warn(geminiError, 'Failed to fetch recommendations from Google Gemini, using rule-based fallback');
+          responseData = getFallbackRecommendations(payload.species, payload.latitude, payload.longitude);
+        }
+
+        return responseData;
       } catch (error) {
         fastify.log.error(error);
         reply.code(500);
@@ -185,7 +319,7 @@ Vær meget konkret og specifik. Basér dine anbefalinger på biologisk korrekt i
     }
   );
 
-  // Get AI fishing advice for a specific location using Groq
+  // Get AI fishing advice for a specific location using Google Gemini
   fastify.post(
     '/ai/fishing-advice',
     {
@@ -233,100 +367,115 @@ Vær meget konkret og specifik. Basér dine anbefalinger på biologisk korrekt i
           season: string;
         };
 
-        // Get user's Groq API key from profile
+        // Get user's Gemini API key from profile
         const user = await prisma.user.findUnique({
           where: { id: request.user?.userId || '' },
-          select: { groqApiKey: true },
+          select: { geminiApiKey: true, groqApiKey: true },
         });
 
-        const userApiKey = user?.groqApiKey || undefined;
+        const userApiKey = user?.geminiApiKey || user?.groqApiKey || undefined;
 
-        // Build context for AI
-        let context = `Du er en dansk fiskeriekspert. Giv konkrete råd på dansk baseret på følgende information:\n\n`;
-        context += `Placering: ${location.latitude}, ${location.longitude}\n`;
-        context += `Vejr: ${weather.temperature}°C, vind ${weather.windSpeed} m/s\n`;
-        context += `Sæson: ${season}\n`;
+        // Build context for AI - request bullet point format for quick overview
+        let context = `Du er en dansk fiskeriekspert. Giv KORTE og KONKRETE fakta i punktform (bullet points) på dansk.
+
+VIGTIGT FORMAT:
+- Brug kun korte sætninger med emoji-ikoner
+- Maks 2-3 ord per punkt hvor muligt
+- Ingen lange forklaringer eller brødtekst
+- Brug bullet points (•) for hvert punkt
+
+INFORMATION:
+📍 Placering: ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}
+🌡️ Temperatur: ${weather.temperature}°C
+💨 Vind: ${weather.windSpeed} m/s
+📅 Sæson: ${season}
+`;
 
         if (nearbyCatchStats && nearbyCatchStats.totalCatches > 0) {
-          context += `\nLokale fangstdata:\n`;
-          context += `- ${nearbyCatchStats.totalCatches} tidligere fangster i området\n`;
+          context += `\n📊 LOKALE DATA:\n`;
+          context += `• ${nearbyCatchStats.totalCatches} fangster i området\n`;
           if (nearbyCatchStats.commonSpecies.length > 0) {
-            context += `- Almindelige arter: ${nearbyCatchStats.commonSpecies.join(', ')}\n`;
+            context += `• Arter: ${nearbyCatchStats.commonSpecies.slice(0, 5).join(', ')}\n`;
           }
-          context += `- Gennemsnitlig vægt: ${Math.round(nearbyCatchStats.avgWeight)}g\n`;
+          context += `• Gns. vægt: ${Math.round(nearbyCatchStats.avgWeight)}g\n`;
         }
 
-        context += `\nGiv praktiske råd om:\n1. Bedste tid på dagen\n2. Valg af agn og teknik\n3. Hvor dybt at fiske\n4. Forventede fiskearter\n`;
+        context += `
+GIV RÅD I DETTE FORMAT (brug emoji + kort tekst):
 
-        const groq = getGroqClient(userApiKey);
+🐟 ARTER I OMRÅDET:
+• [art 1]
+• [art 2]
+• [art 3]
 
-        let completion;
+⏰ BEDSTE TIDSPUNKT:
+• [tidspunkt]
+
+🎣 AGN & TEKNIK:
+• [agn 1]
+• [agn 2]
+• [teknik]
+
+📏 DYBDE:
+• [dybde anbefaling]
+
+💡 TIPS:
+• [tip 1]
+• [tip 2]
+
+Hold det KORT og KONKRET. Maks 3-4 punkter per sektion.`;
+
+        let adviceText = '';
         try {
-          completion = await groq.chat.completions.create({
-            messages: [
-              {
-                role: 'user',
-                content: context,
-              },
-            ],
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.7,
-            max_tokens: 800,
+          const genAI = getGeminiClient(userApiKey);
+          const model = genAI.getGenerativeModel({
+            model: GEMINI_MODEL,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 800,
+            },
           });
-        } catch (groqError: any) {
-          fastify.log.error(groqError, 'Groq API error');
 
-          // Check if it's a Groq service error (500, 502, 503, 504)
-          if (groqError.status >= 500 && groqError.status < 600) {
-            // Provide fallback advice when Groq is down
-            const fallbackAdvice = `🎣 AI-tjenesten er midlertidigt utilgængelig, men her er nogle generelle fiskeråd:\n\n` +
-              `📍 **Baseret på din placering og vejrforhold:**\n\n` +
-              `🌡️ Temperatur: ${weather.temperature}°C\n` +
-              `💨 Vind: ${weather.windSpeed} m/s\n\n` +
-              `**Generelle råd:**\n` +
-              `• Fisk ofte bedst i skumringen - tidlig morgen eller sen eftermiddag\n` +
-              `• Ved temperatur under 10°C: Fisk dybere og brug langsommere teknikker\n` +
-              `• Ved temperatur 10-20°C: Prøv midtvands med varierede agn\n` +
-              `• Ved temperatur over 20°C: Fisk i skyggefulde områder\n` +
-              `• Ved vindstyrke under 5 m/s: Godt til fluefiskeri\n` +
-              `• Ved vindstyrke 5-10 m/s: Brug tungere agn og fisk læsiden\n` +
-              `• Ved vindstyrke over 10 m/s: Overvej at finde mere beskyttede steder\n\n` +
-              (nearbyCatchStats && nearbyCatchStats.totalCatches > 0
-                ? `📊 **Lokale data viser:**\n` +
-                  `• ${nearbyCatchStats.totalCatches} tidligere fangster i området\n` +
-                  (nearbyCatchStats.commonSpecies.length > 0
-                    ? `• Almindelige arter: ${nearbyCatchStats.commonSpecies.join(', ')}\n`
-                    : '') +
-                  `• Gennemsnitlig vægt: ${Math.round(nearbyCatchStats.avgWeight)}g\n\n`
-                : '') +
-              `💡 Tip: Prøv AI-guiden igen om lidt for mere personlige råd!`;
+          const result = await model.generateContent(context);
+          adviceText = result.response.text() || 'Ingen råd tilgængelige.';
+          return { advice: adviceText, isFallback: false };
+        } catch (geminiError: any) {
+          fastify.log.error(geminiError, 'Google Gemini API error');
 
-            return { advice: fallbackAdvice, isFallback: true };
+          let fallbackAdvice = `📍 VEJRFORHOLD:\n`;
+          fallbackAdvice += `• Temperatur: ${weather.temperature}°C\n`;
+          fallbackAdvice += `• Vind: ${weather.windSpeed} m/s\n\n`;
+
+          fallbackAdvice += `⏰ BEDSTE TIDSPUNKT:\n`;
+          fallbackAdvice += `• Morgen (solopgang)\n`;
+          fallbackAdvice += `• Aften (solnedgang)\n\n`;
+
+          fallbackAdvice += `💡 GENERELLE TIPS:\n`;
+          if (weather.temperature < 10) {
+            fallbackAdvice += `• Fisk dybere\n• Langsom teknik\n`;
+          } else if (weather.temperature > 20) {
+            fallbackAdvice += `• Fisk skyggefulde områder\n• Tidlig morgen bedst\n`;
+          } else {
+            fallbackAdvice += `• Prøv midtvands\n• Variér agn\n`;
           }
 
-          // Check for rate limit errors
-          if (groqError.status === 429) {
-            return {
-              advice: '⏳ Der er for mange forespørgsler lige nu. Prøv venligst igen om et øjeblik.',
-              isFallback: true
-            };
+          if (weather.windSpeed > 10) {
+            fallbackAdvice += `• Find læ\n`;
+          } else if (weather.windSpeed < 5) {
+            fallbackAdvice += `• Godt til fluefiskeri\n`;
           }
 
-          // Check for authentication errors
-          if (groqError.status === 401 || groqError.status === 403) {
-            return {
-              advice: '🔑 AI API-nøglen er ugyldig eller mangler. Kontakt support for hjælp.',
-              isFallback: true
-            };
+          if (nearbyCatchStats && nearbyCatchStats.totalCatches > 0) {
+            fallbackAdvice += `\n📊 LOKALE DATA:\n`;
+            fallbackAdvice += `• ${nearbyCatchStats.totalCatches} fangster\n`;
+            if (nearbyCatchStats.commonSpecies.length > 0) {
+              fallbackAdvice += `• Arter: ${nearbyCatchStats.commonSpecies.slice(0, 3).join(', ')}\n`;
+            }
+            fallbackAdvice += `• Gns. vægt: ${Math.round(nearbyCatchStats.avgWeight)}g\n`;
           }
 
-          // Re-throw for other errors to be caught by outer catch
-          throw groqError;
+          return { advice: fallbackAdvice, isFallback: true };
         }
-
-        const advice = completion.choices[0]?.message?.content || 'Ingen råd tilgængelige.';
-
-        return { advice, isFallback: false };
       } catch (error) {
         fastify.log.error(error, 'Unexpected error in fishing advice endpoint');
         reply.code(500);
@@ -344,7 +493,7 @@ Vær meget konkret og specifik. Basér dine anbefalinger på biologisk korrekt i
     }
   );
 
-  // Identify fish species from image using AI vision
+  // Identify fish species from image using Google Gemini Vision
   fastify.post(
     '/ai/identify-species',
     {
@@ -363,75 +512,90 @@ Vær meget konkret og specifik. Basér dine anbefalinger på biologisk korrekt i
       try {
         const { imageUrl } = request.body as { imageUrl: string };
 
-        fastify.log.info('Identifying fish species from image');
+        fastify.log.info('Identifying fish species from image using Google Gemini Vision');
 
-        // Get user's Groq API key from profile
+        // Get user's Gemini API key from profile
         const user = await prisma.user.findUnique({
           where: { id: request.user?.userId || '' },
-          select: { groqApiKey: true },
+          select: { geminiApiKey: true, groqApiKey: true },
         });
 
-        const userApiKey = user?.groqApiKey || undefined;
-
-        const groq = getGroqClient(userApiKey);
+        const userApiKey = user?.geminiApiKey || user?.groqApiKey || undefined;
+        const genAI = getGeminiClient(userApiKey);
 
         // Build vision prompt for species identification
-        const visionPrompt = `Analyser dette billede af en fisk og identificer arten.
+        const visionPrompt = `Analyser dette billede af en fisk og identificer arten på dansk.
 
 VIGTIGE INSTRUKTIONER:
 1. Identificer fiskens art baseret på:
    - Kropsform og proportioner
-   - Finneplacement og størrelse
+   - Finneplacering og størrelse
    - Farvemønster og markeringer
-   - Skæltype
-   - Hovedets form
-   - Mundens placering
+   - Skæltype og mundens placering
 
 2. Almindelige danske fiskearter:
-   Gedde, Aborre, Sandart, Ørred, Karpe, Brasen, Helt, Havørred, Torsk, Makrel, Flynder, Skrubbe
+   Gedde, Aborre, Sandart, Havørred, Bækørred, Regnbueørred, Laks, Karpe, Brasen, Skalle, Torsk, Makrel, Rødspætte, Skrubbe, Pighvar, Hornfisk, Sild.
 
-3. Svar KUN med det danske artsnavn (f.eks. "Gedde")
-4. Hvis usikker, tilføj "?" efter navnet
-5. Hvis ikke en fisk eller dårlig kvalitet, svar: "Kunne ikke identificere"
+3. Svar KUN med JSON (uden markdown formatering) med følgende struktur:
+{
+  "species": "Dansk artsnavn (f.eks. Gedde)",
+  "scientific_name": "Latinsk navn (f.eks. Esox lucius)",
+  "confidence": "high" eller "medium" eller "low",
+  "estimated_length_cm": 45,
+  "estimated_weight_kg": 1.2,
+  "features": ["kendetegn 1", "kendetegn 2"]
+}`;
 
-Artsnavn:`;
+        // Prepare image part
+        let imagePart: { inlineData: { data: string; mimeType: string } };
 
-        // Use Groq's model
-        const completion = await groq.chat.completions.create({
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: visionPrompt,
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: imageUrl,
-                  },
-                },
-              ],
+        if (imageUrl.startsWith('data:')) {
+          const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (match) {
+            imagePart = {
+              inlineData: {
+                mimeType: match[1],
+                data: match[2],
+              },
+            };
+          } else {
+            throw new Error('Invalid base64 image format');
+          }
+        } else {
+          // If URL is an HTTP/HTTPS link, fetch it
+          const res = await fetch(imageUrl);
+          const arrayBuffer = await res.arrayBuffer();
+          const base64Data = Buffer.from(arrayBuffer).toString('base64');
+          const mimeType = res.headers.get('content-type') || 'image/jpeg';
+          imagePart = {
+            inlineData: {
+              mimeType,
+              data: base64Data,
             },
-          ],
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-          temperature: 0.2,
-          max_tokens: 30,
+          };
+        }
+
+        const model = genAI.getGenerativeModel({
+          model: GEMINI_MODEL,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+          },
         });
 
-        const identifiedSpecies = completion.choices[0]?.message?.content?.trim() || 'Kunne ikke identificere';
-
-        // Clean up the response - remove quotes, extra whitespace
-        const cleanedSpecies = identifiedSpecies
-          .replace(/["""]/g, '')
-          .replace(/^(Artsnavn:|Art:)\s*/i, '')
-          .trim();
+        const result = await model.generateContent([visionPrompt, imagePart]);
+        const responseText = result.response.text();
+        const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
 
         return {
-          species: cleanedSpecies,
-          confidence: cleanedSpecies.includes('?') ? 'low' : 'high',
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          species: parsed.species || 'Kunne ikke identificere',
+          scientific_name: parsed.scientific_name || null,
+          confidence: parsed.confidence || 'medium',
+          estimated_length_cm: parsed.estimated_length_cm || null,
+          estimated_weight_kg: parsed.estimated_weight_kg || null,
+          features: parsed.features || [],
+          model: GEMINI_MODEL,
         };
       } catch (error) {
         fastify.log.error(error);
@@ -445,7 +609,7 @@ Artsnavn:`;
     }
   );
 
-  // Health check for Groq service
+  // Health check for Google Gemini service
   fastify.get(
     '/ai/health',
     {
@@ -453,29 +617,29 @@ Artsnavn:`;
     },
     async (request, reply) => {
       try {
-        // Check if Groq API key is configured
-        if (!GROQ_API_KEY) {
+        if (!GEMINI_API_KEY) {
           reply.code(503);
           return {
             status: 'unhealthy',
-            ai_service: 'Groq API key not configured',
+            ai_service: 'Google Gemini API key not configured on server',
           };
         }
 
-        // Try a simple API call to verify connectivity
-        const groq = getGroqClient();
-        await groq.models.list();
+        const genAI = getGeminiClient();
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+        const result = await model.generateContent('Svar med ordet: OK');
+        const text = result.response.text();
 
         return {
-          status: 'healthy',
-          ai_service: 'Groq',
-          model: 'llama-3.3-70b-versatile',
+          status: text ? 'healthy' : 'degraded',
+          ai_service: 'Google Gemini',
+          model: GEMINI_MODEL,
         };
       } catch (error) {
         reply.code(503);
         return {
           status: 'unhealthy',
-          ai_service: 'Groq unreachable',
+          ai_service: 'Google Gemini unreachable',
           error: error instanceof Error ? error.message : 'Unknown error',
         };
       }

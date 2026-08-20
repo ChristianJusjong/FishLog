@@ -16,8 +16,11 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as NavigationBar from 'expo-navigation-bar';
+import * as Haptics from 'expo-haptics';
 import PageLayout from '../components/PageLayout';
 import SlideToConfirm from '../components/SlideToConfirm';
+import VoiceCatchModal from '../components/VoiceCatchModal';
+import { ParsedVoiceCatch } from '../lib/voiceCatchParser';
 import { useSession } from '../contexts/SessionContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
@@ -27,17 +30,17 @@ import { findLocationsInRadius, getWaterTypeLabel, FishingLocation } from '../da
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const SESSION_TYPES = {
+const SESSION_TYPES: Record<string, { label: string; icon: string }> = {
   shore: { label: 'Kyst', icon: 'fish' },
+  wade: { label: 'Vadning', icon: 'water' },
   boat: { label: 'Båd', icon: 'boat' },
-  kayak: { label: 'Kajak', icon: 'kayak' },
+  kayak: { label: 'Kajak', icon: 'boat' },
   ice: { label: 'Is', icon: 'snow' },
-  wade: { label: 'Vadning', icon: 'walk' },
 };
 
 export default function ActiveSessionScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, theme, setThemeMode, isNightVision } = useTheme();
   const styles = useStyles();
   const scrollViewRef = useRef<ScrollView>(null);
   const mapRef = useRef<MapView>(null);
@@ -48,6 +51,11 @@ export default function ActiveSessionScreen() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showStartModal, setShowStartModal] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [oledSaverMode, setOledSaverMode] = useState(false);
+  const [currentSpeedKnots, setCurrentSpeedKnots] = useState(0);
+  const [currentSpeedKmh, setCurrentSpeedKmh] = useState(0);
+  const [heading, setHeading] = useState(0);
   const [selectedSessionType, setSelectedSessionType] = useState<'shore' | 'boat' | 'kayak' | 'ice' | 'wade'>('shore');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [aiAdvice, setAiAdvice] = useState<string>('');
@@ -74,10 +82,34 @@ export default function ActiveSessionScreen() {
     return () => clearInterval(interval);
   }, [isActive, session?.startTime]);
 
-  // Get user location
+  // Real-time speed and location watcher
   useEffect(() => {
-    getUserLocation();
-  }, []);
+    if (!isActive) return;
+    let subscription: Location.LocationSubscription | null = null;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        subscription = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.High, timeInterval: 2000, distanceInterval: 3 },
+          (loc) => {
+            setUserLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+            const speedMps = Math.max(0, loc.coords.speed || 0);
+            setCurrentSpeedKnots(+(speedMps * 1.94384).toFixed(1));
+            setCurrentSpeedKmh(+(speedMps * 3.6).toFixed(1));
+            if (loc.coords.heading !== null && loc.coords.heading >= 0) {
+              setHeading(Math.round(loc.coords.heading));
+            }
+          }
+        );
+      } catch (err) {
+        console.error('Speed watcher error:', err);
+      }
+    })();
+    return () => {
+      subscription?.remove();
+    };
+  }, [isActive]);
 
   // Refresh session data periodically
   useEffect(() => {
@@ -117,23 +149,23 @@ export default function ActiveSessionScreen() {
     }
   }, [isActive]);
 
-  const getUserLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-
-      const location = await Location.getCurrentPositionAsync({});
-      setUserLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-    } catch (error) {
-      console.error('Failed to get user location:', error);
-    }
+  const handleApplyVoiceCatch = (data: ParsedVoiceCatch) => {
+    router.push({
+      pathname: '/catch-form',
+      params: {
+        species: data.species || '',
+        length: data.lengthCm ? String(data.lengthCm) : '',
+        weight: data.weightKg ? String(data.weightKg) : '',
+        bait: data.bait || '',
+        released: data.released !== undefined ? String(data.released) : '',
+        notes: data.notes || '',
+      },
+    });
   };
 
   const handleStartSession = async () => {
     try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       await startSession(selectedSessionType);
       setShowStartModal(false);
     } catch (error: any) {
@@ -143,6 +175,7 @@ export default function ActiveSessionScreen() {
 
   const handleEndSession = async () => {
     try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
       await endSession();
       setShowEndModal(false);
       router.replace('/feed');
@@ -153,6 +186,7 @@ export default function ActiveSessionScreen() {
 
   const handleAddStrike = async () => {
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
       await addStrike();
       Alert.alert('Hug registreret!', `Du har nu ${(session?.strikes || 0) + 1} hug i denne session`);
     } catch (error: any) {
@@ -214,7 +248,7 @@ export default function ActiveSessionScreen() {
 
   if (!isActive || !session) {
     return (
-      <PageLayout>
+      <PageLayout showBottomNav={false}>
         <View style={styles.container}>
           <Modal visible={showStartModal} animationType="slide" transparent={true}>
             <View style={styles.modalOverlay}>
@@ -289,20 +323,85 @@ export default function ActiveSessionScreen() {
   }
 
   return (
-    <PageLayout>
-      <View style={styles.container}>
+    <PageLayout showBottomNav={false}>
+      <View style={[styles.container, oledSaverMode && { backgroundColor: '#000000' }]}>
         {/* Header with session stats */}
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={[styles.header, { backgroundColor: oledSaverMode ? '#0A0A0A' : colors.surface, borderBottomColor: oledSaverMode ? '#222222' : colors.border }]}>
           <View style={styles.headerTop}>
             <View style={styles.sessionInfo}>
-              <Ionicons name={SESSION_TYPES[session.sessionType].icon as any} size={20} color={colors.primary} />
-              <Text style={[styles.sessionTypeText, { color: colors.text }]}>
+              <Ionicons name={SESSION_TYPES[session.sessionType].icon as any} size={20} color={oledSaverMode ? '#00D4B2' : colors.primary} />
+              <Text style={[styles.sessionTypeText, { color: oledSaverMode ? '#FFFFFF' : colors.text }]}>
                 {SESSION_TYPES[session.sessionType].label}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => setShowEndModal(true)} style={styles.endButton}>
-              <Ionicons name="stop-circle-outline" size={24} color={colors.error} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {/* Voice-Log Quick Button */}
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                  setShowVoiceModal(true);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(0, 212, 178, 0.15)',
+                  borderWidth: 1,
+                  borderColor: '#00D4B2',
+                }}
+              >
+                <Ionicons name="mic" size={13} color="#00D4B2" />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#00D4B2' }}>Tale-Log</Text>
+              </TouchableOpacity>
+
+              {/* Night-Vision Stealth Toggle */}
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  setThemeMode(isNightVision ? 'dark' : 'nightVision');
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                  backgroundColor: isNightVision ? '#EF444425' : colors.backgroundLight,
+                  borderWidth: 1,
+                  borderColor: isNightVision ? '#EF4444' : colors.border,
+                }}
+              >
+                <Ionicons name="eye" size={13} color={isNightVision ? '#EF4444' : colors.textSecondary} />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: isNightVision ? '#EF4444' : colors.textSecondary }}>
+                  {isNightVision ? 'Nat-Rødlys' : 'Natsyn'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* OLED / Battery Saver */}
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  setOledSaverMode(!oledSaverMode);
+                }}
+                style={{
+                  padding: 6,
+                  borderRadius: 12,
+                  backgroundColor: oledSaverMode ? '#00D4B220' : colors.backgroundLight,
+                  borderWidth: 1,
+                  borderColor: oledSaverMode ? '#00D4B2' : colors.border,
+                }}
+              >
+                <Ionicons name={oledSaverMode ? 'battery-charging' : 'battery-half'} size={14} color={oledSaverMode ? '#00D4B2' : colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => setShowEndModal(true)} style={styles.endButton}>
+                <Ionicons name="stop-circle-outline" size={24} color={colors.error} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.statsRow}>
@@ -320,6 +419,23 @@ export default function ActiveSessionScreen() {
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Fangster:</Text>
               <Text style={[styles.statValue, { color: colors.success }]}>{session.catches}</Text>
             </View>
+          </View>
+
+          {/* Live Strava-like Friends Sharing Beacon */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#00D4B215',
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+            borderRadius: 8,
+            marginTop: 8,
+            gap: 6,
+          }}>
+            <Ionicons name="radio" size={14} color="#00D4B2" />
+            <Text style={{ fontSize: 12, color: colors.text, fontWeight: '600', flex: 1 }}>
+              Live session aktiv – position & hug deles i realtid med venner
+            </Text>
           </View>
         </View>
 
@@ -353,7 +469,71 @@ export default function ActiveSessionScreen() {
           {/* Page 1: Dashboard */}
           <ScrollView style={[styles.page, { width: SCREEN_WIDTH }]}>
             <View style={styles.pageContent}>
-              <Text style={[styles.pageTitle, { color: colors.text }]}>Dashboard</Text>
+              {/* Trolling & Drift Velocity Cockpit HUD */}
+              <View style={[styles.card, { backgroundColor: colors.surface, borderColor: '#00D4B2', borderWidth: 1 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="speedometer" size={20} color="#00D4B2" />
+                    <Text style={[styles.cardTitle, { color: colors.text, fontWeight: '800' }]}>
+                      Båddrift & Trolling Cockpit
+                    </Text>
+                  </View>
+                  <View style={{
+                    backgroundColor: currentSpeedKnots >= 1.6 && currentSpeedKnots <= 2.6 ? '#10B98120' : '#00D4B220',
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 6,
+                  }}>
+                    <Text style={{
+                      fontSize: 11,
+                      fontWeight: '800',
+                      color: currentSpeedKnots >= 1.6 && currentSpeedKnots <= 2.6 ? '#10B981' : '#00D4B2',
+                    }}>
+                      {currentSpeedKnots >= 1.6 && currentSpeedKnots <= 2.6 ? '🎯 Optimal dørgefart' :
+                       currentSpeedKnots > 2.6 ? '⚡ Høj fart' : '⚓ Drivende'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', marginVertical: 8 }}>
+                  {/* Knots */}
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 34, fontWeight: '900', color: '#00D4B2', letterSpacing: -1 }}>
+                      {currentSpeedKnots.toFixed(1)}
+                    </Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase' }}>
+                      Knob (kn)
+                    </Text>
+                  </View>
+
+                  <View style={{ width: 1, height: 40, backgroundColor: colors.border }} />
+
+                  {/* Km/h */}
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 26, fontWeight: '800', color: colors.text }}>
+                      {currentSpeedKmh.toFixed(1)}
+                    </Text>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>
+                      km/t
+                    </Text>
+                  </View>
+
+                  <View style={{ width: 1, height: 40, backgroundColor: colors.border }} />
+
+                  {/* Heading */}
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                      <Ionicons name="compass" size={16} color={colors.accent} />
+                      <Text style={{ fontSize: 20, fontWeight: '800', color: colors.accent }}>
+                        {heading}°
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>
+                      Kurs
+                    </Text>
+                  </View>
+                </View>
+              </View>
 
               <View style={[styles.card, { backgroundColor: colors.surface }]}>
                 <View style={styles.cardHeader}>
@@ -702,6 +882,13 @@ export default function ActiveSessionScreen() {
             </View>
           </View>
         </Modal>
+
+        {/* Voice Catch Modal */}
+        <VoiceCatchModal
+          visible={showVoiceModal}
+          onClose={() => setShowVoiceModal(false)}
+          onApplyParsedData={handleApplyVoiceCatch}
+        />
       </View>
     </PageLayout>
   );

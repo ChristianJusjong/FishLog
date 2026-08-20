@@ -22,6 +22,7 @@ export async function userRoutes(fastify: FastifyInstance) {
           avatar: true,
           provider: true,
           groqApiKey: true,
+          geminiApiKey: true,
           profileVisibility: true,
           createdAt: true,
           updatedAt: true,
@@ -48,10 +49,11 @@ export async function userRoutes(fastify: FastifyInstance) {
         return reply.code(401).send({ error: 'Unauthorized' });
       }
 
-      const { name, avatar, groqApiKey, profileVisibility } = request.body as {
+      const { name, avatar, groqApiKey, geminiApiKey, profileVisibility } = request.body as {
         name?: string;
         avatar?: string;
         groqApiKey?: string;
+        geminiApiKey?: string;
         profileVisibility?: string;
       };
 
@@ -59,12 +61,18 @@ export async function userRoutes(fastify: FastifyInstance) {
         userId: request.user.userId,
         name,
         avatar: avatar ? 'present' : 'not present',
-        groqApiKey: groqApiKey ? 'present' : 'not present',
+        geminiApiKey: geminiApiKey ? 'present' : 'not present',
         profileVisibility,
       }, 'Update profile request');
 
       // Build update data object
-      const updateData: { name?: string; avatar?: string | null; groqApiKey?: string | null; profileVisibility?: string } = {};
+      const updateData: {
+        name?: string;
+        avatar?: string | null;
+        groqApiKey?: string | null;
+        geminiApiKey?: string | null;
+        profileVisibility?: string;
+      } = {};
 
       if (name !== undefined) {
         updateData.name = name;
@@ -76,8 +84,11 @@ export async function userRoutes(fastify: FastifyInstance) {
       }
 
       if (groqApiKey !== undefined) {
-        // Allow setting groqApiKey to null or empty string to remove it
         updateData.groqApiKey = groqApiKey || null;
+      }
+
+      if (geminiApiKey !== undefined) {
+        updateData.geminiApiKey = geminiApiKey || null;
       }
 
       if (profileVisibility !== undefined) {
@@ -98,6 +109,7 @@ export async function userRoutes(fastify: FastifyInstance) {
           avatar: true,
           provider: true,
           groqApiKey: true,
+          geminiApiKey: true,
           profileVisibility: true,
           createdAt: true,
           updatedAt: true,

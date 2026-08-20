@@ -346,4 +346,42 @@ export async function friendsRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ error: 'Failed to search users' });
     }
   });
+
+  // Remove a friend / delete friendship
+  fastify.delete('/friends/:friendId', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const { friendId } = request.params as { friendId: string };
+      const userId = request.user!.userId;
+
+      if (!friendId) {
+        return reply.code(400).send({ error: 'friendId is required' });
+      }
+
+      // Find friendship (in either direction)
+      const friendship = await prisma.friendship.findFirst({
+        where: {
+          OR: [
+            { requesterId: userId, accepterId: friendId },
+            { requesterId: friendId, accepterId: userId }
+          ]
+        }
+      });
+
+      if (!friendship) {
+        return reply.code(404).send({ error: 'Friendship not found' });
+      }
+
+      // Delete friendship
+      await prisma.friendship.delete({
+        where: { id: friendship.id }
+      });
+
+      return reply.send({ message: 'Friend removed successfully' });
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to remove friend' });
+    }
+  });
 }

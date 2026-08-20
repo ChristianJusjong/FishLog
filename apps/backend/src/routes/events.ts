@@ -16,7 +16,7 @@ export async function eventsRoutes(fastify: FastifyInstance) {
       const { status } = request.query as { status?: 'upcoming' | 'ongoing' | 'past' };
 
       const now = new Date();
-      let whereClause: any = {
+      const whereClause: any = {
         OR: [
           { visibility: 'public' },
           { ownerId: request.user.userId },

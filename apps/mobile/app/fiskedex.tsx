@@ -13,9 +13,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { useTheme } from '../contexts/ThemeContext';
+import ScreenLoading from '../components/ScreenLoading';
+import PageLayout from '../components/PageLayout';
+import FishSpeciesIcon from '../components/FishSpeciesIcon';
 import {
   getLocationsForSpecies,
   FISH_SPECIES_DB,
@@ -330,7 +334,7 @@ export default function FiskeDexScreen() {
 
   const fetchFiskeDex = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/catches/fiskedex`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -391,12 +395,9 @@ export default function FiskeDexScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Indlæser FiskeDex...</Text>
-        </View>
-      </SafeAreaView>
+      <PageLayout>
+        <ScreenLoading message="Indlæser FiskeDex..." />
+      </PageLayout>
     );
   }
 
@@ -477,18 +478,22 @@ export default function FiskeDexScreen() {
             ]}
             activeOpacity={species.caught ? 0.7 : 1}
           >
-            {/* Photo or Placeholder */}
+            {/* Photo or Realistic Silhouette */}
             <View style={styles.photoContainer}>
               {species.caught && species.photo ? (
                 <Image source={{ uri: species.photo }} style={styles.photo} />
               ) : (
-                <View style={styles.placeholderPhoto}>
-                  <Text style={styles.placeholderEmoji}>{species.caught ? species.emoji : '❓'}</Text>
+                <View style={[styles.placeholderPhoto, { backgroundColor: species.caught ? 'rgba(0, 212, 178, 0.12)' : 'rgba(0, 0, 0, 0.35)' }]}>
+                  <FishSpeciesIcon
+                    speciesId={species.name}
+                    size={64}
+                    color={species.caught ? '#00D4B2' : 'rgba(255, 255, 255, 0.3)'}
+                  />
                 </View>
               )}
               {!species.caught && (
                 <View style={styles.lockedOverlay}>
-                  <Ionicons name="lock-closed" size={32} color={colors.textTertiary} />
+                  <Ionicons name="lock-closed" size={26} color="rgba(255, 255, 255, 0.7)" />
                 </View>
               )}
             </View>
@@ -496,7 +501,7 @@ export default function FiskeDexScreen() {
             {/* Species Info */}
             <View style={styles.speciesInfo}>
               <Text style={[styles.speciesName, !species.caught && styles.speciesNameLocked]}>
-                {species.caught ? species.name : '???'}
+                {species.name} {!species.caught && '🔒'}
               </Text>
 
               {species.caught && (

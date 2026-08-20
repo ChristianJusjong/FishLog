@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert, TextInput, Platform, ActivityIndicator, RefreshControl, Modal, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,8 +11,14 @@ import PageLayout from '../components/PageLayout';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FAB_STYLE, FAB, GRADIENTS } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useWebSocket } from '@/contexts/WebSocketContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 
 import { API_URL } from '@/config/api';
+import CatchCard from '../components/CatchCard';
+import CatchCardSkeleton from '../components/CatchCardSkeleton';
+import ScreenLoading from '../components/ScreenLoading';
+import { useCatchesFeed, FeedCatch } from '../hooks/useCatches';
 
 interface User {
   id: string;
@@ -20,33 +26,6 @@ interface User {
   avatar?: string;
 }
 
-interface Comment {
-  id: string;
-  userId: string;
-  text: string;
-  createdAt: string;
-  user: User;
-}
-
-interface FeedCatch {
-  id: string;
-  species: string;
-  lengthCm?: number;
-  weightKg?: number;
-  bait?: string;
-  rig?: string;
-  technique?: string;
-  notes?: string;
-  photoUrl?: string;
-  latitude?: number;
-  longitude?: number;
-  createdAt: string;
-  user: User;
-  likesCount: number;
-  commentsCount: number;
-  isLikedByMe: boolean;
-  comments: Comment[];
-}
 
 interface Message {
   id: string;
@@ -82,25 +61,40 @@ export default function FeedScreen() {
   const { colors } = useTheme();
   const styles = useStyles();
   const { connected, addEventListener } = useWebSocket();
+  const { logout } = useAuth();
+  const authErrorShown = useRef(false);
   const [activeTab, setActiveTab] = useState<'catches' | 'messages'>('catches');
-  const [catches, setCatches] = useState<FeedCatch[]>([]);
+  const [selectedSpeciesFilter, setSelectedSpeciesFilter] = useState<string>('Alle');
+
+  const SPECIES_FILTERS = ['Alle', 'Havørred', 'Gedde', 'Aborre', 'Sandart', 'Torsk', 'Laks', 'Fladfisk'];
+
+  const {
+    data: catchesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch: refetchCatches,
+    isLoading: catchesLoading,
+    isRefetching: catchesRefetching
+  } = useCatchesFeed();
+
+  const catches = catchesData?.pages.flatMap(p => p.catches) || [];
+
+  const filteredCatches = useMemo(() => {
+    if (selectedSpeciesFilter === 'Alle') return catches;
+    return catches.filter(c => c.species?.toLowerCase().includes(selectedSpeciesFilter.toLowerCase()));
+  }, [catches, selectedSpeciesFilter]);
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
-  const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
-  const [locations, setLocations] = useState<{ [key: string]: string }>({});
-  const [refreshing, setRefreshing] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(true);
+  const [messagesRefreshing, setMessagesRefreshing] = useState(false);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [locationCache, setLocationCache] = useState<Map<string, string>>(new Map());
 
   useFocusEffect(
     React.useCallback(() => {
       if (activeTab === 'catches') {
-        fetchFeed();
+        refetchCatches();
       } else {
         fetchConversations();
         fetchFriends();
@@ -108,78 +102,7 @@ export default function FeedScreen() {
     }, [activeTab])
   );
 
-  // Load location cache on mount
-  useEffect(() => {
-    const loadLocationCache = async () => {
-      try {
-        const cachedData = await AsyncStorage.getItem(LOCATION_CACHE_KEY);
-        if (cachedData) {
-          const parsed = JSON.parse(cachedData);
-          setLocationCache(new Map(Object.entries(parsed)));
-        }
-      } catch (error) {
-        console.error('Failed to load location cache:', error);
-      }
-    };
-    loadLocationCache();
-  }, []);
 
-  const getLocationName = useCallback(async (lat: number, lng: number): Promise<string> => {
-    // Round to 2 decimal places for cache key (approx 1km precision)
-    const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
-
-    // Check memory cache
-    if (locationCache.has(key)) {
-      return locationCache.get(key)!;
-    }
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=da`,
-        {
-          headers: {
-            'User-Agent': 'FishLog App'
-          }
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const address = data.address;
-
-        // Try to get city name (multiple possible fields)
-        const city = address.city || address.town || address.village || address.municipality;
-        const country = address.country;
-
-        let locationName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        if (city && country) {
-          locationName = `${city}, ${country}`;
-        } else if (city) {
-          locationName = city;
-        } else if (country) {
-          locationName = country;
-        }
-
-        // Update cache
-        const newCache = new Map(locationCache);
-        newCache.set(key, locationName);
-        setLocationCache(newCache);
-
-        // Persist to AsyncStorage (async, don't block)
-        AsyncStorage.getItem(LOCATION_CACHE_KEY).then(cachedData => {
-          const cache = cachedData ? JSON.parse(cachedData) : {};
-          cache[key] = locationName;
-          AsyncStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(cache));
-        }).catch(err => console.error('Failed to save location cache:', err));
-
-        return locationName;
-      }
-    } catch (error) {
-      console.error('Failed to get location name:', error);
-    }
-
-    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-  }, [locationCache]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -201,92 +124,12 @@ export default function FeedScreen() {
     });
   };
 
-  const fetchFeed = async (pageNum: number = 1, isRefreshing = false) => {
-    if (pageNum === 1 && !isRefreshing) {
-      setLoading(true);
-    } else if (pageNum > 1) {
-      setLoadingMore(true);
-    }
-
-    try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-
-      const response = await fetch(`${API_URL}/feed?page=${pageNum}&limit=20`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const newCatches = data.catches || data; // Handle both old and new API response format
-
-        if (pageNum === 1) {
-          setCatches(newCatches);
-        } else {
-          setCatches(prev => [...prev, ...newCatches]);
-        }
-
-        setHasMore(data.hasMore !== undefined ? data.hasMore : newCatches.length >= 20);
-        setPage(pageNum);
-
-        // Fetch location names for catches with coordinates (batch with delay to avoid rate limiting)
-        newCatches.forEach((catch_: FeedCatch, index: number) => {
-          if (catch_.latitude && catch_.longitude) {
-            // Stagger requests to avoid rate limiting (100ms between each)
-            setTimeout(async () => {
-              const locationName = await getLocationName(catch_.latitude!, catch_.longitude!);
-              setLocations(prev => ({ ...prev, [catch_.id]: locationName }));
-            }, index * 100);
-          }
-        });
-      } else {
-        // Try to get error details from response
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || `HTTP ${response.status}`;
-
-        console.error('Feed fetch failed:', response.status, errorData);
-
-        if (Platform.OS === 'web') {
-          alert(`Fejl: Kunne ikke hente feed\n${errorMessage}`);
-        } else {
-          Alert.alert('Fejl', `Kunne ikke hente feed`, [
-            { text: 'Annuller', style: 'cancel' },
-            { text: 'Prøv igen', onPress: () => fetchFeed(pageNum, isRefreshing) }
-          ]);
-        }
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Ukendt fejl';
-      console.error('Feed fetch error:', error);
-
-      const isNetworkError = errorMessage.includes('Network') || errorMessage.includes('Failed to fetch');
-
-      if (Platform.OS === 'web') {
-        alert(`Fejl: ${errorMessage}`);
-      } else {
-        Alert.alert(
-          isNetworkError ? 'Ingen forbindelse' : 'Netværksfejl',
-          isNetworkError ? 'Tjek din internetforbindelse og prøv igen' : errorMessage,
-          [
-            { text: 'Annuller', style: 'cancel' },
-            { text: 'Prøv igen', onPress: () => fetchFeed(pageNum, isRefreshing) }
-          ]
-        );
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-    }
-  };
-
   const fetchConversations = async (isRefreshing = false) => {
     if (!isRefreshing) {
-      setLoading(true);
+      setMessagesLoading(true);
     }
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/messages/conversations`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -317,14 +160,14 @@ export default function FeedScreen() {
         Alert.alert('Netværksfejl', errorMessage);
       }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setMessagesLoading(false);
+      setMessagesRefreshing(false);
     }
   };
 
   const fetchFriends = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const userId = await AsyncStorage.getItem('userId');
       const response = await fetch(`${API_URL}/friends`, {
         headers: {
@@ -352,19 +195,17 @@ export default function FeedScreen() {
   };
 
   const onRefresh = async () => {
-    setRefreshing(true);
-    setPage(1);
-    setHasMore(true);
     if (activeTab === 'catches') {
-      await fetchFeed(1, true);
+      await refetchCatches();
     } else {
+      setMessagesRefreshing(true);
       await fetchConversations(true);
     }
   };
 
   const loadMore = () => {
-    if (!loadingMore && hasMore && !loading) {
-      fetchFeed(page + 1);
+    if (activeTab === 'catches' && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
   };
 
@@ -374,33 +215,17 @@ export default function FeedScreen() {
 
     // Listen for new catches in feed
     const unsubscribeNewCatch = addEventListener('new_catch', (data) => {
-      setCatches((prevCatches) => [data.catch, ...prevCatches]);
+      refetchCatches(); // Simple: just refetch the feed query when there's an event
     });
 
     // Listen for new likes
     const unsubscribeNewLike = addEventListener('new_like', (data) => {
-      setCatches((prevCatches) =>
-        prevCatches.map((c) =>
-          c.id === data.catchId
-            ? { ...c, likesCount: c.likesCount + 1 }
-            : c
-        )
-      );
+      refetchCatches();
     });
 
     // Listen for new comments
     const unsubscribeNewComment = addEventListener('new_comment', (data) => {
-      setCatches((prevCatches) =>
-        prevCatches.map((c) =>
-          c.id === data.catchId
-            ? {
-              ...c,
-              commentsCount: c.commentsCount + 1,
-              comments: [...(c.comments || []), data.comment],
-            }
-            : c
-        )
-      );
+      refetchCatches();
     });
 
     // Listen for new messages
@@ -420,295 +245,52 @@ export default function FeedScreen() {
     };
   }, [connected, activeTab, addEventListener]);
 
-  const toggleLike = async (catchId: string) => {
-    try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      const catch_ = catches.find(c => c.id === catchId);
-
-      if (!catch_) return;
-
-      const method = catch_.isLikedByMe ? 'DELETE' : 'POST';
-      const response = await fetch(`${API_URL}/catches/${catchId}/like`, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      if (response.ok) {
-        // Update local state
-        setCatches(prevCatches =>
-          prevCatches.map(c =>
-            c.id === catchId
-              ? {
-                ...c,
-                isLikedByMe: !c.isLikedByMe,
-                likesCount: c.isLikedByMe ? c.likesCount - 1 : c.likesCount + 1
-              }
-              : c
-          )
-        );
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        if (Platform.OS === 'web') {
-          alert(`Fejl: ${errorData.error || 'Status: ' + response.status}`);
-        } else {
-          Alert.alert('Fejl', errorData.error || `Status: ${response.status}`);
-        }
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Ukendt fejl';
-      if (Platform.OS === 'web') {
-        alert(`Fejl: ${errorMessage}`);
-      } else {
-        Alert.alert('Fejl', errorMessage);
-      }
-    }
-  };
-
-  const addComment = async (catchId: string) => {
-    const text = commentText[catchId]?.trim();
-
-    if (!text) {
-      if (Platform.OS === 'web') {
-        alert('Kommentar kan ikke være tom');
-      } else {
-        Alert.alert('Fejl', 'Kommentar kan ikke være tom');
-      }
-      return;
-    }
-
-    try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-
-      const response = await fetch(`${API_URL}/catches/${catchId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text }),
-      });
-
-      if (response.ok) {
-        const newComment = await response.json();
-
-        // Update local state
-        setCatches(prevCatches =>
-          prevCatches.map(c =>
-            c.id === catchId
-              ? {
-                ...c,
-                comments: [...c.comments, newComment],
-                commentsCount: c.commentsCount + 1
-              }
-              : c
-          )
-        );
-
-        // Clear comment input
-        setCommentText(prev => ({ ...prev, [catchId]: '' }));
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        if (Platform.OS === 'web') {
-          alert(`Fejl: ${errorData.error || 'Status: ' + response.status}`);
-        } else {
-          Alert.alert('Fejl', errorData.error || `Status: ${response.status}`);
-        }
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Ukendt fejl';
-      if (Platform.OS === 'web') {
-        alert(`Fejl: ${errorMessage}`);
-      } else {
-        Alert.alert('Fejl', errorMessage);
-      }
-    }
-  };
-
-  const toggleShowComments = (catchId: string) => {
-    setShowComments(prev => ({ ...prev, [catchId]: !prev[catchId] }));
-  };
-
   const renderCatchItem = useCallback(({ item: catch_ }: { item: FeedCatch }) => (
-    <TouchableOpacity
-      key={catch_.id}
-      style={[styles.catchCard, { backgroundColor: colors.surface }]}
-      onPress={() => router.push(`/catch-detail?id=${catch_.id}`)}
-      activeOpacity={0.9}
-    >
-      {/* User info */}
-      <View style={styles.userHeader}>
-        <TouchableOpacity
-          style={styles.userInfo}
-          onPress={() => router.push(`/user-profile?userId=${catch_.user.id}`)}
-          activeOpacity={0.7}
-        >
-          {catch_.user.avatar ? (
-            <Image source={{ uri: catch_.user.avatar }} style={styles.userAvatar} contentFit="cover" cachePolicy="memory-disk" />
-          ) : (
-            <View style={[styles.userAvatarPlaceholder, { backgroundColor: colors.primaryLight + '20' }]}>
-              <Ionicons name="person" size={20} color={colors.primary} />
-            </View>
-          )}
-          <Text style={[styles.userName, { color: colors.text }]}>{catch_.user.name}</Text>
-        </TouchableOpacity>
-        <Text style={[styles.catchDate, { color: colors.textSecondary }]}>
-          {new Date(catch_.createdAt).toLocaleDateString('da-DK')}
-        </Text>
-      </View>
+    <CatchCard catchItem={catch_} colors={colors} styles={styles} />
+  ), [colors]);
 
-      {/* Catch photo */}
-      {catch_.photoUrl && (
-        <Image
-          source={{ uri: catch_.photoUrl }}
-          style={[styles.catchImage, { backgroundColor: colors.backgroundLight }]}
-          contentFit="contain"
-          cachePolicy="memory-disk"
-          transition={200}
-        />
-      )}
-
-      {/* Catch details */}
-      <View style={styles.catchContent}>
-        <Text style={[styles.catchSpecies, { color: colors.text }]}>{catch_.species}</Text>
-
-        <View style={styles.catchDetails}>
-          {catch_.lengthCm && (
-            <View style={[styles.catchDetailBadge, { backgroundColor: colors.primaryLight + '20' }]}>
-              <Ionicons name="resize-outline" size={16} color={colors.primary} />
-              <Text style={[styles.catchDetailText, { color: colors.primary }]}>{catch_.lengthCm} cm</Text>
-            </View>
-          )}
-          {catch_.weightKg && (
-            <View style={[styles.catchDetailBadge, { backgroundColor: colors.primaryLight + '20' }]}>
-              <Ionicons name="scale-outline" size={16} color={colors.primary} />
-              <Text style={[styles.catchDetailText, { color: colors.primary }]}>{Math.round(catch_.weightKg * 1000)} g</Text>
-            </View>
-          )}
-        </View>
-
-        {catch_.bait && (
-          <View style={styles.catchInfoRow}>
-            <Ionicons name="bug-outline" size={16} color={colors.textSecondary} />
-            <Text style={[styles.catchInfo, { color: colors.textSecondary }]}>Agn: {catch_.bait}</Text>
-          </View>
-        )}
-        {catch_.technique && (
-          <View style={styles.catchInfoRow}>
-            <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
-            <Text style={[styles.catchInfo, { color: colors.textSecondary }]}>Teknik: {catch_.technique}</Text>
-          </View>
-        )}
-        {catch_.notes && (
-          <Text style={[styles.catchNotes, { color: colors.text, backgroundColor: colors.backgroundLight }]}>{catch_.notes}</Text>
-        )}
-        {catch_.latitude && catch_.longitude && (
-          <View style={styles.catchInfoRow}>
-            <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
-            <Text style={[styles.catchInfo, { color: colors.textSecondary }]}>
-              {locations[catch_.id] || 'Henter sted...'}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Actions */}
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: colors.backgroundLight }]}
-          onPress={() => toggleLike(catch_.id)}
-          accessible={true}
-          accessibilityLabel={catch_.isLikedByMe ? `Fjern like. ${catch_.likesCount} likes` : `Like fangst. ${catch_.likesCount} likes`}
-          accessibilityRole="button"
-          accessibilityState={{ selected: catch_.isLikedByMe }}
-        >
-          <Ionicons
-            name={catch_.isLikedByMe ? "heart" : "heart-outline"}
-            size={22}
-            color={catch_.isLikedByMe ? colors.error : colors.iconDefault}
-          />
-          <Text style={[styles.actionText, { color: catch_.isLikedByMe ? colors.text : colors.textSecondary }]}>
-            {catch_.likesCount}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: colors.backgroundLight }]}
-          onPress={() => toggleShowComments(catch_.id)}
-          accessible={true}
-          accessibilityLabel={`Vis kommentarer. ${catch_.commentsCount} kommentarer`}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: showComments[catch_.id] }}
-        >
-          <Ionicons
-            name={showComments[catch_.id] ? "chatbubble" : "chatbubble-outline"}
-            size={22}
-            color={showComments[catch_.id] ? colors.accent : colors.iconDefault}
-          />
-          <Text style={[styles.actionText, { color: showComments[catch_.id] ? colors.text : colors.textSecondary }]}>
-            {catch_.commentsCount}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Comments section */}
-      {showComments[catch_.id] && (
-        <View style={[styles.commentsSection, { backgroundColor: colors.backgroundLight }]}>
-          {catch_.comments.map((comment) => (
-            <View key={comment.id} style={[styles.comment, { backgroundColor: colors.surface }]}>
-              <TouchableOpacity onPress={() => router.push(`/user-profile?userId=${comment.userId}`)}>
-                <Text style={[styles.commentUser, { color: colors.text }]}>{comment.user.name}</Text>
-              </TouchableOpacity>
-              <Text style={[styles.commentText, { color: colors.text }]}>{comment.text}</Text>
-              <Text style={[styles.commentDate, { color: colors.textTertiary }]}>
-                {new Date(comment.createdAt).toLocaleDateString('da-DK')}
-              </Text>
-            </View>
-          ))}
-
-          {/* Add comment input */}
-          <View style={styles.addCommentContainer}>
-            <TextInput
-              style={[styles.commentInput, { backgroundColor: colors.surface, color: colors.text }]}
-              placeholder="Skriv en kommentar..."
-              placeholderTextColor={colors.textTertiary}
-              value={commentText[catch_.id] || ''}
-              onChangeText={(text) => setCommentText(prev => ({ ...prev, [catch_.id]: text }))}
-              multiline
-              accessible={true}
-              accessibilityLabel="Kommentar felt"
-              accessibilityHint="Skriv din kommentar her"
-            />
-            <TouchableOpacity
-              style={[styles.sendButton, { backgroundColor: colors.accent }]}
-              onPress={() => addComment(catch_.id)}
-              accessible={true}
-              accessibilityLabel="Send kommentar"
-              accessibilityRole="button"
-            >
-              <Text style={[styles.sendButtonText, { color: colors.textInverse }]}>Send</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </TouchableOpacity>
-  ), [colors, locations, showComments, commentText, router, toggleLike, toggleShowComments, addComment]);
-
-  if (loading) {
+  if (catchesLoading && activeTab === 'catches') {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <LinearGradient
-          colors={[colors.accent, colors.accentDark || '#D4880F']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.logoGradient}
-        >
-          <Ionicons name="fish" size={40} color={colors.primary} />
-        </LinearGradient>
-        <ActivityIndicator size="large" color={colors.accent} style={styles.loader} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Indlæser feed...</Text>
-      </View>
+      <PageLayout>
+        <View style={[styles.safeArea, { backgroundColor: colors.backgroundLight }]}>
+          {/* Weather & Location Card */}
+          <WeatherLocationCard showLocation={true} showWeather={true} />
+
+          {/* Tab Navigation Placeholder */}
+          <View style={styles.tabContainer}>
+            <View style={[styles.tab, styles.activeTab]}>
+              <View style={styles.tabContent}>
+                <Ionicons name="fish" size={20} color={colors.accent} style={styles.tabIcon} />
+                <Text style={styles.activeTabText}>Fangster</Text>
+              </View>
+              <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />
+            </View>
+            <View style={styles.tab}>
+              <View style={styles.tabContent}>
+                <Ionicons name="chatbubbles-outline" size={20} color={colors.textSecondary} style={styles.tabIcon} />
+                <Text style={styles.tabText}>Beskeder</Text>
+              </View>
+            </View>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={[styles.container, { backgroundColor: colors.backgroundLight }]}
+            showsVerticalScrollIndicator={false}
+          >
+            <CatchCardSkeleton />
+            <CatchCardSkeleton />
+            <CatchCardSkeleton />
+          </ScrollView>
+        </View>
+      </PageLayout>
+    );
+  }
+
+  if (messagesLoading && activeTab === 'messages') {
+    return (
+      <PageLayout>
+        <ScreenLoading message="Indlæser samtaler..." />
+      </PageLayout>
     );
   }
 
@@ -727,13 +309,20 @@ export default function FeedScreen() {
             accessibilityLabel="Vis fangster feed"
             accessibilityRole="button"
             accessibilityState={{ selected: activeTab === 'catches' }}
+            activeOpacity={0.8}
           >
             <View style={styles.tabContent}>
-              <Text style={styles.tabEmoji}>🐟</Text>
+              <Ionicons
+                name={activeTab === 'catches' ? 'fish' : 'fish-outline'}
+                size={20}
+                color={activeTab === 'catches' ? colors.accent : colors.textSecondary}
+                style={styles.tabIcon}
+              />
               <Text style={[styles.tabText, activeTab === 'catches' && styles.activeTabText]}>
                 Fangster
               </Text>
             </View>
+            {activeTab === 'catches' && <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />}
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'messages' && styles.activeTab]}
@@ -742,26 +331,66 @@ export default function FeedScreen() {
             accessibilityLabel="Vis beskeder"
             accessibilityRole="button"
             accessibilityState={{ selected: activeTab === 'messages' }}
+            activeOpacity={0.8}
           >
             <View style={styles.tabContent}>
-              <Text style={styles.tabEmoji}>💬</Text>
+              <Ionicons
+                name={activeTab === 'messages' ? 'chatbubbles' : 'chatbubbles-outline'}
+                size={20}
+                color={activeTab === 'messages' ? colors.accent : colors.textSecondary}
+                style={styles.tabIcon}
+              />
               <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
                 Beskeder
               </Text>
             </View>
+            {activeTab === 'messages' && <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />}
           </TouchableOpacity>
         </View>
 
+        {activeTab === 'catches' && (
+          <View style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {SPECIES_FILTERS.map((sp) => {
+                const isSelected = selectedSpeciesFilter === sp;
+                return (
+                  <TouchableOpacity
+                    key={sp}
+                    onPress={() => setSelectedSpeciesFilter(sp)}
+                    activeOpacity={0.8}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 6,
+                      borderRadius: 16,
+                      backgroundColor: isSelected ? colors.accent : colors.backgroundLight,
+                      borderWidth: 1,
+                      borderColor: isSelected ? colors.accent : colors.border,
+                    }}
+                  >
+                    <Text style={{
+                      fontSize: 13,
+                      fontWeight: isSelected ? '700' : '500',
+                      color: isSelected ? colors.primary : colors.textSecondary,
+                    }}>
+                      {sp}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
         {activeTab === 'catches' ? (
           <FlatList
-            data={catches}
+            data={filteredCatches}
             renderItem={renderCatchItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={[styles.container, { backgroundColor: colors.backgroundLight }]}
             showsVerticalScrollIndicator={true}
             refreshControl={
               <RefreshControl
-                refreshing={refreshing}
+                refreshing={catchesRefetching}
                 onRefresh={onRefresh}
                 tintColor={colors.accent}
                 colors={[colors.accent]}
@@ -779,7 +408,7 @@ export default function FeedScreen() {
               </View>
             }
             ListFooterComponent={
-              loadingMore ? (
+              isFetchingNextPage ? (
                 <View style={styles.loadingMore}>
                   <ActivityIndicator size="small" color={colors.accent} />
                 </View>
@@ -796,7 +425,7 @@ export default function FeedScreen() {
             showsVerticalScrollIndicator={true}
             refreshControl={
               <RefreshControl
-                refreshing={refreshing}
+                refreshing={messagesRefreshing}
                 onRefresh={onRefresh}
                 tintColor={colors.accent}
                 colors={[colors.accent]}
@@ -1197,39 +826,47 @@ const useStyles = () => {
     tabContainer: {
       flexDirection: 'row',
       backgroundColor: colors.surface,
-      paddingHorizontal: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     tab: {
       flex: 1,
-      paddingVertical: 16,
+      paddingVertical: SPACING.md,
       alignItems: 'center',
       justifyContent: 'center',
-      borderBottomWidth: 3,
-      borderBottomColor: 'transparent',
       minHeight: 48,
-      backgroundColor: colors.surface,
+      position: 'relative',
     },
     activeTab: {
-      borderBottomColor: colors.primary,
+      // active style
     },
     tabContent: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: SPACING.xs,
     },
-    tabEmoji: {
-      fontSize: 20,
-      marginRight: 6,
+    tabIcon: {
+      marginRight: 4,
+    },
+    activeIndicator: {
+      position: 'absolute',
+      bottom: 0,
+      left: SPACING.xl,
+      right: SPACING.xl,
+      height: 3,
+      borderRadius: 1.5,
     },
     tabText: {
-      fontSize: 16,
-      fontWeight: '500',
+      fontSize: 15,
+      fontWeight: '600',
       color: colors.textSecondary,
     },
     activeTabText: {
-      fontSize: 16,
+      fontSize: 15,
       fontWeight: '700',
-      color: colors.primary,
+      color: colors.accent,
     },
     createEventButton: {
       backgroundColor: colors.primary,

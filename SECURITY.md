@@ -114,6 +114,7 @@ Before submitting a PR, ensure:
 - Database encryption at rest
 - Audit logging
 - Intrusion detection
+- **Critical Patching:** Ensure `react` is >= 19.2.1 to prevent CVE-2025-55182 (React2Shell).
 
 ## Security Headers
 

@@ -3,10 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GRADIENTS } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useNavConfig } from '@/contexts/NavConfigContext';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import i18n from '../i18n';
@@ -16,8 +18,9 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.u
 export default function SettingsScreen() {
   const router = useRouter();
   const { theme, toggleTheme, colors, isDark } = useTheme();
+  const { setIsModalOpen } = useNavConfig();
   const styles = useStyles();
-  const [groqApiKey, setGroqApiKey] = useState('');
+  const [geminiApiKey, setGeminiApiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [savedKey, setSavedKey] = useState('');
   const [profileVisibility, setProfileVisibility] = useState('public');
@@ -28,7 +31,7 @@ export default function SettingsScreen() {
 
   const loadSavedApiKey = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/users/me`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -37,9 +40,10 @@ export default function SettingsScreen() {
 
       if (response.ok) {
         const userData = await response.json();
-        if (userData.groqApiKey) {
-          setSavedKey(userData.groqApiKey);
-          setGroqApiKey(userData.groqApiKey);
+        const key = userData.geminiApiKey || userData.groqApiKey;
+        if (key) {
+          setSavedKey(key);
+          setGeminiApiKey(key);
         }
         if (userData.profileVisibility) {
           setProfileVisibility(userData.profileVisibility);
@@ -50,8 +54,8 @@ export default function SettingsScreen() {
     }
   };
 
-  const openGroqConsole = async () => {
-    const url = 'https://console.groq.com';
+  const openGeminiConsole = async () => {
+    const url = 'https://aistudio.google.com/app/apikey';
     try {
       const supported = await Linking.canOpenURL(url);
       if (supported) {
@@ -69,7 +73,7 @@ export default function SettingsScreen() {
   };
 
   const handleSaveApiKey = async () => {
-    if (!groqApiKey.trim()) {
+    if (!geminiApiKey.trim()) {
       if (Platform.OS === 'web') {
         alert('Indtast venligst en API key');
       } else {
@@ -80,7 +84,7 @@ export default function SettingsScreen() {
 
     setLoading(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/users/me`, {
         method: 'PATCH',
         headers: {
@@ -88,12 +92,13 @@ export default function SettingsScreen() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          groqApiKey: groqApiKey.trim(),
+          geminiApiKey: geminiApiKey.trim(),
+          groqApiKey: geminiApiKey.trim(),
         }),
       });
 
       if (response.ok) {
-        setSavedKey(groqApiKey.trim());
+        setSavedKey(geminiApiKey.trim());
         if (Platform.OS === 'web') {
           alert(i18n.t('settings.apiKeySaved'));
         } else {
@@ -137,7 +142,7 @@ export default function SettingsScreen() {
 
   const handleProfileVisibilityChange = async (newVisibility: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/users/me`, {
         method: 'PATCH',
         headers: {
@@ -173,24 +178,24 @@ export default function SettingsScreen() {
         <View style={styles.container}>
           <WeatherLocationCard />
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Groq API Key Section */}
+        {/* Google Gemini API Key Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="key" size={24} color={colors.primary} style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>{i18n.t('settings.groqApiKey')}</Text>
+            <Text style={styles.sectionTitle}>{i18n.t('settings.geminiApiKey')}</Text>
           </View>
 
           <Text style={styles.sectionDescription}>
-            Indtast din Groq API key for at aktivere AI-funktioner som intelligent fiskeanbefalinger og analyser.
+            Indtast din Google Gemini API key for at aktivere AI-funktioner som intelligent fiskeanbefalinger, artsidentifikation og analyser.
           </Text>
 
           <View style={styles.inputContainer}>
             <Ionicons name="lock-closed" size={20} color={colors.textSecondary} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              value={groqApiKey}
-              onChangeText={setGroqApiKey}
-              placeholder={i18n.t('settings.groqApiKeyPlaceholder')}
+              value={geminiApiKey}
+              onChangeText={setGeminiApiKey}
+              placeholder={i18n.t('settings.geminiApiKeyPlaceholder')}
               placeholderTextColor={colors.textTertiary}
               secureTextEntry={true}
               autoCapitalize="none"
@@ -226,22 +231,22 @@ export default function SettingsScreen() {
         </View>
 
         {/* Info Section */}
-        <TouchableOpacity style={styles.infoCard} onPress={openGroqConsole} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.infoCard} onPress={openGeminiConsole} activeOpacity={0.7}>
           <View style={styles.infoHeader}>
             <Ionicons name="information-circle" size={24} color={colors.accent} style={{ marginRight: 8 }} />
-            <Text style={styles.infoTitle}>Sådan får du en Groq API key</Text>
+            <Text style={styles.infoTitle}>Sådan får du en Google Gemini API key</Text>
             <Ionicons name="open-outline" size={20} color={colors.accent} style={{ marginLeft: 'auto' }} />
           </View>
           <Text style={styles.infoText}>
-            1. Gå til https://console.groq.com{'\n'}
-            2. Opret en gratis konto{'\n'}
-            3. Gå til "API Keys" i menuen{'\n'}
-            4. Klik "Create API Key"{'\n'}
+            1. Gå til https://aistudio.google.com/app/apikey{'\n'}
+            2. Log ind med din Google konto{'\n'}
+            3. Klik "Create API key"{'\n'}
+            4. Vælg eller opret et Google Cloud projekt{'\n'}
             5. Kopier nøglen og indsæt den her
           </Text>
           <View style={styles.clickHintContainer}>
             <Ionicons name="hand-left" size={16} color={colors.accent} style={{ marginRight: 6 }} />
-            <Text style={styles.clickHintText}>Tryk her for at åbne Groq Console</Text>
+            <Text style={styles.clickHintText}>Tryk her for at åbne Google AI Studio</Text>
           </View>
         </TouchableOpacity>
 
@@ -358,6 +363,30 @@ export default function SettingsScreen() {
               <Text style={[styles.themeOptionText, { color: isDark ? colors.textPrimary : colors.textSecondary }]}>Mørk tilstand</Text>
             </View>
           </View>
+        </View>
+
+        {/* Navigation Bar Customization Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="options" size={24} color={colors.accent} style={styles.sectionIcon} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Menulinje & Genveje</Text>
+          </View>
+          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+            Vælg hvilke 4 genveje du vil have vist i bundbaren (Kort, AI Guide, Hot Spots, Fangster, Venner mv.).
+          </Text>
+          <TouchableOpacity
+            style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.accent + '30', borderWidth: 1 }]}
+            onPress={() => setIsModalOpen(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="options" size={20} color={colors.accent} style={{ marginRight: 12 }} />
+              <Text style={[styles.menuItemText, { color: colors.accent, fontWeight: '700' }]}>
+                Tilpas Bundmenuen
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.accent} />
+          </TouchableOpacity>
         </View>
 
         {/* Privacy & Safety Section */}

@@ -56,7 +56,7 @@ export class RateLimitError extends AppError {
 
 // Global error handler plugin
 export function errorHandler(fastify: FastifyInstance) {
-  fastify.setErrorHandler((error, request, reply) => {
+  fastify.setErrorHandler((error: any, request, reply) => {
     // Log error
     fastify.log.error(error);
 

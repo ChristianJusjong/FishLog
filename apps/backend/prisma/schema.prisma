@@ -31,7 +31,8 @@ model User {
   provider                 String? // 'google', 'facebook', 'email', or 'test'
   providerId               String? // OAuth provider's user ID
   refreshToken             String?                   @db.Text
-  groqApiKey               String? // User's personal Groq API key
+  groqApiKey               String? // Legacy Groq API key
+  geminiApiKey             String? // User's personal Google Gemini API key
   // Privacy Settings
   profileVisibility        String                    @default("public") @map("profile_visibility") // 'public', 'friends', 'private'
   // XP & Level System
@@ -844,21 +845,63 @@ model PersonalBest {
 
 // Weather Data for Catches
 model WeatherData {
-  id            String   @id @default(cuid())
-  catchId       String   @unique @map("catch_id")
-  catch         Catch    @relation(fields: [catchId], references: [id], onDelete: Cascade)
-  temperature   Float? // Celsius
-  windSpeed     Float? // km/h
-  windDirection String? // N, NE, E, SE, S, SW, W, NW
-  pressure      Float? // hPa
-  humidity      Float? // %
-  conditions    String? // 'clear', 'cloudy', 'rainy', etc.
-  moonPhase     String? // 'new', 'waxing_crescent', 'first_quarter', 'waxing_gibbous', 'full', 'waning_gibbous', 'last_quarter', 'waning_crescent'
-  tideState     String? // 'high', 'low', 'rising', 'falling'
-  createdAt     DateTime @default(now()) @map("created_at")
+  id               String   @id @default(cuid())
+  catchId          String   @unique @map("catch_id")
+  catch            Catch    @relation(fields: [catchId], references: [id], onDelete: Cascade)
+  temperature      Float? // Celsius
+  waterTemperature Float?   @map("water_temperature") // Celsius (measured or marine)
+  windSpeed        Float? // km/h or m/s
+  windDirection    String? // N, NE, E, SE, S, SW, W, NW
+  windDegree       Float?   @map("wind_degree") // Degrees (0-360)
+  pressure         Float? // hPa
+  humidity         Float? // %
+  cloudCover       Float?   @map("cloud_cover") // %
+  conditions       String? // 'clear', 'cloudy', 'rainy', etc.
+  moonPhase        String? // 'new', 'waxing_crescent', 'first_quarter', 'waxing_gibbous', 'full', 'waning_gibbous', 'last_quarter', 'waning_crescent'
+  tideState        String? // 'high', 'low', 'rising', 'falling'
+  createdAt        DateTime @default(now()) @map("created_at")
 
   @@index([catchId])
   @@map("weather_data")
+}
+
+// Dedicated AI Catch Telemetry & Weather Foundation Dataset
+model AiCatchTelemetry {
+  id               String   @id @default(cuid())
+  catchId          String   @unique @map("catch_id")
+  species          String
+  weightKg         Float?   @map("weight_kg")
+  lengthCm         Float?   @map("length_cm")
+  latitude         Float
+  longitude        Float
+  waterType        String?  @map("water_type") // 'freshwater', 'saltwater', 'brackish', 'river', 'lake', 'coastal'
+  waterTemp        Float?   @map("water_temp") // Measured/Marine water temperature in Celsius
+  airTemp          Float?   @map("air_temp") // Air temperature in Celsius
+  pressureHpa      Float?   @map("pressure_hpa") // Barometric pressure in hPa
+  windSpeedMps     Float?   @map("wind_speed_mps") // Wind speed in m/s
+  windDirection    String?  @map("wind_direction") // Cardinal direction
+  windDegree       Float?   @map("wind_degree") // Degrees 0-360
+  weatherCondition String?  @map("weather_condition") // 'clear', 'partly_cloudy', 'overcast', 'rain', 'drizzle', 'thunderstorm', 'snow'
+  cloudCover       Float?   @map("cloud_cover") // %
+  humidity         Float? // %
+  moonPhase        String?  @map("moon_phase")
+  moonIllumination Float?   @map("moon_illumination") // %
+  tideStatus       String?  @map("tide_status") // 'high', 'low', 'rising', 'falling'
+  timeOfDay        String?  @map("time_of_day") // 'dawn', 'morning', 'midday', 'afternoon', 'dusk', 'night'
+  season           String? // 'spring', 'summer', 'autumn', 'winter'
+  technique        String?
+  bait             String?
+  caughtAt         DateTime @map("caught_at")
+  metadata         String?  @db.Text // JSON raw weather API payload + telemetry features for AI/ML embeddings
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([species])
+  @@index([latitude, longitude])
+  @@index([caughtAt])
+  @@index([pressureHpa])
+  @@index([waterTemp])
+  @@index([airTemp])
+  @@map("ai_catch_telemetry_dataset")
 }
 
 // Challenge Templates
@@ -941,8 +984,13 @@ model FishingSession {
   // Weather snapshot
   weatherData String? @map("weather_data") @db.Text // JSON
 
-  // Privacy & sharing
-  visibility String @default("friends") // 'private', 'friends', 'public'
+  // Privacy & Live Strava-like sharing
+  visibility       String    @default("friends") // 'private', 'friends', 'public'
+  isLive           Boolean   @default(true) @map("is_live") // True while fishing session is ongoing
+  currentLat       Float?    @map("current_lat") // Real-time live latitude
+  currentLng       Float?    @map("current_lng") // Real-time live longitude
+  lastPingAt       DateTime? @map("last_ping_at") // Last beacon update from mobile device
+  liveShareEnabled Boolean   @default(true) @map("live_share_enabled") // User permission to broadcast live beacon to friends
 
   // Relations
   catches        Catch[]
@@ -955,6 +1003,8 @@ model FishingSession {
 
   @@index([userId])
   @@index([startTime])
+  @@index([userId, startTime(sort: Desc)])
+  @@index([isLive, lastPingAt])
   @@index([sessionType])
   @@map("fishing_sessions")
 }

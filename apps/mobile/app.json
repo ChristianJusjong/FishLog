@@ -12,7 +12,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F97316"
+      "backgroundColor": "#071524"
     },
     "ios": {
       "supportsTablet": true,
@@ -24,9 +24,14 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F97316"
+        "backgroundColor": "#071524"
       },
       "package": "com.cjusjong.hook",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCD3VVY3rZ03Mkim4oV8mtEihO4iyMQXX8"
+        }
+      },
       "versionCode": 3,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -68,13 +73,28 @@
     "plugins": [
       "expo-router",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "pickFirsts": [
+                "**/libfbjni.so",
+                "**/libc++_shared.so"
+              ]
+            }
+          }
+        }
+      ],
+      [
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3940256099942544~3347511713",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "@config-plugins/detox",
+      "./plugins/withPackagingOptions.js"
     ]
   }
 }

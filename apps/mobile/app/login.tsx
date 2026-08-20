@@ -1,14 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { api } from '../lib/api';
+import { Logo } from '../components/Logo';
+import { LoadingBar } from '../components/LoadingBar';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GRADIENTS } from '@/constants/theme';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -28,13 +33,19 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true);
     try {
-      const response = await api.post('/auth/login', { email, password });
-      const { accessToken, refreshToken, user } = response.data;
+      setLoading(true);
+      const { data } = await api.post('/auth/login', {
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
-      await login(accessToken, refreshToken);
-      router.replace('/feed');
+      if (data.accessToken && data.refreshToken) {
+        await login(data.accessToken, data.refreshToken);
+        router.replace('/feed');
+      } else {
+        Alert.alert('Fejl', 'Kunne ikke logge ind. Prøv igen.');
+      }
     } catch (error: any) {
       Alert.alert('Login fejlede', error.response?.data?.error || 'Ugyldigt email eller adgangskode');
     } finally {
@@ -42,47 +53,50 @@ export default function LoginScreen() {
     }
   };
 
-  const handleTestLogin = async () => {
-    setLoading(true);
+  const handleOAuthLogin = async (provider: 'google' | 'facebook' | 'apple') => {
     try {
-      const response = await api.post('/auth/test-login', {
-        email: 'test@fishlog.app',
-        name: 'Test Bruger'
-      });
-      const { accessToken, refreshToken, user } = response.data;
+      setLoading(true);
+      const redirectUrl = Linking.createURL('/auth/callback');
+      const authUrl = `${API_URL}/auth/${provider}/mobile?redirect_uri=${encodeURIComponent(redirectUrl)}`;
 
-      await login(accessToken, refreshToken);
-      router.replace('/feed');
+      // Try in-app WebBrowser auth session first
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+
+      if (result.type === 'success' && result.url) {
+        const parsed = Linking.parse(result.url);
+        const accessToken = (parsed.queryParams?.accessToken || parsed.queryParams?.token) as string;
+        const refreshToken = (parsed.queryParams?.refreshToken || '') as string;
+        const code = parsed.queryParams?.code as string;
+
+        if (code) {
+          const { data } = await api.post('/auth/exchange', { code });
+          if (data.accessToken) {
+            await login(data.accessToken, data.refreshToken || '');
+            router.replace('/feed');
+            return;
+          }
+        }
+
+        if (accessToken) {
+          await login(accessToken, refreshToken);
+          router.replace('/feed');
+          return;
+        }
+      } else if (result.type !== 'cancel' && result.type !== 'dismiss') {
+        // Fallback to system browser
+        await Linking.openURL(authUrl).catch(() => {});
+      }
     } catch (error: any) {
-      Alert.alert('Login fejlede', error.response?.data?.error || 'Kunne ikke logge ind');
+      console.error(`${provider} login error:`, error);
+      Alert.alert('Login fejlede', error?.message || `Kunne ikke åbne ${provider} login`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true);
-      // Open Google OAuth in browser - will redirect back to app via deep link
-      await Linking.openURL(`${API_URL}/auth/google`);
-    } catch (error: any) {
-      console.error('Google login error:', error);
-      Alert.alert('Login fejlede', 'Kunne ikke åbne Google login');
-      setLoading(false);
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    try {
-      setLoading(true);
-      // Open Facebook OAuth in browser - will redirect back to app via deep link
-      await Linking.openURL(`${API_URL}/auth/facebook`);
-    } catch (error: any) {
-      console.error('Facebook login error:', error);
-      Alert.alert('Login fejlede', 'Kunne ikke åbne Facebook login');
-      setLoading(false);
-    }
-  };
+  const handleGoogleLogin = () => handleOAuthLogin('google');
+  const handleFacebookLogin = () => handleOAuthLogin('facebook');
+  const handleAppleLogin = () => handleOAuthLogin('apple');
 
   const handleSignup = () => {
     router.push('/signup');
@@ -112,22 +126,16 @@ export default function LoginScreen() {
           >
             {/* Premium Header Section */}
             <View style={styles.headerSection}>
-              <View style={styles.logoContainer}>
-                <LinearGradient
-                  colors={['#F5A623', '#FFD93D']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.logoGradient}
-                >
-                  <Ionicons name="fish" size={40} color="#0A2540" />
-                </LinearGradient>
-              </View>
-              <Text style={styles.title}>Hook</Text>
-              <Text style={styles.subtitle}>Din digitale fiskebog</Text>
+              <Logo size={72} variant="light" layout="vertical" subtitle="DIN DIGITALE FISKEBOG" />
             </View>
 
             {/* Premium Form Card */}
             <View style={styles.formCard}>
+              {loading && (
+                <View style={{ marginBottom: 12 }}>
+                  <LoadingBar height={3} glow={true} colors={['#00D4B2', '#FFB800', '#F97316']} />
+                </View>
+              )}
               <View style={styles.formContainer}>
                 {/* Email Input */}
                 <View style={styles.inputGroup}>
@@ -217,6 +225,16 @@ export default function LoginScreen() {
               <View style={styles.oauthContainer}>
                 <TouchableOpacity
                   style={[styles.oauthButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={handleAppleLogin}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-apple" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <Text style={[styles.oauthButtonText, { color: colors.text }]}>Apple</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.oauthButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={handleGoogleLogin}
                   disabled={loading}
                   activeOpacity={0.8}
@@ -237,16 +255,6 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            {/* Test Login */}
-            <TouchableOpacity
-              style={styles.testButton}
-              onPress={handleTestLogin}
-              disabled={loading}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="code-outline" size={14} color="rgba(255,255,255,0.5)" />
-              <Text style={styles.testButtonText}>Test Login</Text>
-            </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -409,17 +417,5 @@ const styles = StyleSheet.create({
   oauthButtonText: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  testButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-    marginTop: SPACING.xl,
-    padding: SPACING.md,
-  },
-  testButtonText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.5)',
   },
 });

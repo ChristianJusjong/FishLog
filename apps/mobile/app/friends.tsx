@@ -3,12 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
+import ScreenLoading from '../components/ScreenLoading';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -245,7 +247,7 @@ export default function FriendsScreen() {
 
   const fetchFriends = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       if (!accessToken) {
         if (Platform.OS === 'web') {
@@ -309,7 +311,7 @@ export default function FriendsScreen() {
 
     setSearching(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/friends/search?query=${encodeURIComponent(searchQuery)}`, {
         headers: {
@@ -342,7 +344,7 @@ export default function FriendsScreen() {
 
   const sendFriendRequest = async (accepterId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/friends/request`, {
         method: 'POST',
@@ -382,7 +384,7 @@ export default function FriendsScreen() {
 
   const acceptFriendRequest = async (friendshipId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/friends/accept`, {
         method: 'POST',
@@ -420,7 +422,7 @@ export default function FriendsScreen() {
 
   const rejectFriendRequest = async (friendshipId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/friends/reject`, {
         method: 'POST',
@@ -458,20 +460,9 @@ export default function FriendsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundLight }} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <LinearGradient
-            colors={[colors.accent, colors.accentDark || '#D4880F']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.logoGradient}
-          >
-            <Ionicons name="people" size={40} color={colors.primary} />
-          </LinearGradient>
-          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
-          <Text style={styles.loadingText}>Indlæser venner...</Text>
-        </View>
-      </SafeAreaView>
+      <PageLayout>
+        <ScreenLoading message="Indlæser dine fiskevenner..." />
+      </PageLayout>
     );
   }
 

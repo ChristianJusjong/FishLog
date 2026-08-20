@@ -2,13 +2,15 @@ import { FastifyInstance } from 'fastify';
 import { wsService } from '../services/websocket.js';
 
 export async function websocketRoutes(fastify: FastifyInstance) {
+  wsService.initialize(fastify);
+
   fastify.get('/ws', { websocket: true }, (socket: any, request) => {
     // Extract token from query params
     const token = (request.query as any).token as string;
 
     if (!token) {
-      socket.socket.send(JSON.stringify({ error: 'Authentication required' }));
-      socket.socket.close();
+      socket.send(JSON.stringify({ error: 'Authentication required' }));
+      socket.close();
       return;
     }
 
@@ -16,16 +18,16 @@ export async function websocketRoutes(fastify: FastifyInstance) {
     const userId = wsService.verifyToken(token);
 
     if (!userId) {
-      socket.socket.send(JSON.stringify({ error: 'Invalid token' }));
-      socket.socket.close();
+      socket.send(JSON.stringify({ error: 'Invalid token' }));
+      socket.close();
       return;
     }
 
     // Add client to WebSocket service
-    wsService.addClient(userId, socket.socket);
+    wsService.addClient(userId, socket);
 
     // Send welcome message
-    socket.socket.send(JSON.stringify({
+    socket.send(JSON.stringify({
       event: 'connected',
       data: { userId, message: 'WebSocket connection established' },
       timestamp: new Date().toISOString(),
@@ -35,7 +37,7 @@ export async function websocketRoutes(fastify: FastifyInstance) {
     wsService.notifyUserOnline(userId, true);
 
     // Handle incoming messages from client
-    socket.socket.on('message', (message: Buffer) => {
+    socket.on('message', (message: Buffer) => {
       try {
         const data = JSON.parse(message.toString());
         handleClientMessage(userId, data);
@@ -45,7 +47,7 @@ export async function websocketRoutes(fastify: FastifyInstance) {
     });
 
     // Handle disconnect
-    socket.socket.on('close', () => {
+    socket.on('close', () => {
       wsService.notifyUserOnline(userId, false);
     });
   });

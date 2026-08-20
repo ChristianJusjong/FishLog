@@ -16,11 +16,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { useTheme } from '../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, FAB_STYLE, FAB, GRADIENTS } from '@/constants/theme';
 import { API_URL } from '../config/api';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
+import ScreenLoading from '../components/ScreenLoading';
 
 type ChallengeType = 'most_catches' | 'biggest_fish' | 'total_weight' | 'most_species';
 
@@ -488,7 +490,7 @@ export default function ChallengesScreen() {
 
   const fetchMyGroups = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/groups/my-groups`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -513,7 +515,7 @@ export default function ChallengesScreen() {
 
   const fetchMyFriends = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const userId = await AsyncStorage.getItem('userId');
       const response = await fetch(`${API_URL}/friends`, {
         headers: {
@@ -547,7 +549,7 @@ export default function ChallengesScreen() {
 
   const fetchTemplates = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/challenge-templates`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -579,7 +581,7 @@ export default function ChallengesScreen() {
 
   const fetchChallenges = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/challenges`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -608,7 +610,7 @@ export default function ChallengesScreen() {
 
   const joinChallenge = async (challengeId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/challenges/${challengeId}/join`, {
         method: 'POST',
         headers: {
@@ -636,7 +638,7 @@ export default function ChallengesScreen() {
     }
 
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       // Prepare challenge data - remove groupId if empty, add participantIds
       const challengeData = {
@@ -702,7 +704,7 @@ export default function ChallengesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const accessToken = await AsyncStorage.getItem('accessToken');
+              const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
               const response = await fetch(`${API_URL}/challenges/${challengeId}`, {
                 method: 'DELETE',
                 headers: {
@@ -749,20 +751,9 @@ export default function ChallengesScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <LinearGradient
-          colors={[colors.accent, colors.accentDark || '#D4880F']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.logoGradient}
-        >
-          <Ionicons name="trophy" size={40} color={colors.primary} />
-        </LinearGradient>
-        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          Indlæser udfordringer...
-        </Text>
-      </View>
+      <PageLayout>
+        <ScreenLoading message="Indlæser udfordringer..." />
+      </PageLayout>
     );
   }
 

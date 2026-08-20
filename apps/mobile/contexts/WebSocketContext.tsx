@@ -97,22 +97,27 @@ export function WebSocketProvider({ children }: Props) {
         }
       };
 
-      ws.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+      ws.current.onerror = () => {
+        // Don't log error objects - they're not useful and spam the console
       };
 
-      ws.current.onclose = () => {
+      ws.current.onclose = (event) => {
         setConnected(false);
         ws.current = null;
 
-        // Attempt to reconnect
+        // Don't reconnect if closed due to auth error (code 1008) or if token is missing
+        if (event.code === 1008 || !token) {
+          reconnectAttempts.current = maxReconnectAttempts; // Stop reconnecting
+          return;
+        }
+
+        // Attempt to reconnect with exponential backoff
         if (reconnectAttempts.current < maxReconnectAttempts) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
           reconnectTimeout.current = setTimeout(() => {
             reconnectAttempts.current++;
             connect();
           }, delay);
-        } else {
         }
       };
     } catch (error) {

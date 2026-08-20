@@ -21,23 +21,45 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Track if we're currently refreshing to avoid multiple refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<any> | null = null;
+
 // Handle token refresh on 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
+    const originalRequest = error.config;
+
+    // Don't retry if already retried or if it's a refresh request
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
       const refreshToken = await getSecureItem(TOKEN_KEYS.REFRESH_TOKEN);
-      if (refreshToken) {
+      if (refreshToken && !isRefreshing) {
+        isRefreshing = true;
+
         try {
-          const { data } = await axios.post(`${API_URL}/auth/refresh`, {
-            refreshToken,
-          });
+          refreshPromise = axios.post(`${API_URL}/auth/refresh`, { refreshToken });
+          const { data } = await refreshPromise;
           await setTokens(data.accessToken, data.refreshToken);
-          error.config.headers.Authorization = `Bearer ${data.accessToken}`;
-          return axios(error.config);
-        } catch {
-          // Refresh failed, logout
-          await clearTokens();
+          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+          isRefreshing = false;
+          refreshPromise = null;
+          return api(originalRequest);
+        } catch (refreshErr) {
+          isRefreshing = false;
+          refreshPromise = null;
+          return Promise.reject(refreshErr);
+        }
+      } else if (isRefreshing && refreshPromise) {
+        // Wait for ongoing refresh
+        try {
+          const { data } = await refreshPromise;
+          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+          return api(originalRequest);
+        } catch (refreshErr) {
+          return Promise.reject(refreshErr);
         }
       }
     }
@@ -47,7 +69,7 @@ api.interceptors.response.use(
 
 export const authService = {
   getProfile: () => api.get('/users/me'),
-  updateProfile: (data: { name?: string; avatar?: string; groqApiKey?: string }) =>
+  updateProfile: (data: { name?: string; avatar?: string; groqApiKey?: string; geminiApiKey?: string; profileVisibility?: string }) =>
     api.patch('/users/me', data),
   logout: async () => {
     const refreshToken = await getSecureItem(TOKEN_KEYS.REFRESH_TOKEN);

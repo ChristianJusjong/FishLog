@@ -39,12 +39,13 @@ function assert(condition, testName, details = '') {
 // API Helper
 async function apiCall(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
+  const { headers, ...restOptions } = options;
   const response = await fetch(url, {
     headers: {
-      'Content-Type': 'application/json',
-      ...options.headers
+      ...(restOptions.body ? { 'Content-Type': 'application/json' } : {}),
+      ...headers
     },
-    ...options
+    ...restOptions
   });
 
   const data = await response.json().catch(() => null);
@@ -201,11 +202,12 @@ async function testCreateCatch() {
   });
 
   assert(ok, 'Create catch successfully', `Status: ${status}, Error: ${JSON.stringify(data)}`);
-  assert(data.id, 'Catch has ID');
-  assert(data.species === testCatch.species, 'Catch has correct species');
-  assert(!data.isDraft, 'Catch is not a draft');
+  const catchObj = data.catch || data;
+  assert(catchObj.id, 'Catch has ID');
+  assert(catchObj.species === testCatch.species, 'Catch has correct species');
+  assert(!catchObj.isDraft, 'Catch is not a draft');
 
-  catches.push({ ...data, userId: user.user.id });
+  catches.push({ ...catchObj, userId: user.user.id });
 }
 
 async function testGetCatches() {
@@ -242,18 +244,20 @@ async function testDraftCatch() {
   });
 
   assert(ok, 'Create draft catch');
-  assert(data.isDraft === true, 'Catch is marked as draft');
+  const draftObj = data.catch || data;
+  assert(draftObj.isDraft === true, 'Catch is marked as draft');
 
-  // Complete the draft
+  // Complete the draft (endpoint is PATCH)
   const completeData = { ...draftCatch, weightKg: 0.4, isDraft: false };
-  const complete = await apiCall(`/catches/${data.id}/complete`, {
-    method: 'PUT',
+  const complete = await apiCall(`/catches/${draftObj.id}/complete`, {
+    method: 'PATCH',
     headers: { 'Authorization': `Bearer ${user.accessToken}` },
     body: JSON.stringify(completeData)
   });
 
   assert(complete.ok, 'Complete draft catch');
-  assert(complete.data.isDraft === false, 'Catch is no longer a draft');
+  const completedObj = complete.data.catch || complete.data;
+  assert(completedObj.isDraft === false, 'Catch is no longer a draft');
 }
 
 async function testSendFriendRequest() {
@@ -262,10 +266,16 @@ async function testSendFriendRequest() {
   const user1 = users[0];
   const user2 = users[1];
 
+  // Clean up any existing friendship first to ensure clean state
+  await apiCall(`/friends/${user2.user.id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${user1.accessToken}` }
+  });
+
   const { ok, data } = await apiCall('/friends/request', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${user1.accessToken}` },
-    body: JSON.stringify({ friendId: user2.user.id })
+    body: JSON.stringify({ accepterId: user2.user.id })
   });
 
   assert(ok, `User 1 sends friend request to User 2`);
@@ -287,10 +297,11 @@ async function testAcceptFriendRequest() {
 
   const request = requests.data[0];
 
-  // Accept request
-  const accept = await apiCall(`/friends/request/${request.id}/accept`, {
-    method: 'PUT',
-    headers: { 'Authorization': `Bearer ${user2.accessToken}` }
+  // Accept request (POST /friends/accept with body { friendshipId })
+  const accept = await apiCall('/friends/accept', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${user2.accessToken}` },
+    body: JSON.stringify({ friendshipId: request.friendshipId })
   });
 
   assert(accept.ok, 'Accept friend request');
@@ -306,8 +317,8 @@ async function testGetFriendsList() {
   });
 
   assert(ok, 'Fetch friends list');
-  assert(Array.isArray(data), 'Friends is an array');
-  assert(data.length > 0, 'User has at least one friend');
+  assert(Array.isArray(data.friends), 'Friends is an array');
+  assert(data.friends.length > 0, 'User has at least one friend');
 }
 
 async function testFeedVisibility() {
@@ -326,7 +337,7 @@ async function testFeedVisibility() {
   assert(Array.isArray(feedCatches), 'Feed returns catches array');
 
   const friendCatch = feedCatches.find(c =>
-    c.species === testCatch.species && c.user.email === testUsers[0].email
+    c.species === testCatch.species && c.user.name === testUsers[0].name
   );
 
   assert(friendCatch !== undefined, "User 2 can see User 1's catch in feed");
@@ -425,17 +436,29 @@ async function testCreateSession() {
     visibility: 'public'
   };
 
-  const { ok, data } = await apiCall('/sessions', {
+  // Clean up any existing active session for this user first
+  const activeCheck = await apiCall('/sessions/active', {
+    headers: { 'Authorization': `Bearer ${user.accessToken}` }
+  });
+  if (activeCheck.ok && activeCheck.data && activeCheck.data.id) {
+    await apiCall(`/sessions/${activeCheck.data.id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${user.accessToken}` }
+    });
+  }
+
+  const { ok, data, status } = await apiCall('/sessions/start', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${user.accessToken}` },
     body: JSON.stringify(session)
   });
 
-  assert(ok, 'Create fishing session');
-  assert(data.id, 'Session has ID');
-  assert(data.title === session.title, 'Session title is correct');
+  assert(ok, 'Create fishing session', `Status: ${status}, Data: ${JSON.stringify(data)}`);
+  const sessionObj = data.session || data;
+  assert(sessionObj.id, 'Session has ID');
+  assert(sessionObj.title === session.title, 'Session title is correct');
 
-  users[0].sessionId = data.id;
+  users[0].sessionId = sessionObj.id;
 }
 
 async function testSessionWithCatches() {
@@ -492,7 +515,8 @@ async function testUnfriend() {
     headers: { 'Authorization': `Bearer ${user1.accessToken}` }
   });
 
-  const stillFriends = friends.data.find(f => f.id === user2.user.id);
+  const friendsList = friends.data.friends || [];
+  const stillFriends = friendsList.find(f => f.friend.id === user2.user.id);
   assert(stillFriends === undefined, 'User is no longer in friends list');
 }
 

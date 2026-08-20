@@ -2,12 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Platform, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { LinearGradient } from 'expo-linear-gradient';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import MapPicker from '../components/MapPicker';
+import PageLayout from '../components/PageLayout';
+import ScreenLoading from '../components/ScreenLoading';
+import StoryCardModal from '../components/StoryCardModal';
 import { shareCatchToSocial, shareViaDialog } from '@/lib/socialShare';
+import { checkCatchRegulation } from '../data/fishingRegulations';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -324,6 +328,7 @@ interface Catch {
   isLikedByMe?: boolean;
   comments?: Comment[];
   visibility?: string;
+  released?: boolean;
 }
 
 export default function CatchDetailScreen() {
@@ -339,6 +344,7 @@ export default function CatchDetailScreen() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [showStoryModal, setShowStoryModal] = useState(false);
 
   useEffect(() => {
     fetchCatchDetail();
@@ -348,7 +354,7 @@ export default function CatchDetailScreen() {
 
   const fetchCurrentUser = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/users/me`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -366,7 +372,7 @@ export default function CatchDetailScreen() {
 
   const fetchCatchDetail = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/catches/${catchId}`, {
         headers: {
@@ -401,7 +407,7 @@ export default function CatchDetailScreen() {
   const fetchWeatherData = async () => {
     setLoadingWeather(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/weather/${catchId}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -457,7 +463,7 @@ export default function CatchDetailScreen() {
     if (!confirmed) return;
 
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/catches/${catchId}`, {
         method: 'DELETE',
@@ -493,18 +499,9 @@ export default function CatchDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <LinearGradient
-          colors={[colors.accent, colors.accentDark || '#D4880F']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.logoGradient}
-        >
-          <Ionicons name="fish" size={40} color={colors.primary} />
-        </LinearGradient>
-        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
-        <Text style={styles.loadingText}>Indlæser fangst...</Text>
-      </View>
+      <PageLayout>
+        <ScreenLoading message="Indlæser fangstdetaljer..." />
+      </PageLayout>
     );
   }
 
@@ -574,7 +571,33 @@ export default function CatchDetailScreen() {
 
       {/* Catch details */}
       <View style={styles.catchContent}>
-        <Text style={styles.catchSpecies}>{catchData.species}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <Text style={styles.catchSpecies}>{catchData.species}</Text>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            backgroundColor: catchData.released !== false ? '#10B98115' : '#0A254015',
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: catchData.released !== false ? '#10B981' : '#0A254030',
+          }}>
+            <Ionicons
+              name={catchData.released !== false ? 'repeat' : 'basket'}
+              size={14}
+              color={catchData.released !== false ? '#10B981' : colors.primary}
+            />
+            <Text style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: catchData.released !== false ? '#10B981' : colors.primary,
+            }}>
+              {catchData.released !== false ? 'Genudsat (C&R)' : 'Hjemtaget'}
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.catchDetailsRow}>
           {catchData.lengthCm && (
@@ -592,6 +615,33 @@ export default function CatchDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* Danish Fisheries Regulation Status Badge */}
+        {(() => {
+          const reg = checkCatchRegulation(catchData.species, catchData.lengthCm, new Date(catchData.createdAt));
+          return (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: reg.badgeType === 'legal' ? '#F0FDF4' : '#FFFBEB',
+              padding: 10,
+              borderRadius: 10,
+              marginTop: 10,
+              gap: 8,
+              borderWidth: 1,
+              borderColor: reg.badgeType === 'legal' ? '#BBF7D0' : '#FDE68A',
+            }}>
+              <Ionicons
+                name={reg.badgeType === 'legal' ? 'shield-checkmark' : 'information-circle'}
+                size={18}
+                color={reg.badgeType === 'legal' ? '#16A34A' : '#D97706'}
+              />
+              <Text style={{ fontSize: 12, color: colors.text, flex: 1, lineHeight: 16 }}>
+                {reg.message}
+              </Text>
+            </View>
+          );
+        })()}
 
         {/* Weather Information */}
         {weatherData && (
@@ -713,6 +763,14 @@ export default function CatchDetailScreen() {
       {isOwnCatch && (
         <View style={styles.actionButtons}>
           <TouchableOpacity
+            style={[styles.button, { backgroundColor: '#E1306C' }]}
+            onPress={() => setShowStoryModal(true)}
+          >
+            <Ionicons name="logo-instagram" size={20} color={colors.white} style={{ marginRight: 6 }} />
+            <Text style={styles.buttonText}>Story (9:16)</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.button, styles.shareButton]}
             onPress={handleShareCatch}
             disabled={sharing}
@@ -737,6 +795,28 @@ export default function CatchDetailScreen() {
             <Text style={styles.buttonText}>Slet</Text>
           </TouchableOpacity>
         </View>
+      )}
+
+      {/* 9:16 Instagram/Facebook Story Generator Modal */}
+      {catchData && (
+        <StoryCardModal
+          visible={showStoryModal}
+          onClose={() => setShowStoryModal(false)}
+          catchData={{
+            species: catchData.species,
+            weight: catchData.weightKg,
+            length: catchData.lengthCm,
+            baitUsed: catchData.bait,
+            date: new Date(catchData.createdAt).toLocaleDateString('da-DK', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
+            photoUrl: catchData.photoUrl,
+            released: catchData.released,
+            anglerName: catchData.user.name,
+          }}
+        />
       )}
     </ScrollView>
   );

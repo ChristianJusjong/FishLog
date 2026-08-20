@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import * as ImagePicker from 'expo-image-picker';
 import { SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -636,7 +637,7 @@ export default function GroupDetailScreen() {
 
   const fetchGroupDetails = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/groups/${id}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -660,7 +661,7 @@ export default function GroupDetailScreen() {
 
   const fetchPosts = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/groups/${id}/posts`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -678,7 +679,7 @@ export default function GroupDetailScreen() {
 
   const fetchMessages = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/groups/${id}/messages`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -702,7 +703,7 @@ export default function GroupDetailScreen() {
 
     setPosting(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/groups/${id}/posts`, {
         method: 'POST',
         headers: {
@@ -734,7 +735,7 @@ export default function GroupDetailScreen() {
 
     logger.info('Sending message:', newMessageText);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/groups/${id}/messages`, {
         method: 'POST',
         headers: {
@@ -791,7 +792,7 @@ export default function GroupDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const accessToken = await AsyncStorage.getItem('accessToken');
+              const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
               const response = await fetch(`${API_URL}/groups/${id}/leave`, {
                 method: 'POST',
                 headers: {
@@ -822,7 +823,7 @@ export default function GroupDetailScreen() {
     }
 
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/groups/${id}`, {
         method: 'PATCH',
         headers: {
@@ -856,7 +857,7 @@ export default function GroupDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const accessToken = await AsyncStorage.getItem('accessToken');
+              const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
               const response = await fetch(`${API_URL}/groups/${id}`, {
                 method: 'DELETE',
                 headers: {

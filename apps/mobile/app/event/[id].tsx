@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -262,7 +263,7 @@ export default function EventDetailsScreen() {
 
   const fetchEvent = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/events/${id}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -287,7 +288,7 @@ export default function EventDetailsScreen() {
 
   const fetchLeaderboard = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/events/${id}/leaderboard`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -313,7 +314,7 @@ export default function EventDetailsScreen() {
 
     setJoining(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const method = event.isParticipating ? 'DELETE' : 'POST';
 
       const response = await fetch(`${API_URL}/events/${id}/join`, {

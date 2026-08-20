@@ -642,7 +642,7 @@ export async function statisticsRoutes(fastify: FastifyInstance) {
       const sortedDates = Array.from(catchesByDay.keys()).sort().reverse();
 
       // Calculate current streak
-      let checkDate = new Date(today);
+      const checkDate = new Date(today);
       for (let i = 0; i < sortedDates.length; i++) {
         const dateKey = checkDate.toISOString().split('T')[0];
         if (catchesByDay.has(dateKey)) {

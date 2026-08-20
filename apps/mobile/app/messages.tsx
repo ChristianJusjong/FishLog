@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { FAB_STYLE, FAB } from '@/constants/theme';
@@ -256,7 +257,7 @@ export default function MessagesScreen() {
 
   const fetchFriends = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const userId = await AsyncStorage.getItem('userId');
       const response = await fetch(`${API_URL}/friends`, {
         headers: {
@@ -285,7 +286,7 @@ export default function MessagesScreen() {
 
   const fetchConversations = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/messages/conversations`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,

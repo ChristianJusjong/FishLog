@@ -34,8 +34,8 @@ describe('Index Screen', () => {
 
     const { getByText } = render(<Index />);
 
-    expect(getByText('Hook')).toBeTruthy();
-    expect(getByText('Indlæser...')).toBeTruthy();
+    expect(getByText('HOOK')).toBeTruthy();
+    expect(getByText('Gør klar til fiskeri...')).toBeTruthy();
   });
 
   it('navigates to feed when user is logged in', async () => {

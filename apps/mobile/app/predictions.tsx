@@ -20,6 +20,7 @@ import {
   getWaterTypeLabel,
   FishingLocation
 } from '../data/fishingLocations';
+import { calculateTideAndBite } from '../data/tideEngine';
 
 interface PredictionFactors {
   timeOfDay: { hour: number; successRate: number; avgCatches: number }[];
@@ -512,6 +513,85 @@ export default function PredictionsScreen() {
         <Ionicons name="analytics" size={32} color={colors.primary} />
         <Text style={styles.title}>Fangst Forudsigelser</Text>
       </View>
+
+      {/* Real-time Marine Tide & Bite Chance Radar */}
+      {(() => {
+        const tide = calculateTideAndBite();
+        return (
+          <View style={[styles.card, { backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(0, 212, 178, 0.3)' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: '#00D4B220',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                  <Ionicons name="water" size={18} color="#00D4B2" />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
+                    Realtids Tidevand & Strøm
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                    {tide.phaseLabel} • Strøm: {tide.currentSpeedKnots} kn
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{
+                backgroundColor: '#F5A62320',
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#F5A623',
+              }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: '#F5A623' }}>
+                  {tide.biteChanceScore}% Hug
+                </Text>
+              </View>
+            </View>
+
+            {/* 24-Hour Tide & Bite Curve */}
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 8 }}>
+              Tidevands- & Hugchanceforløb (Næste 12 timer)
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {tide.hourlyCurve.map((pt, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    alignItems: 'center',
+                    paddingVertical: 8,
+                    paddingHorizontal: 10,
+                    borderRadius: 10,
+                    backgroundColor: idx === 3 ? '#00D4B225' : colors.backgroundLight,
+                    borderWidth: idx === 3 ? 1 : 0,
+                    borderColor: '#00D4B2',
+                    minWidth: 54,
+                  }}
+                >
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: idx === 3 ? '#00D4B2' : colors.textSecondary }}>
+                    {idx === 3 ? 'Nu' : pt.time}
+                  </Text>
+                  <Ionicons
+                    name={pt.levelCm >= 0 ? 'arrow-up' : 'arrow-down'}
+                    size={14}
+                    color={pt.levelCm >= 0 ? '#00D4B2' : '#F5A623'}
+                    style={{ marginVertical: 4 }}
+                  />
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: colors.text }}>
+                    {pt.levelCm > 0 ? `+${pt.levelCm}` : pt.levelCm}cm
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        );
+      })()}
 
       {/* Weather Insights Link */}
       <TouchableOpacity

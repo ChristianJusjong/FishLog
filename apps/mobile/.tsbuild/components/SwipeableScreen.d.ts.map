@@ -1,0 +1,1 @@
+{"version":3,"file":"SwipeableScreen.d.ts","sourceRoot":"","sources":["../../components/SwipeableScreen.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAC1B,OAAO,EAAQ,SAAS,EAAE,MAAM,cAAc,CAAC;AAE/C,UAAU,oBAAoB;IAC5B,QAAQ,EAAE,KAAK,CAAC,SAAS,CAAC;IAC1B,KAAK,CAAC,EAAE,SAAS,CAAC;CACnB;AAED,eAAO,MAAM,eAAe,EAAE,KAAK,CAAC,EAAE,CAAC,oBAAoB,CAE1D,CAAC;AAEF,eAAe,eAAe,CAAC"}

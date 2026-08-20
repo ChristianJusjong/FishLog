@@ -15,10 +15,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { TYPOGRAPHY, SPACING, RADIUS } from '@/constants/branding';
 import { useTheme } from '../contexts/ThemeContext';
 import { API_URL } from '../config/api';
 import { logger } from '../utils/logger';
+import { extractCatchMetadataFromImage } from '../lib/exifExtractor';
 
 const useStyles = () => {
   const { colors } = useTheme();
@@ -181,17 +183,46 @@ export default function CameraCaptureScreen() {
     }
   };
 
-  const uploadAndCreateCatch = async (imageUri: string) => {
-    setLoading(true);
-    setStatus('Henter GPS-koordinater...');
-
+  const openGalleryWithExif = async () => {
     try {
-      // Get GPS coordinates
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        exif: true,
       });
 
-      const { latitude, longitude } = location.coords;
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setCapturedImage(asset.uri);
+        const exifData = await extractCatchMetadataFromImage(asset);
+        await uploadAndCreateCatch(asset.uri, exifData.latitude, exifData.longitude);
+      }
+    } catch (error) {
+      logger.error('Gallery picker error:', error);
+      Alert.alert('Fejl', 'Kunne ikke hente billede fra galleriet');
+    }
+  };
+
+  const uploadAndCreateCatch = async (imageUri: string, exifLat?: number, exifLng?: number) => {
+    setLoading(true);
+    setStatus(exifLat && exifLng ? 'Bruger fotoets EXIF GPS...' : 'Henter GPS-koordinater...');
+
+    try {
+      let latitude = exifLat;
+      let longitude = exifLng;
+
+      if (latitude === undefined || longitude === undefined) {
+        // Get current GPS coordinates if not in EXIF
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }).catch(() => null);
+
+        latitude = location?.coords?.latitude || 55.6761;
+        longitude = location?.coords?.longitude || 12.5683;
+      }
+
       setStatus('Komprimerer billede...');
 
       // Compress image to reduce file size (max 1024px width, 0.6 quality)
@@ -200,12 +231,6 @@ export default function CameraCaptureScreen() {
         [{ resize: { width: 1024 } }], // Resize to max 1024px width, maintains aspect ratio
         { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG } // 60% quality JPEG
       );
-
-      logger.debug('Compressed image:', {
-        width: manipulatedImage.width,
-        height: manipulatedImage.height,
-        uri: manipulatedImage.uri.substring(0, 50) + '...'
-      });
 
       setStatus('Uploader billede...');
 
@@ -223,13 +248,10 @@ export default function CameraCaptureScreen() {
         reader.readAsDataURL(blob);
       });
 
-      const sizeInKB = Math.round(base64.length / 1024);
-      logger.debug(`Base64 image size: ${sizeInKB} KB`);
-
       setStatus('Opretter fangst...');
 
       // Create initial catch with photo and GPS
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const catchResponse = await fetch(`${API_URL}/catches/start`, {
         method: 'POST',
         headers: {
@@ -266,7 +288,7 @@ export default function CameraCaptureScreen() {
         'Kunne ikke oprette fangst. Prøv igen.',
         [
           { text: 'Annuller', onPress: () => router.back() },
-          { text: 'Prøv igen', onPress: () => uploadAndCreateCatch(imageUri) },
+          { text: 'Prøv igen', onPress: () => uploadAndCreateCatch(imageUri, exifLat, exifLng) },
         ]
       );
     }
@@ -292,11 +314,18 @@ export default function CameraCaptureScreen() {
       <View style={styles.content}>
         <Text style={[styles.title, { color: colors.text }]}>Tag billede af fangst</Text>
         <Text style={[styles.description, { color: colors.textSecondary }]}>
-          For at logge en fangst skal du først tage et billede. Billedet og GPS-koordinater bliver låst efter upload.
+          Tag et foto med kameraet nu, eller vælg et eksisterende foto fra galleriet med automatisk EXIF GPS-udfyld.
         </Text>
 
         <TouchableOpacity style={[styles.cameraButton, { backgroundColor: colors.primary }]} onPress={openCamera}>
-          <Text style={[styles.cameraButtonText, { color: colors.white }]}>Åbn kamera</Text>
+          <Text style={[styles.cameraButtonText, { color: colors.white }]}>📸 Åbn kamera</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.cameraButton, { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accent, marginTop: 6 }]}
+          onPress={openGalleryWithExif}
+        >
+          <Text style={[styles.cameraButtonText, { color: colors.accent, fontSize: 16 }]}>🖼️ Vælg fra galleri (EXIF Auto-GPS)</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -304,11 +333,10 @@ export default function CameraCaptureScreen() {
         </TouchableOpacity>
 
         <View style={[styles.infoBox, { backgroundColor: colors.surface, borderLeftColor: colors.accent }]}>
-          <Text style={[styles.infoTitle, { color: colors.text }]}>Vigtigt:</Text>
+          <Text style={[styles.infoTitle, { color: colors.text }]}>Smart Auto-Udfyld:</Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            • Billede og GPS-koordinater kan ikke ændres efter upload{'\n'}
-            • Du kan udfylde fangstdata bagefter{'\n'}
-            • Gem som kladde hvis du ikke er færdig
+            • Vælger du et billede fra galleriet, aflæses GPS-lokation og fangstdato automatisk fra billedets EXIF-data.{'\n'}
+            • Billede og GPS låses automatisk til verifikation.
           </Text>
         </View>
       </View>

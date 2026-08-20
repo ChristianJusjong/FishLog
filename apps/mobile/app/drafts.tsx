@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
@@ -143,7 +144,7 @@ export default function DraftsScreen() {
 
   const fetchDrafts = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/catches/drafts`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -172,7 +173,7 @@ export default function DraftsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const accessToken = await AsyncStorage.getItem('accessToken');
+              const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
               await fetch(`${API_URL}/catches/${id}`, {
                 method: 'DELETE',
                 headers: {

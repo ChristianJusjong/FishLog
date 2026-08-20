@@ -1,14 +1,24 @@
 {
   "compilerOptions": {
     "strict": true,
+    "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["apps/mobile/*"]
+      "@/*": [
+        "apps/mobile/*"
+      ]
     }
   },
-  "extends": "expo/tsconfig.base",
   "references": [
-    { "path": "./apps/backend" },
-    { "path": "./apps/mobile" }
+    {
+      "path": "./apps/backend"
+    },
+    {
+      "path": "./apps/mobile"
+    }
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
   ]
 }

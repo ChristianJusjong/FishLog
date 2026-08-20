@@ -264,6 +264,77 @@ export const DARK_COLORS = {
 } as const;
 
 /**
+ * Red-Light Night Vision Stealth Mode
+ * Pure OLED black #000000 with night-preservation red spectrum
+ */
+export const NIGHT_VISION_COLORS = {
+  primary: '#EF4444',
+  primaryLight: '#F87171',
+  primaryDark: '#991B1B',
+  primaryMuted: '#7F1D1D',
+
+  accent: '#EF4444',
+  accentLight: '#FCA5A5',
+  accentDark: '#B91C1C',
+  accentGlow: 'rgba(239, 68, 68, 0.4)',
+
+  secondary: '#DC2626',
+  secondaryLight: '#EF4444',
+  secondaryDark: '#991B1B',
+  secondaryMuted: '#7F1D1D',
+
+  background: '#000000',
+  backgroundLight: '#0A0000',
+  backgroundDark: '#000000',
+  backgroundElevated: '#110303',
+
+  surface: '#0D0202',
+  surfaceVariant: '#170505',
+  surfaceHover: '#260808',
+  surfaceActive: '#330B0B',
+  surfaceGlass: 'rgba(15, 2, 2, 0.95)',
+
+  text: '#FCA5A5',
+  textPrimary: '#FEE2E2',
+  textSecondary: '#EF4444',
+  textTertiary: '#B91C1C',
+  textMuted: '#7F1D1D',
+  textInverse: '#000000',
+  textAccent: '#EF4444',
+
+  iconDefault: '#DC2626',
+  iconMuted: '#7F1D1D',
+  iconActive: '#F87171',
+
+  success: '#EF4444',
+  successLight: '#450A0A',
+  successDark: '#B91C1C',
+  warning: '#F59E0B',
+  warningLight: '#451A03',
+  warningDark: '#D97706',
+  error: '#EF4444',
+  errorLight: '#450A0A',
+  errorDark: '#7F1D1D',
+  info: '#EF4444',
+  infoLight: '#450A0A',
+  infoDark: '#991B1B',
+
+  border: '#330808',
+  borderLight: '#1F0404',
+  borderDark: '#4C0C0C',
+  borderFocus: '#EF4444',
+  borderAccent: '#EF4444',
+
+  overlay: 'rgba(0, 0, 0, 0.9)',
+
+  gradientPrimary: ['#000000', '#1A0000'],
+  gradientAccent: ['#DC2626', '#EF4444'],
+  gradientOcean: ['#000000', '#330505'],
+  gradientDawn: ['#000000', '#450A0A', '#EF4444'],
+  gradientCard: ['rgba(15,2,2,0.95)', 'rgba(25,5,5,0.85)'],
+} as const;
+
+/**
  * Premium Typography System
  * Refined hierarchy with elegant spacing
  */

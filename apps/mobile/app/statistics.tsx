@@ -8,18 +8,22 @@ import {
   ActivityIndicator,
   Dimensions,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, GRADIENTS } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { API_URL } from '../config/api';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
+import ScreenLoading from '../components/ScreenLoading';
+import LurePerformanceCard from '../components/LurePerformanceCard';
 
 // Import fishing gear database for gear info
 import {
@@ -32,6 +36,67 @@ import {
 } from '../data/fishingGear';
 
 const screenWidth = Dimensions.get('window').width;
+
+const CustomBarChart = ({ data, colors }: { data: any; colors: any }) => {
+  const values = data.datasets[0].data as number[];
+  const labels = data.labels as string[];
+  const maxValue = Math.max(...values, 1);
+
+  return (
+    <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', height: 160, alignItems: 'flex-end', justifyContent: 'space-around', width: '100%', paddingHorizontal: 8 }}>
+        {values.map((val, idx) => {
+          const heightPct = (val / maxValue) * 100;
+          return (
+            <View key={idx} style={{ alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 10, color: colors.textSecondary, marginBottom: 4 }}>{val}</Text>
+              <View style={{
+                height: `${Math.max(heightPct, 5)}%`,
+                width: 24,
+                backgroundColor: colors.accent,
+                borderRadius: 4,
+                opacity: val === 0 ? 0.2 : 1
+              }} />
+            </View>
+          );
+        })}
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginTop: 8, paddingHorizontal: 8 }}>
+        {labels.map((label, idx) => (
+          <Text key={idx} style={{ fontSize: 10, color: colors.textSecondary, flex: 1, textAlign: 'center' }}>{label}</Text>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+const CustomSpeciesBreakdown = ({ data, colors }: { data: any[]; colors: any }) => {
+  const total = data.reduce((acc, curr) => acc + curr.population, 0);
+
+  return (
+    <View style={{ paddingVertical: 8 }}>
+      {data.map((item, idx) => {
+        const pct = total > 0 ? (item.population / total) * 100 : 0;
+        return (
+          <View key={idx} style={{ marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: item.color }} />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{item.name}</Text>
+              </View>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>
+                {item.population} stk. ({Math.round(pct)}%)
+              </Text>
+            </View>
+            <View style={{ height: 8, backgroundColor: colors.border || '#E5E7EB', borderRadius: 4, overflow: 'hidden' }}>
+              <View style={{ height: '100%', width: `${pct}%`, backgroundColor: item.color, borderRadius: 4 }} />
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
 
 // Helper to get icon for bait type from gear database
 const getBaitIcon = (baitName: string): string => {
@@ -596,7 +661,7 @@ export default function StatisticsScreen() {
 
   const fetchStatistics = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       // Fetch overview
       const overviewRes = await fetch(`${API_URL}/statistics/overview`, {
@@ -624,7 +689,7 @@ export default function StatisticsScreen() {
 
   const fetchPersonalBests = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/personal-bests`, {
         headers: { 'Authorization': `Bearer ${accessToken}` },
       });
@@ -640,7 +705,7 @@ export default function StatisticsScreen() {
 
   const fetchStreaks = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/statistics/streaks`, {
         headers: { 'Authorization': `Bearer ${accessToken}` },
       });
@@ -659,7 +724,7 @@ export default function StatisticsScreen() {
 
   const fetchPatterns = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/statistics/patterns`, {
         headers: { 'Authorization': `Bearer ${accessToken}` },
       });
@@ -690,18 +755,9 @@ export default function StatisticsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <LinearGradient
-          colors={[colors.accent, colors.accentDark || '#D4880F']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.logoGradient}
-        >
-          <Ionicons name="stats-chart" size={40} color={colors.primary} />
-        </LinearGradient>
-        <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Indlæser statistik...</Text>
-      </View>
+      <PageLayout>
+        <ScreenLoading message="Indlæser dine fangststatistikker..." />
+      </PageLayout>
     );
   }
 
@@ -1068,15 +1124,19 @@ export default function StatisticsScreen() {
           </View>
 
           {timelineChartData.datasets[0].data.length > 0 ? (
-            <LineChart
-              data={timelineChartData}
-              width={screenWidth - 48}
-              height={220}
-              chartConfig={chartConfig}
-              bezier
-              style={styles.chart}
-              fromZero
-            />
+            Platform.OS === 'android' ? (
+              <CustomBarChart data={timelineChartData} colors={colors} />
+            ) : (
+              <LineChart
+                data={timelineChartData}
+                width={screenWidth - 48}
+                height={220}
+                chartConfig={chartConfig}
+                bezier
+                style={styles.chart}
+                fromZero
+              />
+            )
           ) : (
             <View style={styles.emptyChart}>
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -1094,17 +1154,21 @@ export default function StatisticsScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Arter Fordeling</Text>
             </View>
 
-            <PieChart
-              data={pieChartData}
-              width={screenWidth - 48}
-              height={220}
-              chartConfig={chartConfig}
-              accessor="population"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              absolute
-              style={styles.chart}
-            />
+            {Platform.OS === 'android' ? (
+              <CustomSpeciesBreakdown data={pieChartData} colors={colors} />
+            ) : (
+              <PieChart
+                data={pieChartData}
+                width={screenWidth - 48}
+                height={220}
+                chartConfig={chartConfig}
+                accessor="population"
+                backgroundColor="transparent"
+                paddingLeft="15"
+                absolute
+                style={styles.chart}
+              />
+            )}
 
             <View style={styles.speciesList}>
               {(overview?.speciesBreakdown || []).slice(0, 5).map((item, index) => (
@@ -1152,6 +1216,9 @@ export default function StatisticsScreen() {
                   <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>Fiskedage</Text>
                 </View>
               </View>
+
+              {/* Lure & Tackle ROI Performance Tracker */}
+              <LurePerformanceCard />
 
               {/* Achievements Section */}
               <View style={[styles.section, { backgroundColor: colors.surface }]}>

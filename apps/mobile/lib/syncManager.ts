@@ -99,9 +99,8 @@ class SyncManager {
           // Increment retry count
           await offlineStorage.incrementRetryCount(operation.id);
 
-          // Remove if too many retries
           if (operation.retries >= 3) {
-            await offlineStorage.removeFromSyncQueue(operation.id);
+            console.warn(`Sync operation ${operation.id} failed ${operation.retries} times. Retaining in queue for manual retry.`);
           }
         }
       }

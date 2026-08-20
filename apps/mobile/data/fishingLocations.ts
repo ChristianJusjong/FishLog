@@ -286,6 +286,131 @@ export const LOCATIONS_BY_REGION: LocationCategory[] = [
       { name: "Gedser", latitude: 54.57, longitude: 11.93, description: "Danmarks sydligste punkt", waterType: 'saltvand', species: ['torsk', 'fladfisk', 'rodspaette', 'hornfisk', 'makrel', 'sild', 'havorred'], depth: "5-25m", regulations: "Fisketegn påkrævet" },
       { name: "Nysted", latitude: 54.67, longitude: 11.73, description: "Sydkysten - havørred", waterType: 'saltvand', species: ['havorred', 'fladfisk', 'skrubbe', 'torsk', 'hornfisk'], depth: "2-15m", regulations: "Fisketegn påkrævet" },
       { name: "Stubbekøbing", latitude: 54.88, longitude: 12.05, description: "Østfalster - havørred", waterType: 'saltvand', species: ['havorred', 'torsk', 'fladfisk', 'hornfisk', 'makrel'], depth: "3-18m", regulations: "Fisketegn påkrævet" },
+      { name: "Hvideklint", latitude: 54.9370576, longitude: 12.2822623, description: "Vinter/forår plads - dybt vand tæt på kyst, huller på 3-4m", waterType: 'saltvand', species: ['havorred', 'hornfisk'], depth: "3-4m", regulations: "Fisketegn påkrævet" },
+      { name: "Vesterskov (Farø)", latitude: 54.9336051, longitude: 11.9936905, description: "Ved Farø bro - 20-25m dybt vand, stærk strøm, trækkende havørred", waterType: 'saltvand', species: ['havorred', 'hornfisk'], depth: "20-25m", regulations: "Fisketegn påkrævet" },
+      { name: "Madsesklint", latitude: 54.88153, longitude: 12.206979, description: "Suverænt havørredspot - dybt vand, stærk strøm fra Grønsund", waterType: 'saltvand', species: ['havorred', 'hornfisk'], depth: "Dybt", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Djursland",
+    locations: [
+      { name: "Polterrev", latitude: 56.3925356, longitude: 10.9218865, description: "Første rev syd for Grenå - havørred, vadning anbefales", waterType: 'saltvand', species: ['havorred', 'fladfisk', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Stenrevet (Randers Fjord)", latitude: 56.5793493, longitude: 10.2731833, description: "Yderfjordens mest kendte plads - sten, sand, muslingebanker", waterType: 'brakvand', species: ['havorred', 'hornfisk', 'sild', 'makrel', 'fladfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet, fredning 15/11-2/3" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Storebælt",
+    locations: [
+      { name: "Klarskov", latitude: 55.3012467, longitude: 11.1942729, description: "Vestsjælland - dyb varieret bund, store sten, tangskove, leopardbund", waterType: 'saltvand', species: ['havorred', 'hornfisk', 'makrel'], depth: "Dybt", regulations: "Fisketegn påkrævet" },
+      { name: "Nørrehoved", latitude: 55.7476384, longitude: 11.2225855, description: "Afsides plads - varieret bund, rev, dybt vand tæt på", waterType: 'saltvand', species: ['havorred', 'hornfisk', 'makrel'], depth: "Dybt", regulations: "Fisketegn påkrævet" },
+      { name: "Drøsselbjerg Strand", latitude: 55.4709794, longitude: 11.181098, description: "God varieret bund - sten, ålegræs, blæretang", waterType: 'saltvand', species: ['havorred', 'hornfisk', 'makrel', 'fladfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Vågehøj", latitude: 55.7349103, longitude: 10.8854063, description: "Stenkyst med stort rev - gode muligheder for store havørred", waterType: 'saltvand', species: ['havorred', 'hornfisk', 'makrel', 'fladfisk', 'sild', 'torsk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Lillebælt",
+    locations: [
+      { name: "Strandhuse", latitude: 55.4970373, longitude: 9.5344926, description: "Kolding Fjord - typisk fjordbund, blød bund, ålegræs, muslingebanker", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Dybt", regulations: "Fisketegn påkrævet" },
+      { name: "Fællesstykket", latitude: 55.625163, longitude: 9.794351, description: "Vejle Fjord - sten, tangskog, ålegræs, rev med badekar", waterType: 'saltvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Lyngsodde", latitude: 55.5186777, longitude: 9.74088, description: "Lillebælt - dybt vand under bro, flere km kyststræk", waterType: 'saltvand', species: ['havorred', 'torsk', 'hornfisk', 'makrel'], depth: "Dybt", regulations: "Fisketegn påkrævet" },
+      { name: "Kasmose", latitude: 55.5545837, longitude: 9.8371612, description: "Fyn - leopardbund, badekar, stejle klinter ved Røjle Klint", waterType: 'saltvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Skelodde", latitude: 55.2400615, longitude: 9.8956628, description: "Fyn - varieret bund, god langs hele odden", waterType: 'saltvand', species: ['havorred', 'hornfisk', 'fladfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Fyn",
+    locations: [
+      { name: "Svendborg Havn (mole)", latitude: 55.0583275, longitude: 10.6165564, description: "Havnefiskeri - fladfisk, sæsonfisk, havørred", waterType: 'saltvand', species: ['havorred', 'torsk', 'fladfisk', 'hornfisk', 'makrel'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Fyns Hoved (nord)", latitude: 55.6172817, longitude: 10.5879519, description: "Klassiker - lang stræk mod spidsen, store sten, små rev", waterType: 'saltvand', species: ['havorred', 'hornfisk', 'makrel', 'fladfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Odense Å (by)", latitude: 55.3716455, longitude: 10.3821017, description: "20 km å gennem Odense - 20+ arter, havørred, gedde", waterType: 'ferskvand', species: ['havorred', 'oerred', 'gedde', 'aborre', 'skalle'], depth: "Varierende", regulations: "Dagkort + fisketegn" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Mariager Fjord",
+    locations: [
+      { name: "Dollarhuset (Stenarmen)", latitude: 56.6653596, longitude: 9.9929683, description: "Himmerland - dybt vand, rev, parkering ved vand", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Dybt", regulations: "Fisketegn påkrævet, fredning 16/9-15/3" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Køge Bugt",
+    locations: [
+      { name: "Strøby Ladeplads", latitude: 55.4009983, longitude: 12.3158112, description: "Stevns - stort rev, store sten, ålegræs, leopardbund", waterType: 'saltvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Roskilde Fjord",
+    locations: [
+      { name: "Midgård", latitude: 55.8554046, longitude: 12.0450658, description: "Roskilde Fjord - dyb sejlrende tæt på kyst, vadere nødvendige", waterType: 'brakvand', species: ['havorred', 'makrel', 'hornfisk'], depth: "Dybt", regulations: "Fisketegn påkrævet, fredning ved Græse Å" },
+      { name: "Møllekrogen", latitude: 55.7357701, longitude: 11.9926198, description: "Isefjord - lavt område med god dybde i midten, både ferskvand og saltvand", waterType: 'brakvand', species: ['havorred', 'aborre', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Færgebrorevet", latitude: 55.707132, longitude: 11.9912077, description: "Unikt rev midt i Roskilde Fjord - fantastisk havørredfiskeri, naturskøn tur fra Bognæs", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet, Bognæs er fredet" },
+      { name: "Herslev Odde", latitude: 55.6758288, longitude: 11.9519769, description: "Spredte muslingebanker og ålegræs - god havørred hele året", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet, fredning syd ved Gevninge Å" },
+      { name: "Vesterskov (Bognæs)", latitude: 55.6933976, longitude: 11.9804512, description: "Flotte naturomgivelser - varieret bund, optimal for havørred", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet, Bognæs er fredet" },
+      { name: "Veddelev", latitude: 55.6696067, longitude: 12.0818868, description: "Smuk odde med udsigt over Roskilde - varieret bund, havørred", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Isefjord",
+    locations: [
+      { name: "Lommestenen", latitude: 55.8520443, longitude: 11.7141503, description: "En af de smukkeste pladser i Isefjord - fantastisk naturoplevelse, varieret bund", waterType: 'brakvand', species: ['havorred', 'hornfisk', 'makrel'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Bramsnæs Vig", latitude: 55.6894164, longitude: 11.8378223, description: "En af Isefjords mest populære - magisk efterår/vinter/forår, trofæfisk", waterType: 'brakvand', species: ['havorred', 'hornfisk', 'makrel'], depth: "Varierende", regulations: "Fisketegn påkrævet, ingen kørsel på Bramsnæs" },
+      { name: "Bøsserup", latitude: 55.8746823, longitude: 11.6913113, description: "Klassiker på vestsiden - gode pynter, varieret bund, sydøst vind godt", waterType: 'brakvand', species: ['havorred', 'makrel', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Englands Huse", latitude: 55.8681641, longitude: 11.699715, description: "Klassisk plads på vestsiden - spændende stenrev, strækker sig til Bøsserup", waterType: 'brakvand', species: ['havorred', 'hornfisk', 'makrel'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Tempelkrogen", latitude: 55.6726416, longitude: 11.8023262, description: "Populær i kolde måneder - lavere saltholdighed, rev med masser af fisk", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Jægerspris", latitude: 55.8651191, longitude: 11.948889, description: "Revfiskeri med smukke badekar - varieret bund, muslingebanker, ålegræs", waterType: 'brakvand', species: ['havorred', 'hornfisk', 'makrel'], depth: "Varierende", regulations: "Fisketegn påkrævet, skydeterræn mod syd" },
+      { name: "Kulhuse", latitude: 55.9316598, longitude: 11.906158, description: "Havn med god parkering - fladfisk fra moler, havørred mod sydvest", waterType: 'brakvand', species: ['havorred', 'hornfisk', 'makrel', 'rodspaette', 'skrubbe'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Galgebjerg Strand", latitude: 55.9877796, longitude: 11.8917696, description: "Nordsjælland - varierede bundforhold, badekar og rev, hele året", waterType: 'saltvand', species: ['havorred', 'hornfisk', 'makrel'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Vesterlyng", latitude: 55.9425204, longitude: 11.6259841, description: "Sandet plads med markant kraftigt rev - naturligt stoppested for havørred", waterType: 'saltvand', species: ['havorred', 'hornfisk', 'makrel'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Bornholm",
+    locations: [
+      { name: "Svenskehavn", latitude: 55.0890585, longitude: 15.1536914, description: "Klassisk Bornholm plads - grove klipper, skær, vilde forhold", waterType: 'saltvand', species: ['havorred', 'hornfisk'], depth: "Dybt", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Limfjorden",
+    locations: [
+      { name: "Rovvig", latitude: 56.8379511, longitude: 8.6324124, description: "Vinterfiskeri - lavt vand, blød bund, ferskvand udløb", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Lavt", regulations: "Fisketegn påkrævet, fredning i bunden af bugten" },
+      { name: "Bådsgård Vig", latitude: 56.6160701, longitude: 9.122713, description: "Stor muslingerev ved pynten - god i kolde måneder", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Silstrup Hoved", latitude: 56.923281, longitude: 8.6619892, description: "Langt spændende stræk - hotspot under smukke klinter", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Færker Odde", latitude: 56.8445344, longitude: 9.0822366, description: "Strækker sig langt ud i fjorden - gode pladser på begge sider", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+      { name: "Lendrup", latitude: 56.9396221, longitude: 9.2095441, description: "Velkendt plads - nem adgang, gode fisk fanges årligt", waterType: 'brakvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Sydsjælland",
+    locations: [
+      { name: "Store Brunddrag", latitude: 54.6131675, longitude: 11.4491943, description: "Lolland-Falster - dybt vand tæt på, leopardbund", waterType: 'saltvand', species: ['havorred', 'hornfisk'], depth: "Dybt", regulations: "Fisketegn påkrævet" },
+      { name: "Haraldsted Sø", latitude: 55.4788791, longitude: 11.8271746, description: "200 ha sø - gedde, sandart, aborre, maks 11m dyb", waterType: 'ferskvand', species: ['gedde', 'aborre', 'skalle', 'sandart'], depth: "5-11m", regulations: "Fisketegn + dagkort" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Sønderjylland",
+    locations: [
+      { name: "Aabenraa Havn (mole)", latitude: 55.0458395, longitude: 9.4267639, description: "Havnefiskeri - makrel, sild, havørred, fladfisk", waterType: 'saltvand', species: ['havorred', 'makrel', 'sild', 'torsk', 'fladfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Midtjylland Søer",
+    locations: [
+      { name: "Ejstrup Sø", latitude: 55.9907437, longitude: 9.2857983, description: "Smuk sø ved Holtum Å - gedde tæt på bred, maks 4m", waterType: 'ferskvand', species: ['gedde', 'aborre', 'skalle'], depth: "1-4m", regulations: "Fisketegn påkrævet, kun ved badeområder" },
+      { name: "Tollundgaard Put & Take", latitude: 56.153298, longitude: 9.423865, description: "Stor sø ved Silkeborg - 40.000 m², åbent hele året", waterType: 'ferskvand', species: ['regnbue', 'oerred'], depth: "Varierende", regulations: "Put & Take - betaling" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Vestkysten",
+    locations: [
+      { name: "Hvide Sande (moler)", latitude: 56.0038478, longitude: 8.1284948, description: "Mange arter fra moler - makrel, fladfisk, multe, torsk, sild", waterType: 'saltvand', species: ['makrel', 'sild', 'fladfisk', 'hornfisk', 'bars', 'pighvar', 'torsk', 'multe'], depth: "Varierende", regulations: "Fisketegn påkrævet, laks/havørred fredet ved sluse" },
+      { name: "Hvide Sande Nordstrand", latitude: 56.0215874, longitude: 8.1050103, description: "Fladfisk og pighvar - makrel i sensommer på lavt vand", waterType: 'saltvand', species: ['fladfisk', 'pighvar', 'makrel'], depth: "0.5-Dybt", regulations: "Fisketegn påkrævet" },
+      { name: "Thyborøn Havn (moler)", latitude: 56.7060947, longitude: 8.2233502, description: "Gode faciliteter - nemt for familier, torsk, fladfisk, sild, makrel", waterType: 'saltvand', species: ['makrel', 'sild', 'fladfisk', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
+    ],
+  },
+  {
+    region: "Fishingindenmark.info - Vejle Fjord Åer",
+    locations: [
+      { name: "Egtved Å", latitude: 55.6416217, longitude: 9.2828934, description: "God havørred og bækørred - del af Vejle Å systemet", waterType: 'ferskvand', species: ['havorred', 'oerred', 'regnbue'], depth: "Varierende", regulations: "Dagkort + fisketegn" },
+      { name: "Borgmesteren", latitude: 55.6277165, longitude: 9.8285913, description: "Vejle Fjord kyst - store havørred fanges årligt, børsteorm", waterType: 'saltvand', species: ['havorred', 'hornfisk'], depth: "Varierende", regulations: "Fisketegn påkrævet" },
     ],
   },
 ];

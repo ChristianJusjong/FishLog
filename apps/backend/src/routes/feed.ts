@@ -12,8 +12,8 @@ export async function feedRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     try {
       const userId = request.user!.userId;
-      const page = request.query.page || 1;
-      const limit = Math.min(request.query.limit || 20, 50); // Max 50 items per page
+      const page = Number(request.query.page) || 1;
+      const limit = Math.min(Number(request.query.limit) || 20, 50); // Max 50 items per page
       const skip = (page - 1) * limit;
 
       // Get all accepted friendships where user is involved

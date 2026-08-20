@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
@@ -269,7 +270,7 @@ export default function EditCatchScreen() {
 
   const fetchCatchData = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/catches/${catchId}`, {
         headers: {
@@ -363,10 +364,10 @@ export default function EditCatchScreen() {
 
     setLoading(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       // Use selected image if available
-      let finalPhotoUrl = selectedImage || undefined;
+      const finalPhotoUrl = selectedImage || undefined;
 
       const response = await fetch(`${API_URL}/catches/${catchId}`, {
         method: 'PUT',

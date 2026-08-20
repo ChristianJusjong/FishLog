@@ -47,6 +47,8 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
           title,
           description,
           visibility,
+          isLive: true,
+          liveShareEnabled: true,
           startTime: new Date(),
           route: JSON.stringify([]), // Initialize empty route array
         },
@@ -60,6 +62,8 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
           title: session.title,
           startTime: session.startTime,
           visibility: session.visibility,
+          isLive: true,
+          liveShareEnabled: true,
         },
       });
     } catch (error) {
@@ -161,12 +165,16 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         totalDistance += distance;
       }
 
-      // Update session with new route point
+      // Update session with new route point and live position
       await prisma.fishingSession.update({
         where: { id },
         data: {
           route: JSON.stringify(route),
           totalDistance,
+          currentLat: locationPoint.lat,
+          currentLng: locationPoint.lng,
+          lastPingAt: new Date(),
+          isLive: true,
         },
       });
 
@@ -269,6 +277,7 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
         data: {
           endTime,
           duration,
+          isLive: false,
           maxSpeed: maxSpeed > 0 ? maxSpeed : null,
           avgSpeed: avgSpeed > 0 ? avgSpeed : null,
           totalCatches,
@@ -614,6 +623,101 @@ export async function sessionsRoutes(fastify: FastifyInstance) {
     } catch (error) {
       fastify.log.error(error as any);
       return reply.code(500).send({ error: 'Failed to get feed' });
+    }
+  });
+
+  // GET /sessions/live-friends - Get real-time active sessions from friends (Strava for fishers)
+  fastify.get('/sessions/live-friends', {
+    preHandler: authenticateToken
+  }, async (request, reply) => {
+    try {
+      const userId = request.user!.userId;
+
+      // Get user's accepted friends
+      const friendships = await prisma.friendship.findMany({
+        where: {
+          OR: [
+            { requesterId: userId, status: 'accepted' },
+            { accepterId: userId, status: 'accepted' },
+          ],
+        },
+      });
+
+      const friendIds = friendships.map(f =>
+        f.requesterId === userId ? f.accepterId : f.requesterId
+      );
+
+      if (friendIds.length === 0) {
+        return reply.send({ liveSessions: [] });
+      }
+
+      // Fetch all ongoing sessions with liveShareEnabled for these friends
+      const liveSessions = await prisma.fishingSession.findMany({
+        where: {
+          userId: { in: friendIds },
+          endTime: null,
+          isLive: true,
+          liveShareEnabled: true,
+          visibility: { in: ['public', 'friends'] },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          },
+          catches: {
+            select: {
+              id: true,
+              species: true,
+              lengthCm: true,
+              weightKg: true,
+              photoUrl: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          },
+          _count: {
+            select: {
+              catches: true,
+              kudos: true,
+              comments: true,
+            },
+          },
+        },
+        orderBy: { startTime: 'desc' },
+      });
+
+      const formatted = liveSessions.map(session => {
+        const now = new Date();
+        const durationMinutes = Math.round((now.getTime() - new Date(session.startTime).getTime()) / (1000 * 60));
+
+        return {
+          id: session.id,
+          userId: session.userId,
+          user: session.user,
+          title: session.title || 'Fisketur i gang',
+          sessionType: session.sessionType,
+          startTime: session.startTime,
+          durationMinutes,
+          currentLat: session.currentLat,
+          currentLng: session.currentLng,
+          lastPingAt: session.lastPingAt,
+          totalDistanceKm: session.totalDistance || 0,
+          catchesCount: session._count.catches,
+          latestCatches: session.catches.slice(0, 3),
+        };
+      });
+
+      return reply.send({
+        liveSessions: formatted,
+        count: formatted.length,
+      });
+    } catch (error) {
+      fastify.log.error(error as any);
+      return reply.code(500).send({ error: 'Failed to fetch live friends sessions' });
     }
   });
 

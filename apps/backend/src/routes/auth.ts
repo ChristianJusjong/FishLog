@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { FastifyInstance } from 'fastify';
 import { generateTokenPair, verifyRefreshToken } from '../utils/jwt';
-import { signupSchema, loginSchema, refreshTokenSchema, validate } from '../lib/validation';
+import { signupSchema, loginSchema, refreshTokenSchema, authExchangeSchema, facebookDeletionSchema, appleNativeAuthSchema, validate } from '../lib/validation';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
@@ -11,6 +11,8 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const FACEBOOK_AUTH_URL = 'https://www.facebook.com/v12.0/dialog/oauth';
 const FACEBOOK_TOKEN_URL = 'https://graph.facebook.com/v12.0/oauth/access_token';
+const APPLE_AUTH_URL = 'https://appleid.apple.com/auth/authorize';
+const APPLE_TOKEN_URL = 'https://appleid.apple.com/auth/token';
 
 // Temporary auth code store (codes expire after 5 minutes)
 // This allows secure OAuth token exchange via POST instead of URL params
@@ -54,6 +56,43 @@ function cleanupExpiredCodes(): void {
   }
 }
 
+// Security: Validate Redirect URI to prevent Open Redirect attacks
+function validateRedirectUri(uri: string): boolean {
+  if (!uri) return false;
+
+  try {
+    const url = new URL(uri);
+
+    // Whitelisted protocols
+    const allowedProtocols = ['hook:', 'exp:', 'https:'];
+    if (!allowedProtocols.includes(url.protocol)) return false;
+
+    // Check specific domains for HTTPS
+    if (url.protocol === 'https:') {
+      // Allow Railway production and specific trusted domains
+      const allowedDomains = [
+        'fishlog-production.up.railway.app',
+        'accounts.google.com',
+        'www.facebook.com',
+        'appleid.apple.com',
+        'auth.expo.io',
+      ];
+      // Check if hostname ends with allowed domain (e.g., to allow subdomains if needed, strict match preferred here)
+      return allowedDomains.includes(url.hostname);
+    }
+
+    // Allow custom scheme (mobile app)
+    if (url.protocol === 'hook:') return true;
+
+    // Allow Expo Go (development only - consider restricting in production)
+    if (url.protocol === 'exp:') return true;
+
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
 export async function authRoutes(fastify: FastifyInstance) {
   // Google OAuth - Initiate login
   fastify.get('/auth/google', async (request, reply) => {
@@ -80,6 +119,15 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.get('/auth/google/mobile', async (request, reply) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const { redirect_uri } = request.query as { redirect_uri?: string };
+
+    if (!redirect_uri) {
+      return reply.code(400).send({ error: 'redirect_uri is required' });
+    }
+
+    // Security: Validate redirect_uri
+    if (!validateRedirectUri(redirect_uri)) {
+      return reply.code(400).send({ error: 'Invalid redirect_uri' });
+    }
 
     if (!clientId) {
       return reply.code(500).send({ error: 'Google OAuth not configured' });
@@ -170,6 +218,9 @@ export async function authRoutes(fastify: FastifyInstance) {
         picture?: string;
       };
 
+      const userEmail = googleUser.email || `${googleUser.id}@google.hook.app`;
+      const userName = googleUser.name || 'Google Bruger';
+
       // Find or create user in database
       let user = await prisma.user.findUnique({
         where: {
@@ -180,11 +231,27 @@ export async function authRoutes(fastify: FastifyInstance) {
         },
       });
 
+      if (!user && googleUser.email) {
+        user = await prisma.user.findUnique({
+          where: { email: googleUser.email },
+        });
+        if (user) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              provider: 'google',
+              providerId: googleUser.id,
+              avatar: user.avatar || googleUser.picture,
+            },
+          });
+        }
+      }
+
       if (!user) {
         user = await prisma.user.create({
           data: {
-            email: googleUser.email,
-            name: googleUser.name,
+            email: userEmail,
+            name: userName,
             avatar: googleUser.picture,
             provider: 'google',
             providerId: googleUser.id,
@@ -235,7 +302,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'email,public_profile',
+      scope: 'public_profile',
     })}`;
 
     return reply.redirect(authUrl);
@@ -245,6 +312,15 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.get('/auth/facebook/mobile', async (request, reply) => {
     const clientId = process.env.FACEBOOK_APP_ID;
     const { redirect_uri } = request.query as { redirect_uri?: string };
+
+    if (!redirect_uri) {
+      return reply.code(400).send({ error: 'redirect_uri is required' });
+    }
+
+    // Security: Validate redirect_uri
+    if (!validateRedirectUri(redirect_uri)) {
+      return reply.code(400).send({ error: 'Invalid redirect_uri' });
+    }
 
     if (!clientId) {
       return reply.code(500).send({ error: 'Facebook OAuth not configured' });
@@ -269,7 +345,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       client_id: clientId,
       redirect_uri: backendCallbackUrl || '',
       response_type: 'code',
-      scope: 'email,public_profile',
+      scope: 'public_profile',
       state: `mobile:${state}`, // Prefix to identify mobile flow
     })}`;
 
@@ -326,6 +402,9 @@ export async function authRoutes(fastify: FastifyInstance) {
         picture?: { data: { url: string } };
       };
 
+      const userEmail = facebookUser.email || `${facebookUser.id}@facebook.hook.app`;
+      const userName = facebookUser.name || 'Facebook Bruger';
+
       // Find or create user in database
       let user = await prisma.user.findUnique({
         where: {
@@ -336,11 +415,27 @@ export async function authRoutes(fastify: FastifyInstance) {
         },
       });
 
+      if (!user && facebookUser.email) {
+        user = await prisma.user.findUnique({
+          where: { email: facebookUser.email },
+        });
+        if (user) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              provider: 'facebook',
+              providerId: facebookUser.id,
+              avatar: user.avatar || facebookUser.picture?.data?.url,
+            },
+          });
+        }
+      }
+
       if (!user) {
         user = await prisma.user.create({
           data: {
-            email: facebookUser.email,
-            name: facebookUser.name,
+            email: userEmail,
+            name: userName,
             avatar: facebookUser.picture?.data?.url,
             provider: 'facebook',
             providerId: facebookUser.id,
@@ -377,14 +472,289 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Apple OAuth - Initiate login (Web / Browser flow)
+  fastify.get('/auth/apple', async (request, reply) => {
+    const clientId = process.env.APPLE_CLIENT_ID || process.env.APPLE_SERVICE_ID;
+    const redirectUri = process.env.APPLE_CALLBACK_URL;
+
+    if (!clientId || !redirectUri) {
+      return reply.code(500).send({ error: 'Apple OAuth not configured' });
+    }
+
+    const state = crypto.randomBytes(16).toString('hex');
+    const authUrl = `${APPLE_AUTH_URL}?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code id_token',
+      scope: 'name email',
+      response_mode: 'form_post',
+      state,
+    })}`;
+
+    return reply.redirect(authUrl);
+  });
+
+  // Apple OAuth for mobile - uses custom redirect URI
+  fastify.get('/auth/apple/mobile', async (request, reply) => {
+    const clientId = process.env.APPLE_CLIENT_ID || process.env.APPLE_SERVICE_ID;
+    const { redirect_uri } = request.query as { redirect_uri?: string };
+
+    if (!redirect_uri) {
+      return reply.code(400).send({ error: 'redirect_uri is required' });
+    }
+
+    if (!validateRedirectUri(redirect_uri)) {
+      return reply.code(400).send({ error: 'Invalid redirect_uri' });
+    }
+
+    if (!clientId) {
+      return reply.code(500).send({ error: 'Apple OAuth not configured' });
+    }
+
+    const state = crypto.randomBytes(16).toString('hex');
+    mobileRedirectStore.set(state, {
+      redirectUri: redirect_uri,
+      expiresAt: Date.now() + MOBILE_REDIRECT_EXPIRY_MS,
+    });
+    cleanupExpiredCodes();
+
+    const backendCallbackUrl = process.env.APPLE_CALLBACK_URL;
+
+    const authUrl = `${APPLE_AUTH_URL}?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: backendCallbackUrl || '',
+      response_type: 'code id_token',
+      scope: 'name email',
+      response_mode: 'form_post',
+      state: `mobile:${state}`,
+    })}`;
+
+    return reply.redirect(authUrl);
+  });
+
+  // Helper function to handle Apple OAuth callback payloads
+  const handleAppleCallback = async (request: any, reply: any) => {
+    try {
+      const query = (request.query || {}) as { code?: string; state?: string; id_token?: string };
+      const body = (request.body || {}) as { code?: string; state?: string; id_token?: string; user?: string };
+
+      const code = body.code || query.code;
+      const state = body.state || query.state;
+      const idToken = body.id_token || query.id_token;
+
+      if (!code && !idToken) {
+        return reply.code(400).send({ error: 'Authorization data missing' });
+      }
+
+      const isMobileFlow = state?.startsWith('mobile:');
+      let mobileRedirectUri: string | null = null;
+
+      if (isMobileFlow && state) {
+        const mobileState = state.replace('mobile:', '');
+        const storedData = mobileRedirectStore.get(mobileState);
+        if (storedData && Date.now() < storedData.expiresAt) {
+          mobileRedirectUri = storedData.redirectUri;
+          mobileRedirectStore.delete(mobileState);
+        }
+      }
+
+      let appleSub = '';
+      let appleEmail = '';
+      let appleName = 'Apple Bruger';
+
+      // If Apple returned identity token in form_post, decode payload JWT
+      if (idToken) {
+        try {
+          const parts = idToken.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+            appleSub = payload.sub || '';
+            appleEmail = payload.email || '';
+          }
+        } catch (e) {
+          fastify.log.error(e, 'Failed to parse Apple ID token');
+        }
+      }
+
+      // If user object was sent on first login: { name: { firstName, lastName }, email }
+      if (body.user) {
+        try {
+          const parsedUser = typeof body.user === 'string' ? JSON.parse(body.user) : body.user;
+          if (parsedUser.name) {
+            const fullName = [parsedUser.name.firstName, parsedUser.name.lastName].filter(Boolean).join(' ');
+            if (fullName) appleName = fullName;
+          }
+          if (parsedUser.email && !appleEmail) {
+            appleEmail = parsedUser.email;
+          }
+        } catch (e) {
+          fastify.log.error(e, 'Failed to parse Apple user data');
+        }
+      }
+
+      if (!appleSub) {
+        appleSub = code || crypto.randomBytes(16).toString('hex');
+      }
+
+      if (!appleEmail) {
+        appleEmail = `apple_${appleSub.substring(0, 10)}@privaterelay.appleid.com`;
+      }
+
+      let user = await prisma.user.findUnique({
+        where: {
+          provider_providerId: {
+            provider: 'apple',
+            providerId: appleSub,
+          },
+        },
+      });
+
+      if (!user) {
+        const existingEmailUser = await prisma.user.findUnique({
+          where: { email: appleEmail },
+        });
+
+        if (existingEmailUser) {
+          user = await prisma.user.update({
+            where: { id: existingEmailUser.id },
+            data: {
+              provider: 'apple',
+              providerId: appleSub,
+            },
+          });
+        } else {
+          user = await prisma.user.create({
+            data: {
+              email: appleEmail,
+              name: appleName,
+              provider: 'apple',
+              providerId: appleSub,
+            },
+          });
+        }
+      }
+
+      const authCode = generateAuthCode(user.id);
+
+      if (mobileRedirectUri) {
+        return reply.redirect(`${mobileRedirectUri}?code=${authCode}&provider=apple`);
+      } else {
+        return reply.redirect(`hook://auth/callback?code=${authCode}&provider=apple`);
+      }
+    } catch (error) {
+      fastify.log.error(error, 'Apple OAuth callback error');
+      return reply.redirect(`hook://auth/callback?error=authentication_failed`);
+    }
+  };
+
+  // Apple OAuth callbacks (Apple sends POST for form_post and GET for standard redirects)
+  fastify.get('/auth/apple/callback', handleAppleCallback);
+  fastify.post('/auth/apple/callback', handleAppleCallback);
+
+  // Native Sign in with Apple (Direct verification endpoint for iOS / React Native apps)
+  fastify.post('/auth/apple/native', async (request, reply) => {
+    try {
+      const validData = validate(appleNativeAuthSchema, request.body, reply);
+      if (!validData) return;
+
+      const { identityToken, user: userInfo } = validData;
+
+      // Decode JWT identityToken from Apple
+      const parts = identityToken.split('.');
+      if (parts.length !== 3) {
+        return reply.code(400).send({ error: 'Invalid Apple identity token format' });
+      }
+
+      const decodedPayload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+      const appleSub = decodedPayload.sub;
+      let email = decodedPayload.email || userInfo?.email;
+
+      if (!appleSub) {
+        return reply.code(400).send({ error: 'Missing subject claim in Apple token' });
+      }
+
+      if (!email) {
+        email = `apple_${appleSub.substring(0, 10)}@privaterelay.appleid.com`;
+      }
+
+      let name = 'Apple Bruger';
+      if (userInfo?.name) {
+        const fullName = [userInfo.name.firstName, userInfo.name.lastName].filter(Boolean).join(' ');
+        if (fullName) name = fullName;
+      }
+
+      let user = await prisma.user.findUnique({
+        where: {
+          provider_providerId: {
+            provider: 'apple',
+            providerId: appleSub,
+          },
+        },
+      });
+
+      if (!user) {
+        const existingEmailUser = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (existingEmailUser) {
+          user = await prisma.user.update({
+            where: { id: existingEmailUser.id },
+            data: {
+              provider: 'apple',
+              providerId: appleSub,
+            },
+          });
+        } else {
+          user = await prisma.user.create({
+            data: {
+              email,
+              name,
+              provider: 'apple',
+              providerId: appleSub,
+            },
+          });
+        }
+      }
+
+      // Generate JWT Token Pair
+      const tokens = generateTokenPair({
+        id: user.id,
+        userId: user.id,
+        email: user.email,
+      });
+
+      // Save refresh token in DB
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken: tokens.refreshToken },
+      });
+
+      return reply.send({
+        success: true,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+          provider: user.provider,
+        },
+      });
+    } catch (error: any) {
+      fastify.log.error(error, 'Native Apple auth error');
+      return reply.code(500).send({ error: error.message || 'Apple authentication failed' });
+    }
+  });
+
   // Exchange auth code for tokens (secure POST endpoint)
   fastify.post('/auth/exchange', async (request, reply) => {
     try {
-      const { code } = request.body as { code?: string };
+      const validData = validate(authExchangeSchema, request.body, reply);
+      if (!validData) return;
 
-      if (!code) {
-        return reply.code(400).send({ error: 'Authorization code required' });
-      }
+      const { code } = validData;
 
       // Consume the auth code (one-time use)
       const userId = consumeAuthCode(code);
@@ -435,11 +805,10 @@ export async function authRoutes(fastify: FastifyInstance) {
   // Refresh token endpoint
   fastify.post('/auth/refresh', async (request, reply) => {
     try {
-      const { refreshToken } = request.body as { refreshToken: string };
+      const validData = validate(refreshTokenSchema, request.body, reply);
+      if (!validData) return;
 
-      if (!refreshToken) {
-        return reply.code(400).send({ error: 'Refresh token required' });
-      }
+      const { refreshToken } = validData;
 
       // Verify refresh token
       const payload = verifyRefreshToken(refreshToken);
@@ -482,15 +851,16 @@ export async function authRoutes(fastify: FastifyInstance) {
   // Logout endpoint
   fastify.post('/auth/logout', async (request, reply) => {
     try {
-      const { refreshToken } = request.body as { refreshToken: string };
+      const validData = validate(refreshTokenSchema, request.body, reply);
+      if (!validData) return;
 
-      if (refreshToken) {
-        // Remove refresh token from database
-        await prisma.user.updateMany({
-          where: { refreshToken },
-          data: { refreshToken: null },
-        });
-      }
+      const { refreshToken } = validData;
+
+      // Remove refresh token from database
+      await prisma.user.updateMany({
+        where: { refreshToken },
+        data: { refreshToken: null },
+      });
 
       return { message: 'Logged out successfully' };
     } catch (error) {
@@ -627,15 +997,43 @@ export async function authRoutes(fastify: FastifyInstance) {
   // This endpoint handles user data deletion requests from Facebook
   fastify.post('/auth/facebook/deletion', async (request, reply) => {
     try {
-      const { signed_request } = request.body as { signed_request?: string };
+      const validData = validate(facebookDeletionSchema, request.body, reply);
+      if (!validData) return;
 
-      if (!signed_request) {
-        return reply.code(400).send({ error: 'Missing signed_request' });
+      const { signed_request } = validData;
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+
+      if (!appSecret) {
+        return reply.code(500).send({ error: 'Facebook OAuth not configured' });
       }
 
-      // Parse the signed request from Facebook
-      const [encodedSig, payload] = signed_request.split('.');
-      const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
+      // Parse and verify the signed request from Facebook
+      const parts = signed_request.split('.');
+      if (parts.length !== 2) {
+        return reply.code(400).send({ error: 'Invalid signed_request format' });
+      }
+
+      const [encodedSig, payload] = parts;
+
+      // Verify HMAC-SHA256 signature
+      const expectedSig = crypto
+        .createHmac('sha256', appSecret)
+        .update(payload)
+        .digest('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+
+      const sigBuffer = Buffer.from(encodedSig, 'utf-8');
+      const expectedBuffer = Buffer.from(expectedSig, 'utf-8');
+
+      if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+        return reply.code(400).send({ error: 'Invalid signature in signed_request' });
+      }
+
+      // Base64url decode payload
+      const base64Payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const data = JSON.parse(Buffer.from(base64Payload, 'base64').toString('utf-8'));
       const userId = data.user_id;
 
       if (userId) {

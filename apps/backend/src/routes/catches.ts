@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticateToken } from '../middleware/auth';
 import { badgeService } from '../services/badgeService.js';
 import { awardCatchXP } from '../services/xp-service.js';
+import { weatherTelemetryService } from '../services/weather-telemetry';
 import { startCatchSchema, updateCatchSchema, safeValidate } from '../utils/validation';
 
 
@@ -42,6 +43,16 @@ export async function catchesRoutes(fastify: FastifyInstance) {
           }
         }
       });
+
+      // Background weather telemetry capture
+      if (latitude && longitude) {
+        weatherTelemetryService.enrichCatchTelemetry({
+          catchId: catch_.id,
+          latitude,
+          longitude,
+          caughtAt: catch_.createdAt,
+        }).catch(err => fastify.log.error(err, 'Weather telemetry auto-capture error'));
+      }
 
       return reply.code(201).send(catch_);
     } catch (error) {
@@ -140,14 +151,17 @@ export async function catchesRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     try {
       const { userId, includeDrafts } = request.query as { userId?: string; includeDrafts?: string };
-
       const targetUserId = userId === 'me' || !userId ? request.user!.userId : userId;
+      const currentUserId = request.user!.userId;
+      const isOwner = targetUserId === currentUserId;
 
       const catches = await prisma.catch.findMany({
         where: {
           userId: targetUserId,
-          // Exclude drafts by default unless specifically requested
-          ...(includeDrafts !== 'true' && { isDraft: false }),
+          // Exclude drafts unless owner specifically requested them
+          ...( (!isOwner || includeDrafts !== 'true') && { isDraft: false }),
+          // Exclude private catches unless caller is owner
+          ...( !isOwner && { visibility: 'public' }),
         },
         include: {
           user: {
@@ -188,6 +202,26 @@ export async function catchesRoutes(fastify: FastifyInstance) {
               name: true,
               avatar: true
             }
+          },
+          comments: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  avatar: true
+                }
+              }
+            },
+            orderBy: {
+              createdAt: 'asc'
+            }
+          },
+          _count: {
+            select: {
+              likes: true,
+              comments: true
+            }
           }
         }
       });
@@ -196,8 +230,32 @@ export async function catchesRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Catch not found' });
       }
 
-      // Return catch with latitude/longitude from the regular columns
-      return catch_;
+      // Check object-level access control / visibility
+      const currentUserId = request.user!.userId;
+      const isOwner = catch_.userId === currentUserId;
+
+      if (!isOwner) {
+        if (catch_.isDraft || catch_.visibility === 'private') {
+          return reply.code(403).send({ error: 'This catch is private' });
+        }
+      }
+
+      // Check if liked by me
+      const userLike = await prisma.like.findUnique({
+        where: {
+          userId_catchId: {
+            userId: currentUserId,
+            catchId: id
+          }
+        }
+      });
+
+      return {
+        ...catch_,
+        likesCount: catch_._count.likes,
+        commentsCount: catch_._count.comments,
+        isLikedByMe: !!userLike
+      };
     } catch (error) {
       fastify.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch catch' });
@@ -387,8 +445,24 @@ export async function catchesRoutes(fastify: FastifyInstance) {
           }
         } catch (error) {
           fastify.log.error(error);
-          // Don't fail the whole request if FiskeDex update fails
         }
+      }
+
+      // Enrich complete catch with full weather telemetry & store in AI dataset
+      try {
+        await weatherTelemetryService.enrichCatchTelemetry({
+          catchId: completedCatch.id,
+          species: completedCatch.species || undefined,
+          weightKg: completedCatch.weightKg,
+          lengthCm: completedCatch.lengthCm,
+          latitude: completedCatch.latitude,
+          longitude: completedCatch.longitude,
+          caughtAt: completedCatch.createdAt,
+          technique: completedCatch.technique,
+          bait: completedCatch.bait,
+        });
+      } catch (weatherErr) {
+        fastify.log.error(weatherErr, 'Catch weather telemetry enrichment error');
       }
 
       return reply.send({

@@ -32,6 +32,15 @@ import {
   getSpeciesName,
 } from '../data/fishingLocations';
 
+import { useMapData } from '../hooks/useMapData';
+import MapFilters from '../components/map/MapFilters';
+import AIAdviceModal from '../components/map/AIAdviceModal';
+import FavoriteSpotModal from '../components/map/FavoriteSpotModal';
+import HotSpotModal from '../components/map/HotSpotModal';
+import FishingSpotModal from '../components/map/FishingSpotModal';
+import DepthInfoCard from '../components/map/DepthInfoCard';
+import CreateFavoriteSpotModal from '../components/map/CreateFavoriteSpotModal';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
 type Species = {
@@ -98,12 +107,6 @@ export default function MapScreen() {
   const { colors } = useTheme();
   const styles = useStyles();
   const mapRef = useRef<MapView>(null);
-  const [heatmapData, setHeatmapData] = useState<HeatmapPoint[]>([]);
-  const [topSpots, setTopSpots] = useState<TopSpot[]>([]);
-  const [hotSpots, setHotSpots] = useState<HotSpot[]>([]);
-  const [favoriteSpots, setFavoriteSpots] = useState<FavoriteSpot[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [allSpecies, setAllSpecies] = useState<Species[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
   const [selectedSeason, setSelectedSeason] = useState('');
   const [showSpeciesModal, setShowSpeciesModal] = useState(false);
@@ -122,12 +125,22 @@ export default function MapScreen() {
   const [expandedBaseMap, setExpandedBaseMap] = useState(true);
   const [expandedDataLayers, setExpandedDataLayers] = useState(false);
   const [baseMap, setBaseMap] = useState<'arcgis-ocean' | 'arcgis-topo' | 'arcgis-imagery' | 'arcgis-streets' | 'standard' | 'satellite'>('standard');
+  const [showFredningsbaelter, setShowFredningsbaelter] = useState(false);
 
-  // ArcGIS Feature Layers
-  const [showFredningsbaelter, setShowFredningsbaelter] = useState(false); // Fredningsbælter (LBST)
-  const [fredningsbaelterPolygons, setFredningsbaelterPolygons] = useState<any[]>([]); // Fetched polygons
-  const [loadingFredningsbaelter, setLoadingFredningsbaelter] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  const {
+    heatmapData,
+    topSpots,
+    hotSpots,
+    favoriteSpots,
+    loading,
+    allSpecies,
+    fredningsbaelterPolygons,
+    loadingFredningsbaelter,
+    refetchFavoriteSpots,
+  } = useMapData(selectedSpecies, selectedSeason, showFredningsbaelter, userLocation);
+
   const [selectedLocation, setSelectedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [aiAdvice, setAiAdvice] = useState<string>('');
   const [loadingAiAdvice, setLoadingAiAdvice] = useState(false);
@@ -140,37 +153,10 @@ export default function MapScreen() {
     longitudeDelta: 0.4,
   });
 
-  // Favorite location state
-  const [showFavoriteModal, setShowFavoriteModal] = useState(false);
-  const [favoriteName, setFavoriteName] = useState('');
-  const [favoriteFishSpecies, setFavoriteFishSpecies] = useState('');
-  const [favoriteBottomType, setFavoriteBottomType] = useState('');
-  const [favoriteDepth, setFavoriteDepth] = useState('');
-  const [favoritePrivacy, setFavoritePrivacy] = useState<'public' | 'groups' | 'friends' | 'private'>('private');
-  const [favoriteParkingLat, setFavoriteParkingLat] = useState('');
-  const [favoriteParkingLng, setFavoriteParkingLng] = useState('');
-  const [favoriteNotes, setFavoriteNotes] = useState('');
-  const [savingFavorite, setSavingFavorite] = useState(false);
-
-  // Hot Spot and Favorite Spot modals
-  const [selectedHotSpot, setSelectedHotSpot] = useState<HotSpot | null>(null);
-  const [selectedFavoriteSpot, setSelectedFavoriteSpot] = useState<FavoriteSpot | null>(null);
-
-  const fetchSpecies = async () => {
-    try {
-      const { data } = await api.get('/species');
-      setAllSpecies(data);
-    } catch (error) {
-      console.error('Failed to fetch species:', error);
-    }
-  };
-
   const getUserLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        return;
-      }
+      if (status !== 'granted') return;
 
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
@@ -179,7 +165,7 @@ export default function MapScreen() {
       setRegion({
         latitude,
         longitude,
-        latitudeDelta: 0.4, // ~20km radius
+        latitudeDelta: 0.4,
         longitudeDelta: 0.4,
       });
     } catch (error) {
@@ -198,168 +184,67 @@ export default function MapScreen() {
     }
   };
 
-  const fetchHeatmapData = async () => {
-    try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      const params = new URLSearchParams();
-      params.append('gridSize', '0.02');
-
-      // Add multiple species as query parameters
-      if (selectedSpecies.length > 0) {
-        selectedSpecies.forEach(species => {
-          params.append('species', species);
-        });
-      }
-
-      if (selectedSeason) {
-        params.append('season', selectedSeason);
-      }
-
-      const url = `${API_URL}/spots/heatmap?${params.toString()}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setHeatmapData(data.points);
-      } else {
-        console.error('Failed to fetch heatmap');
-      }
-    } catch (error) {
-      console.error('Heatmap fetch error:', error);
-    }
-  };
-
-  const fetchTopSpots = async () => {
-    try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      const params = new URLSearchParams();
-      params.append('limit', '20');
-
-      // Add multiple species as query parameters
-      if (selectedSpecies.length > 0) {
-        selectedSpecies.forEach(species => {
-          params.append('species', species);
-        });
-      }
-
-      const url = `${API_URL}/spots/top?${params.toString()}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTopSpots(data.spots);
-      } else {
-        console.error('Failed to fetch top spots');
-      }
-    } catch (error) {
-      console.error('Top spots fetch error:', error);
-    }
-  };
-
-  const fetchHotSpots = async () => {
-    try {
-      if (!userLocation) return;
-
-      const { data } = await api.get(
-        `/hot-spots/discover?near=${userLocation.latitude},${userLocation.longitude}`
-      );
-
-      if (data.hotSpots) {
-        setHotSpots(data.hotSpots);
-      }
-    } catch (error) {
-      console.error('Hot spots fetch error:', error);
-    }
-  };
-
-  const fetchFavoriteSpots = async () => {
-    try {
-      const { data } = await api.get('/hot-spots/my-favorites');
-
-      if (data.favoriteSpots) {
-        setFavoriteSpots(data.favoriteSpots);
-      }
-    } catch (error) {
-      console.error('Favorite spots fetch error:', error);
-    }
-  };
-
-  const fetchFredningsbaelter = async () => {
-    try {
-      setLoadingFredningsbaelter(true);
-      const url = 'https://services-eu1.arcgis.com/c3o7qz6F0HswtuVz/arcgis/rest/services/Fredningsbælter/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json';
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.features && data.features.length > 0) {
-        // Transform ArcGIS features to polygon coordinates
-        const polygons = data.features.map((feature: any, index: number) => {
-          if (feature.geometry && feature.geometry.rings) {
-            return {
-              id: index,
-              coordinates: feature.geometry.rings[0].map((coord: number[]) => ({
-                latitude: coord[1],
-                longitude: coord[0],
-              })),
-              attributes: feature.attributes,
-            };
-          }
-          return null;
-        }).filter(Boolean);
-
-        setFredningsbaelterPolygons(polygons);
-      }
-    } catch (error) {
-      console.error('Fredningsbælter fetch error:', error);
-    } finally {
-      setLoadingFredningsbaelter(false);
-    }
-  };
-
   useEffect(() => {
     getUserLocation();
-    fetchSpecies();
   }, []);
 
+  // Favorite location state
+  const [showFavoriteModal, setShowFavoriteModal] = useState(false);
+  const [favoriteName, setFavoriteName] = useState('');
+  const [favoriteFishSpecies, setFavoriteFishSpecies] = useState('');
+  const [favoriteBottomType, setFavoriteBottomType] = useState('');
+  const [favoriteDepth, setFavoriteDepth] = useState('');
+  const [favoritePrivacy, setFavoritePrivacy] = useState<'public' | 'groups' | 'friends' | 'private'>('private');
+  const [favoriteParkingLat, setFavoriteParkingLat] = useState('');
+  const [favoriteParkingLng, setFavoriteParkingLng] = useState('');
+  const [favoriteNotes, setFavoriteNotes] = useState('');
+  const [savingFavorite, setSavingFavorite] = useState(false);
+
+  // Hot Spot and Favorite Spot modals
+  const [selectedHotSpot, setSelectedHotSpot] = useState<HotSpot | null>(null);
+  const [selectedFavoriteSpot, setSelectedFavoriteSpot] = useState<FavoriteSpot | null>(null);
+  const [liveFriends, setLiveFriends] = useState<any[]>([]);
+  const [showPersonalHeatmap, setShowPersonalHeatmap] = useState(true);
+  const [userCatchesList, setUserCatchesList] = useState<any[]>([]);
+
+  // Fetch user's own catches for personal hotspot heatmap
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([
-        fetchHeatmapData(),
-        fetchTopSpots(),
-        fetchHotSpots(),
-        fetchFavoriteSpots(),
-      ]);
-      setLoading(false);
+    const fetchUserCatches = async () => {
+      try {
+        const response = await api.get('/catches?limit=100');
+        if (response.data?.catches) {
+          setUserCatchesList(response.data.catches.filter((c: any) => c.latitude && c.longitude));
+        }
+      } catch {
+        // silent fallback
+      }
+    };
+    fetchUserCatches();
+  }, []);
+
+  // Fetch live friends sessions periodically (Strava for fishers)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveFriends = async () => {
+      try {
+        const response = await api.get('/sessions/live-friends');
+        if (isMounted && response.data?.liveSessions) {
+          setLiveFriends(response.data.liveSessions);
+        }
+      } catch {
+        // ignore background errors
+      }
     };
 
-    loadData();
-  }, [selectedSpecies, selectedSeason]);
+    fetchLiveFriends();
+    const interval = setInterval(fetchLiveFriends, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
-  // Fetch hot spots when user location changes
-  useEffect(() => {
-    if (userLocation) {
-      fetchHotSpots();
-    }
-  }, [userLocation]);
 
-  // Fetch fredningsbælter when layer is enabled
-  useEffect(() => {
-    if (showFredningsbaelter && fredningsbaelterPolygons.length === 0) {
-      fetchFredningsbaelter();
-    }
-  }, [showFredningsbaelter]);
 
   const getIntensityColor = (intensity: number, maxIntensity: number) => {
     const normalized = intensity / maxIntensity;
@@ -771,6 +656,13 @@ export default function MapScreen() {
             onPress={handleMapPress}
             onLongPress={handleLongPress}
             mapType={baseMap.startsWith('arcgis') ? 'none' : (baseMap as 'standard' | 'satellite' | 'none')}
+            showsPointsOfInterest={false}
+            showsBuildings={false}
+            showsIndoors={false}
+            showsTraffic={false}
+            loadingEnabled={false}
+            maxZoomLevel={19}
+            minZoomLevel={5}
           >
             {/* ========== BASE MAPS ========== */}
 
@@ -866,6 +758,26 @@ export default function MapScreen() {
               );
             })()}
 
+            {/* Personal Catch Heatmap Layer (Egne Fangst Hotspots) */}
+            {showPersonalHeatmap && userCatchesList.map((c, idx) => (
+              <React.Fragment key={`user-catch-heat-${c.id || idx}`}>
+                <Circle
+                  center={{ latitude: c.latitude, longitude: c.longitude }}
+                  radius={280}
+                  fillColor="rgba(245, 166, 35, 0.35)"
+                  strokeColor="rgba(245, 166, 35, 0.7)"
+                  strokeWidth={1.5}
+                />
+                <Circle
+                  center={{ latitude: c.latitude, longitude: c.longitude }}
+                  radius={100}
+                  fillColor="rgba(255, 217, 61, 0.6)"
+                  strokeColor="#F5A623"
+                  strokeWidth={2}
+                />
+              </React.Fragment>
+            ))}
+
             {/* Heatmap circles */}
             {showHeatmap && heatmapData.map((point, index) => (
               <Circle
@@ -889,6 +801,7 @@ export default function MapScreen() {
                     latitude: spot.latitude,
                     longitude: spot.longitude,
                   }}
+                  tracksViewChanges={false}
                   title={`Hot Spot - ${spot.catchCount} fangster`}
                   description={`${spot.species.join(', ')}\nGns: ${spot.avgWeight}g | Max: ${spot.maxWeight}g`}
                   pinColor="red"
@@ -904,6 +817,7 @@ export default function MapScreen() {
                     latitude: spot.latitude,
                     longitude: spot.longitude,
                   }}
+                  tracksViewChanges={false}
                   title={`Hot Spot - ${spot.totalCatches} fangster`}
                   description={`${spot.totalAnglers} anglere | Score: ${spot.totalScore}`}
                   onPress={() => setSelectedHotSpot(spot)}
@@ -921,6 +835,7 @@ export default function MapScreen() {
                     latitude: spot.latitude,
                     longitude: spot.longitude,
                   }}
+                  tracksViewChanges={false}
                   title={`Favoritsted - ${spot.catchCount} fangster`}
                   description={`${spot.visitCount} besøg | Score: ${spot.totalScore}`}
                   onPress={() => setSelectedFavoriteSpot(spot)}
@@ -938,6 +853,7 @@ export default function MapScreen() {
                     latitude: spot.latitude,
                     longitude: spot.longitude,
                   }}
+                  tracksViewChanges={false}
                   title={spot.name}
                   description={`${spot.waterType === 'ferskvand' ? 'Ferskvand' : spot.waterType === 'saltvand' ? 'Saltvand' : 'Brakvand'} • ${spot.depth || 'Ukendt dybde'}`}
                   onPress={() => setSelectedFishingSpot(spot)}
@@ -965,6 +881,45 @@ export default function MapScreen() {
                   </View>
                 </Marker>
               ))}
+
+            {/* Live Friends Fishing Right Now (Strava for Fishers) */}
+            {liveFriends.map((lf) => {
+              if (!lf.currentLat || !lf.currentLng) return null;
+              return (
+                <Marker
+                  key={`live-friend-${lf.id}`}
+                  coordinate={{ latitude: lf.currentLat, longitude: lf.currentLng }}
+                  tracksViewChanges={false}
+                  title={`${lf.user?.name || 'Ven'} fisker nu!`}
+                  description={`${lf.title} • ${lf.catchesCount} fangster • ${lf.durationMinutes} min`}
+                >
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={{
+                      backgroundColor: '#00D4B2',
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: '#FFFFFF',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 3.84,
+                      elevation: 5,
+                    }}>
+                      <Ionicons name="radio" size={12} color="#FFFFFF" />
+                      <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 11 }}>
+                        {(lf.user?.name || 'Ven').split(' ')[0]}
+                      </Text>
+                    </View>
+                    <Ionicons name="boat" size={24} color="#0A2540" />
+                  </View>
+                </Marker>
+              );
+            })}
 
             {/* User's current location */}
             {userLocation && (
@@ -1001,21 +956,50 @@ export default function MapScreen() {
         )}
       </View>
 
-      {/* Filter Dropdown Button - Top Right - Rendered AFTER map */}
-      <TouchableOpacity
-        style={[styles.filterDropdownButton, { top: insets.top + 80 }]}
-        onPress={() => setShowFilters(!showFilters)}
-        activeOpacity={0.9}
-      >
-        <Ionicons name="options" size={20} color={colors.white} style={{ marginRight: 6 }} />
-        <Text style={styles.filterDropdownText}>Filter</Text>
-        <Ionicons
-          name={showFilters ? 'chevron-up' : 'chevron-down'}
-          size={16}
-          color={colors.white}
-          style={{ marginLeft: 4 }}
-        />
-      </TouchableOpacity>
+      {/* Map Control Buttons - Top Right */}
+      <View style={{ position: 'absolute', top: insets.top + 80, right: 16, flexDirection: 'row', gap: 8, zIndex: 1000 }}>
+        {/* Personal Catch Heatmap Toggle */}
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: showPersonalHeatmap ? '#F5A623' : 'rgba(10, 37, 64, 0.85)',
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: showPersonalHeatmap ? '#FFD93D' : 'rgba(255, 255, 255, 0.2)',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 5,
+          }}
+          onPress={() => setShowPersonalHeatmap(!showPersonalHeatmap)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="flame" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
+            {showPersonalHeatmap ? 'Mit Heatmap' : 'Heatmap Fra'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Filter Dropdown Button */}
+        <TouchableOpacity
+          style={styles.filterDropdownButton}
+          onPress={() => setShowFilters(!showFilters)}
+          activeOpacity={0.9}
+        >
+          <Ionicons name="options" size={18} color={colors.white} style={{ marginRight: 6 }} />
+          <Text style={styles.filterDropdownText}>Filter</Text>
+          <Ionicons
+            name={showFilters ? 'chevron-up' : 'chevron-down'}
+            size={14}
+            color={colors.white}
+            style={{ marginLeft: 4 }}
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Center on User Location Button - Rendered AFTER map */}
       {userLocation && (
@@ -1822,153 +1806,25 @@ export default function MapScreen() {
         </View>
       </Modal>
 
-      {/* Fishing Spot Details Modal */}
-      <Modal
-        visible={selectedFishingSpot !== null}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setSelectedFishingSpot(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: selectedFishingSpot ? getWaterTypeColor(selectedFishingSpot.waterType) : '#666',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginRight: 10,
-                }}>
-                  <Ionicons
-                    name={
-                      selectedFishingSpot?.waterType === 'ferskvand' ? 'leaf' :
-                      selectedFishingSpot?.waterType === 'saltvand' ? 'water' : 'git-merge'
-                    }
-                    size={20}
-                    color="#FFFFFF"
-                  />
-                </View>
-                <Text style={styles.modalTitle}>{selectedFishingSpot?.name || 'Fiskeplads'}</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setSelectedFishingSpot(null)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={28} color="#333" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody}>
-              {selectedFishingSpot && (
-                <>
-                  {/* Water Type Badge */}
-                  <View style={styles.fishingSpotBadgeRow}>
-                    <View style={[styles.fishingSpotBadge, { backgroundColor: getWaterTypeColor(selectedFishingSpot.waterType) }]}>
-                      <Text style={styles.fishingSpotBadgeText}>
-                        {selectedFishingSpot.waterType === 'ferskvand' ? 'Ferskvand' :
-                         selectedFishingSpot.waterType === 'saltvand' ? 'Saltvand' : 'Brakvand'}
-                      </Text>
-                    </View>
-                    {selectedFishingSpot.depth && (
-                      <View style={[styles.fishingSpotBadge, { backgroundColor: '#3B82F6' }]}>
-                        <Text style={styles.fishingSpotBadgeText}>{selectedFishingSpot.depth}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Description */}
-                  {selectedFishingSpot.description && (
-                    <View style={styles.fishingSpotSection}>
-                      <Text style={styles.fishingSpotDescription}>{selectedFishingSpot.description}</Text>
-                    </View>
-                  )}
-
-                  {/* Species Section */}
-                  {selectedFishingSpot.species && selectedFishingSpot.species.length > 0 && (
-                    <View style={styles.fishingSpotSection}>
-                      <Text style={styles.fishingSpotSectionTitle}>
-                        <Ionicons name="fish" size={16} color={colors.primary} /> Fiskearter
-                      </Text>
-                      <View style={styles.fishSpeciesContainer}>
-                        {selectedFishingSpot.species.map((speciesId, index) => (
-                          <View key={index} style={styles.fishSpeciesChip}>
-                            <Text style={styles.fishSpeciesText}>{getSpeciesName(speciesId)}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Regulations */}
-                  {selectedFishingSpot.regulations && (
-                    <View style={styles.fishingSpotSection}>
-                      <Text style={styles.fishingSpotSectionTitle}>
-                        <Ionicons name="shield-checkmark" size={16} color={colors.warning} /> Regler & Information
-                      </Text>
-                      <Text style={styles.fishingSpotRegulations}>{selectedFishingSpot.regulations}</Text>
-                    </View>
-                  )}
-
-                  {/* Coordinates */}
-                  <View style={styles.fishingSpotSection}>
-                    <Text style={styles.fishingSpotSectionTitle}>
-                      <Ionicons name="location" size={16} color={colors.primary} /> Koordinater
-                    </Text>
-                    <Text style={styles.fishingSpotCoords}>
-                      {selectedFishingSpot.latitude.toFixed(4)}°N, {selectedFishingSpot.longitude.toFixed(4)}°Ø
-                    </Text>
-                  </View>
-
-                  {/* Action Buttons */}
-                  <View style={styles.fishingSpotActions}>
-                    <TouchableOpacity
-                      style={[styles.fishingSpotActionButton, { backgroundColor: colors.primary }]}
-                      onPress={() => {
-                        setSelectedFishingSpot(null);
-                        setSelectedLocation({
-                          latitude: selectedFishingSpot.latitude,
-                          longitude: selectedFishingSpot.longitude,
-                        });
-                        setLoadingAiAdvice(true);
-                        // Trigger AI advice for this location
-                        const event = {
-                          nativeEvent: {
-                            coordinate: {
-                              latitude: selectedFishingSpot.latitude,
-                              longitude: selectedFishingSpot.longitude,
-                            },
-                          },
-                        };
-                        handleMapPress(event);
-                      }}
-                    >
-                      <Ionicons name="sparkles" size={20} color="#FFFFFF" />
-                      <Text style={styles.fishingSpotActionText}>Få AI Rådgivning</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.fishingSpotActionButton, { backgroundColor: '#22C55E' }]}
-                      onPress={() => {
-                        // Open in maps app
-                        const url = Platform.OS === 'ios'
-                          ? `maps:?q=${selectedFishingSpot.latitude},${selectedFishingSpot.longitude}`
-                          : `geo:${selectedFishingSpot.latitude},${selectedFishingSpot.longitude}?q=${selectedFishingSpot.latitude},${selectedFishingSpot.longitude}(${encodeURIComponent(selectedFishingSpot.name)})`;
-                        Linking.openURL(url);
-                      }}
-                    >
-                      <Ionicons name="navigate" size={20} color="#FFFFFF" />
-                      <Text style={styles.fishingSpotActionText}>Navigation</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      {/* Fishing Spot Details Modal with Instant AI Tactics */}
+      <FishingSpotModal
+        selectedFishingSpot={selectedFishingSpot}
+        setSelectedFishingSpot={setSelectedFishingSpot}
+        onGetAIAdvice={(lat, lng) => {
+          setSelectedLocation({ latitude: lat, longitude: lng });
+          const event = {
+            nativeEvent: {
+              coordinate: { latitude: lat, longitude: lng },
+            },
+          };
+          handleMapPress(event);
+        }}
+        currentWeather={{
+          temperature: 14,
+          windSpeed: 5,
+          pressure: 1014,
+        }}
+      />
       </View>
     </PageLayout>
   );

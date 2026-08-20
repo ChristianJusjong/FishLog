@@ -210,10 +210,9 @@ export default function SessionTracking() {
   const startTime = useRef<Date | null>(null);
 
   const sessionTypes = [
-    { id: 'shore', label: 'Kyst', icon: 'water' },
-    { id: 'boat', label: 'Båd', icon: 'boat' },
-    { id: 'kayak', label: 'Kajak', icon: 'boat' },
-    { id: 'wade', label: 'Vadning', icon: 'walk' },
+    { id: 'shore', label: 'Kyst/Vadning', icon: 'water' },
+    { id: 'boat', label: 'Båd/Kajak', icon: 'boat' },
+    { id: 'lake', label: 'Sø', icon: 'water-outline' },
     { id: 'ice', label: 'Is', icon: 'snow' },
   ];
 

@@ -15,8 +15,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
+import ScreenLoading from '../components/ScreenLoading';
 import { API_URL } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 
 interface LeaderboardEntry {
   rank: number;
@@ -56,7 +58,7 @@ export default function LeaderboardScreen() {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(
         `${API_URL}/leaderboard?category=${selectedCategory}&limit=100`,
@@ -150,18 +152,7 @@ export default function LeaderboardScreen() {
 
           {/* Leaderboard List */}
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <LinearGradient
-                colors={[colors.accent, colors.accentDark || '#D4880F']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoGradient}
-              >
-                <Ionicons name="podium" size={40} color={colors.primary} />
-              </LinearGradient>
-              <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
-              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Indlæser leaderboard...</Text>
-            </View>
+            <ScreenLoading message="Indlæser rangliste..." />
           ) : (
             <ScrollView
               style={styles.leaderboardScroll}

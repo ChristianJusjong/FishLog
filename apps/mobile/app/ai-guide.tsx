@@ -20,6 +20,8 @@ import { useTheme } from "../contexts/ThemeContext";
 import { api } from "../lib/api";
 import PageLayout from "../components/PageLayout";
 import WeatherLocationCard from "../components/WeatherLocationCard";
+import { LoadingBar } from "../components/LoadingBar";
+import FishSpeciesIcon from "../components/FishSpeciesIcon";
 
 // Import from shared fishing locations database
 import {
@@ -1098,143 +1100,117 @@ export default function AIGuideScreen() {
           </Text>
         </View>
 
+        {/* 1. VÆLG LOKATION (TRIN 1) */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>1. Vælg fiskeart</Text>
-          {/* Selected species button */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm }}>
+            <Text style={styles.sectionTitle}>📍 1. Vælg fiskeplads</Text>
+            <View style={{
+              backgroundColor: selectedLocation.waterType === 'saltvand' ? 'rgba(0, 212, 178, 0.15)' :
+                               selectedLocation.waterType === 'ferskvand' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(139, 92, 246, 0.15)',
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: selectedLocation.waterType === 'saltvand' ? '#00D4B2' :
+                           selectedLocation.waterType === 'ferskvand' ? '#10B981' : '#8B5CF6',
+            }}>
+              <Text style={{
+                fontSize: 11,
+                fontWeight: '800',
+                color: selectedLocation.waterType === 'saltvand' ? '#00D4B2' :
+                       selectedLocation.waterType === 'ferskvand' ? '#10B981' : '#8B5CF6',
+                textTransform: 'uppercase',
+              }}>
+                {selectedLocation.waterType === 'saltvand' ? 'Saltvand / Kyst' :
+                 selectedLocation.waterType === 'ferskvand' ? 'Ferskvand / Å / Sø' : 'Brakvand / Fjord'}
+              </Text>
+            </View>
+          </View>
+
           <TouchableOpacity
             style={styles.locationButton}
-            onPress={() => setShowSpeciesPicker(!showSpeciesPicker)}
+            onPress={() => setShowLocationPicker(!showLocationPicker)}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 24, marginRight: SPACING.sm }}>{selectedSpecies.icon}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.locationName}>{selectedSpecies.name}</Text>
-                <Text style={styles.locationDescription}>
-                  {selectedSpecies.category === 'ferskvand' ? 'Ferskvand' :
-                   selectedSpecies.category === 'saltvand' ? 'Saltvand' : 'Fersk/Salt'} • Sæson: {selectedSpecies.season} • Min: {selectedSpecies.minSize > 0 ? `${selectedSpecies.minSize}cm` : 'Ingen'}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.locationName}>{selectedLocation.name}</Text>
+              <Text style={styles.locationDescription}>
+                Dybde: {selectedLocation.depth || 'Variabel'} • {selectedLocation.description}
+              </Text>
+              {selectedLocation.regulations && (
+                <Text style={[styles.locationDescription, { marginTop: 2, color: colors.accent }]}>
+                  ⚠️ {selectedLocation.regulations}
                 </Text>
-              </View>
+              )}
             </View>
             <Text style={styles.locationArrow}>
-              {showSpeciesPicker ? "▲" : "▼"}
+              {showLocationPicker ? "▲" : "▼"}
             </Text>
           </TouchableOpacity>
 
-          {/* Species info card */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: colors.primaryLight,
-            padding: SPACING.sm,
-            borderRadius: RADIUS.md,
-            marginTop: SPACING.sm,
-          }}>
-            <Ionicons name="location" size={16} color={colors.primary} />
-            <Text style={{ marginLeft: SPACING.xs, fontSize: 12, color: colors.primary }}>
-              {matchingSpeciesCount} fiskearter ved {selectedLocation.name}
-            </Text>
-          </View>
-
-          {/* Species picker dropdown */}
-          {showSpeciesPicker && (
+          {showLocationPicker && (
             <View style={styles.locationList}>
-              <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled>
-                {/* Freshwater fish */}
-                {filteredSpeciesByCategory.ferskvand.length > 0 && (
-                  <View style={styles.locationCategory}>
-                    <Text style={styles.locationCategoryTitle}>Ferskvandsfisk</Text>
-                    {filteredSpeciesByCategory.ferskvand.map((species) => (
-                      <TouchableOpacity
-                        key={species.id}
-                        style={[
-                          styles.locationItem,
-                          selectedSpeciesId === species.id && styles.locationItemActive,
-                        ]}
-                        onPress={() => {
-                          setSelectedSpeciesId(species.id);
-                          setShowSpeciesPicker(false);
-                        }}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: 20, marginRight: SPACING.sm }}>{species.icon}</Text>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.locationItemName}>{species.name}</Text>
-                            <Text style={styles.locationItemDesc}>
-                              Sæson: {species.season} • Min: {species.minSize > 0 ? `${species.minSize}cm` : 'Ingen'}
-                            </Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
+              <View style={{
+                backgroundColor: colors.primaryLight + '15',
+                padding: SPACING.sm,
+                borderRadius: RADIUS.md,
+                marginBottom: SPACING.sm,
+              }}>
+                <Text style={{ fontSize: 12, color: colors.accent, fontWeight: '600' }}>
+                  Fiskearterne i trin 3 tilpasses automatisk den valgte plads.
+                </Text>
+              </View>
 
-                {/* Saltwater fish */}
-                {filteredSpeciesByCategory.saltvand.length > 0 && (
-                  <View style={styles.locationCategory}>
-                    <Text style={styles.locationCategoryTitle}>Saltvandsfisk</Text>
-                    {filteredSpeciesByCategory.saltvand.map((species) => (
-                      <TouchableOpacity
-                        key={species.id}
-                        style={[
-                          styles.locationItem,
-                          selectedSpeciesId === species.id && styles.locationItemActive,
-                        ]}
-                        onPress={() => {
-                          setSelectedSpeciesId(species.id);
-                          setShowSpeciesPicker(false);
-                        }}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: 20, marginRight: SPACING.sm }}>{species.icon}</Text>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.locationItemName}>{species.name}</Text>
-                            <Text style={styles.locationItemDesc}>
-                              Sæson: {species.season} • Min: {species.minSize > 0 ? `${species.minSize}cm` : 'Ingen'}
-                            </Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    ))}
+              {/* Link to external fishing map */}
+              <TouchableOpacity
+                style={styles.externalMapButton}
+                onPress={() => Linking.openURL('https://fishingindenmark.info/fiskepladser')}
+              >
+                <View style={styles.externalMapContent}>
+                  <Ionicons name="map" size={20} color={colors.accent} />
+                  <View style={{ flex: 1, marginLeft: SPACING.sm }}>
+                    <Text style={styles.externalMapTitle}>Udforsk 100+ fiskepladser</Text>
+                    <Text style={styles.externalMapDesc}>Åbn interaktivt kort på fishingindenmark.info</Text>
                   </View>
-                )}
+                  <Ionicons name="open-outline" size={16} color={colors.textSecondary} />
+                </View>
+              </TouchableOpacity>
 
-                {/* Both water types */}
-                {filteredSpeciesByCategory.begge.length > 0 && (
-                  <View style={styles.locationCategory}>
-                    <Text style={styles.locationCategoryTitle}>Fersk- & Saltvand</Text>
-                    {filteredSpeciesByCategory.begge.map((species) => (
+              {/* Grouped locations */}
+              <ScrollView style={{ maxHeight: 350 }} nestedScrollEnabled>
+                {LOCATIONS_BY_REGION.map((category: LocationCategory) => (
+                  <View key={category.region} style={styles.locationCategory}>
+                    <Text style={styles.locationCategoryTitle}>
+                      {category.region} ({category.locations.length})
+                    </Text>
+                    {category.locations.map((location: LocationSuggestion) => (
                       <TouchableOpacity
-                        key={species.id}
+                        key={location.name}
                         style={[
                           styles.locationItem,
-                          selectedSpeciesId === species.id && styles.locationItemActive,
+                          selectedLocation.name === location.name && styles.locationItemActive,
                         ]}
                         onPress={() => {
-                          setSelectedSpeciesId(species.id);
-                          setShowSpeciesPicker(false);
+                          setSelectedLocation(location);
+                          setShowLocationPicker(false);
                         }}
                       >
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: 20, marginRight: SPACING.sm }}>{species.icon}</Text>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.locationItemName}>{species.name}</Text>
-                            <Text style={styles.locationItemDesc}>
-                              Sæson: {species.season} • Min: {species.minSize > 0 ? `${species.minSize}cm` : 'Ingen'}
-                            </Text>
-                          </View>
-                        </View>
+                        <Text style={styles.locationItemName}>{location.name}</Text>
+                        <Text style={styles.locationItemDesc}>
+                          {location.waterType === 'ferskvand' ? 'Ferskvand' :
+                           location.waterType === 'saltvand' ? 'Saltvand' : 'Brakvand'} • Dybde: {location.depth}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
-                )}
+                ))}
               </ScrollView>
             </View>
           )}
         </View>
 
+        {/* 2. VÆLG FISKEDAG & VEJR (TRIN 2) */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>2. Vælg dato</Text>
+          <Text style={styles.sectionTitle}>📅 2. Vælg fiskedag</Text>
           <View style={styles.dateContainer}>
             <TouchableOpacity
               style={styles.dateButton}
@@ -1281,131 +1257,108 @@ export default function AIGuideScreen() {
                 setSelectedDate(weekend);
               }}
             >
-              <Text style={styles.quickDateButtonText}>Næste lørdag</Text>
+              <Text style={styles.quickDateButtonText}>Næste weekend</Text>
             </TouchableOpacity>
           </View>
         </View>
 
+        {/* 3. VÆLG MÅLART (TRIN 3 - VALGFRIT MED VEKTOR IKONER) */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>3. Vælg lokation</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm }}>
+            <Text style={styles.sectionTitle}>🐟 3. Vælg målart (Valgfrit)</Text>
+            <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600' }}>
+              {matchingSpeciesCount} arter på pladsen
+            </Text>
+          </View>
+
+          {/* Selected species highlight card */}
           <TouchableOpacity
-            style={styles.locationButton}
-            onPress={() => setShowLocationPicker(!showLocationPicker)}
+            style={[styles.locationButton, { borderColor: colors.accent, backgroundColor: colors.accent + '10' }]}
+            onPress={() => setShowSpeciesPicker(!showSpeciesPicker)}
           >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.locationName}>{selectedLocation.name}</Text>
-              <Text style={styles.locationDescription}>
-                {selectedLocation.waterType === 'ferskvand' ? 'Ferskvand' :
-                 selectedLocation.waterType === 'saltvand' ? 'Saltvand' : 'Brakvand'} • Dybde: {selectedLocation.depth}
-              </Text>
-              <Text style={[styles.locationDescription, { marginTop: 2 }]}>
-                {selectedLocation.regulations}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+              <FishSpeciesIcon speciesId={selectedSpecies.id} size={38} color={colors.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.locationName, { color: colors.accent, fontWeight: '800' }]}>
+                  {selectedSpecies.name}
+                </Text>
+                <Text style={styles.locationDescription}>
+                  Sæson: {selectedSpecies.season} • Mindstemål: {selectedSpecies.minSize > 0 ? `${selectedSpecies.minSize} cm` : 'Intet'}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.locationArrow}>
-              {showLocationPicker ? "▲" : "▼"}
+            <Text style={[styles.locationArrow, { color: colors.accent }]}>
+              {showSpeciesPicker ? "▲" : "▼"}
             </Text>
           </TouchableOpacity>
 
-          {/* Show other fish species available at this location */}
-          <View style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            marginTop: SPACING.sm,
-            gap: SPACING.xs,
-          }}>
-            <Text style={{ fontSize: 12, color: colors.textSecondary, marginRight: SPACING.xs }}>
-              Andre arter her:
-            </Text>
-            {selectedLocation.species
-              .filter(id => id !== selectedSpeciesId)
-              .slice(0, 5)
-              .map(id => {
-                const sp = getSpeciesById(id);
-                return sp ? (
+          {/* Horizontal species quick-scroll with Vector Icons */}
+          <View style={{ marginTop: 12 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {filteredSpeciesByLocation.map((species) => {
+                const isSelected = selectedSpeciesId === species.id;
+                return (
                   <TouchableOpacity
-                    key={id}
-                    onPress={() => setSelectedSpeciesId(id)}
-                    style={{
-                      backgroundColor: colors.backgroundLight,
-                      paddingHorizontal: SPACING.xs,
-                      paddingVertical: 2,
-                      borderRadius: RADIUS.sm,
-                    }}
+                    key={species.id}
+                    style={[
+                      styles.speciesChip,
+                      {
+                        backgroundColor: isSelected ? colors.accent : colors.backgroundLight,
+                        borderColor: isSelected ? colors.accent : colors.border,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                      },
+                    ]}
+                    onPress={() => setSelectedSpeciesId(species.id)}
                   >
-                    <Text style={{ fontSize: 11, color: colors.textSecondary }}>
-                      {sp.icon} {sp.name}
+                    <FishSpeciesIcon
+                      speciesId={species.id}
+                      size={24}
+                      color={isSelected ? '#FFFFFF' : colors.accent}
+                    />
+                    <Text
+                      style={[
+                        styles.speciesChipText,
+                        { color: isSelected ? '#FFFFFF' : colors.text, fontWeight: '700' },
+                      ]}
+                    >
+                      {species.name}
                     </Text>
                   </TouchableOpacity>
-                ) : null;
+                );
               })}
-            {selectedLocation.species.length > 6 && (
-              <Text style={{ fontSize: 11, color: colors.textTertiary }}>
-                +{selectedLocation.species.length - 6} mere
-              </Text>
-            )}
+            </ScrollView>
           </View>
 
-          {showLocationPicker && (
-            <View style={styles.locationList}>
-              {/* Filter info */}
-              <View style={{
-                backgroundColor: colors.primaryLight,
-                padding: SPACING.sm,
-                borderRadius: RADIUS.md,
-                marginBottom: SPACING.sm,
-              }}>
-                <Text style={{ fontSize: 12, color: colors.primary }}>
-                  Vælg en lokation - fiskearter filtreres automatisk baseret på valgt lokation
-                </Text>
-              </View>
-
-              {/* Link to external fishing map */}
-              <TouchableOpacity
-                style={styles.externalMapButton}
-                onPress={() => Linking.openURL('https://fishingindenmark.info/fiskepladser')}
-              >
-                <View style={styles.externalMapContent}>
-                  <Ionicons name="map" size={20} color={colors.accent} />
-                  <View style={{ flex: 1, marginLeft: SPACING.sm }}>
-                    <Text style={styles.externalMapTitle}>Udforsk flere fiskepladser</Text>
-                    <Text style={styles.externalMapDesc}>Åbn interaktivt kort på fishingindenmark.info</Text>
-                  </View>
-                  <Ionicons name="open-outline" size={16} color={colors.textSecondary} />
-                </View>
-              </TouchableOpacity>
-
-              {/* Grouped locations - all locations, no filtering */}
-              <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled>
-                {LOCATIONS_BY_REGION.map((category: LocationCategory) => (
-                  <View key={category.region} style={styles.locationCategory}>
-                    <Text style={styles.locationCategoryTitle}>
-                      {category.region} ({category.locations.length})
-                    </Text>
-                    {category.locations.map((location: LocationSuggestion) => (
-                      <TouchableOpacity
-                        key={location.name}
-                        style={[
-                          styles.locationItem,
-                          selectedLocation.name === location.name &&
-                            styles.locationItemActive,
-                        ]}
-                        onPress={() => {
-                          setSelectedLocation(location);
-                          setShowLocationPicker(false);
-                        }}
-                      >
-                        <Text style={styles.locationItemName}>{location.name}</Text>
+          {/* Species picker full dropdown */}
+          {showSpeciesPicker && (
+            <View style={[styles.locationList, { marginTop: 12 }]}>
+              <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled>
+                {filteredSpeciesByLocation.map((species) => (
+                  <TouchableOpacity
+                    key={species.id}
+                    style={[
+                      styles.locationItem,
+                      selectedSpeciesId === species.id && styles.locationItemActive,
+                    ]}
+                    onPress={() => {
+                      setSelectedSpeciesId(species.id);
+                      setShowSpeciesPicker(false);
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <FishSpeciesIcon speciesId={species.id} size={32} color={colors.accent} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.locationItemName}>{species.name}</Text>
                         <Text style={styles.locationItemDesc}>
-                          {location.waterType === 'ferskvand' ? 'Ferskvand' :
-                           location.waterType === 'saltvand' ? 'Saltvand' : 'Brakvand'} • Dybde: {location.depth}
+                          Sæson: {species.season} • Mindstemål: {species.minSize > 0 ? `${species.minSize} cm` : 'Intet'}
                         </Text>
-                        <Text style={[styles.locationItemDesc, { fontSize: 11 }]}>
-                          {location.regulations}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
@@ -1647,6 +1600,17 @@ export default function AIGuideScreen() {
                 ))}
               </View>
             )}
+          </View>
+        )}
+
+        {loading && (
+          <View style={{ marginVertical: 12 }}>
+            <LoadingBar
+              height={4}
+              glow={true}
+              colors={['#00D4B2', '#FFB800', '#F97316']}
+              label="Genererer personlige Google Gemini fiskeråd..."
+            />
           </View>
         )}
 

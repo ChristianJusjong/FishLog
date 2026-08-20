@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -195,7 +196,7 @@ export default function NotificationsScreen() {
 
   const fetchNotifications = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const url = filter === 'unread'
         ? `${API_URL}/notifications?unreadOnly=true`
         : `${API_URL}/notifications`;
@@ -225,7 +226,7 @@ export default function NotificationsScreen() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       await fetch(`${API_URL}/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
@@ -240,7 +241,7 @@ export default function NotificationsScreen() {
 
   const markAllAsRead = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       await fetch(`${API_URL}/notifications/read-all`, {
         method: 'PATCH',
         headers: {
@@ -255,7 +256,7 @@ export default function NotificationsScreen() {
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       await fetch(`${API_URL}/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {

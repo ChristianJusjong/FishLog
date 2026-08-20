@@ -10,8 +10,8 @@ export async function predictionsRoutes(fastify: FastifyInstance) {
     try {
       const userId = request.user!.userId;
 
-      // Optional: User can provide their own Groq API key
-      const userApiKey = request.headers['x-groq-api-key'] as string | undefined;
+      // Optional: User can provide their own Gemini API key
+      const userApiKey = (request.headers['x-gemini-api-key'] || request.headers['x-groq-api-key']) as string | undefined;
 
       const predictions = await catchPredictionService.generatePredictions(userId, userApiKey);
 

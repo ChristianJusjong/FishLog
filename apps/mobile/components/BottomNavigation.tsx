@@ -1,10 +1,13 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path, Circle } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSession } from '../contexts/SessionContext';
+import { useNavConfig } from '../contexts/NavConfigContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface BottomNavigationProps {
@@ -15,79 +18,97 @@ export default function BottomNavigation({ onMorePress }: BottomNavigationProps)
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { colors, shadows, spacing, radius, isDark } = useTheme();
+  const { colors, shadows, isDark } = useTheme();
   const { isActive: hasActiveSession } = useSession();
+  const { selectedRoutes, getNavItem } = useNavConfig();
 
   const isActive = (route: string) => pathname === route;
 
+  const handleNavPress = (route: string) => {
+    Haptics.selectionAsync().catch(() => {});
+    router.push(route as any);
+  };
+
   const handleMiddleButtonPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     router.push('/active-session');
   };
 
-  // Dynamic styles based on theme
+  const handleMenuPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    onMorePress?.();
+  };
+
+  const leftRoutes = selectedRoutes.slice(0, 2);
+  const rightRoutes = selectedRoutes.slice(2, 3); // 1 item on right + More menu
+
+  // Container styling with blur and shadow
   const containerStyle = {
-    backgroundColor: isDark ? colors.surface : colors.surface,
-    borderTopColor: isDark ? colors.border : 'transparent',
+    backgroundColor: isDark ? '#0A1E34' : colors.surface,
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
   };
 
   return (
-    <View style={[
-      styles.outerContainer,
-      { paddingBottom: Math.max(insets.bottom, 12) }
-    ]}>
+    <View
+      style={[
+        styles.outerContainer,
+        { paddingBottom: Math.max(insets.bottom, 10) },
+      ]}
+    >
       <View style={[styles.container, containerStyle, shadows.lg]}>
-        {/* Feed */}
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={() => router.push('/feed')}
-          activeOpacity={0.7}
-        >
-          <View style={[
-            styles.iconContainer,
-            isActive('/feed') && { backgroundColor: colors.accent + '15' }
-          ]}>
-            <Ionicons
-              name={isActive('/feed') ? 'home' : 'home-outline'}
-              size={24}
-              color={isActive('/feed') ? colors.accent : colors.iconDefault}
-            />
-          </View>
-          {isActive('/feed') && <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />}
-        </TouchableOpacity>
+        {/* Left Side Custom Nav Items (Slots 1 & 2) */}
+        {leftRoutes.map((route) => {
+          const item = getNavItem(route);
+          const active = isActive(route);
 
-        {/* Statistics */}
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={() => router.push('/statistics')}
-          activeOpacity={0.7}
-        >
-          <View style={[
-            styles.iconContainer,
-            isActive('/statistics') && { backgroundColor: colors.accent + '15' }
-          ]}>
-            <Ionicons
-              name={isActive('/statistics') ? 'stats-chart' : 'stats-chart-outline'}
-              size={24}
-              color={isActive('/statistics') ? colors.accent : colors.iconDefault}
-            />
-          </View>
-          {isActive('/statistics') && <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />}
-        </TouchableOpacity>
+          return (
+            <TouchableOpacity
+              key={route}
+              style={styles.navButton}
+              onPress={() => handleNavPress(route)}
+              activeOpacity={0.75}
+            >
+              <View
+                style={[
+                  styles.iconContainer,
+                  active && { backgroundColor: colors.accent + '18' },
+                ]}
+              >
+                <Ionicons
+                  name={active ? item.iconActive : item.iconInactive}
+                  size={24}
+                  color={active ? colors.accent : colors.iconDefault}
+                />
+              </View>
+              {active && (
+                <View
+                  style={[
+                    styles.activeIndicator,
+                    { backgroundColor: colors.accent },
+                  ]}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
 
-        {/* Active Session - Premium Center Button */}
+        {/* Center HOOK Action Button */}
         <TouchableOpacity
           style={styles.centerButtonContainer}
           onPress={handleMiddleButtonPress}
-          activeOpacity={0.85}
+          activeOpacity={0.88}
         >
-          <View style={[
-            styles.centerButtonOuter,
-            { backgroundColor: colors.background }
-          ]}>
+          <View
+            style={[
+              styles.centerButtonOuter,
+              { backgroundColor: isDark ? '#071524' : colors.background },
+            ]}
+          >
             <LinearGradient
-              colors={hasActiveSession
-                ? [colors.success, colors.successDark]
-                : [colors.accent, colors.accentDark]
+              colors={
+                hasActiveSession
+                  ? [colors.success, colors.successDark || '#059669']
+                  : [colors.accent, colors.accentDark || '#D4880F']
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -96,53 +117,98 @@ export default function BottomNavigation({ onMorePress }: BottomNavigationProps)
                 hasActiveSession && styles.centerButtonActive,
               ]}
             >
-              <Ionicons
-                name={hasActiveSession ? 'pulse' : 'add'}
-                size={hasActiveSession ? 28 : 32}
-                color={hasActiveSession ? colors.white : colors.primary}
-              />
+              {hasActiveSession ? (
+                <Ionicons name="pulse" size={28} color={colors.white} />
+              ) : (
+                <Svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+                  {/* Hook Eyelet */}
+                  <Circle
+                    cx="26"
+                    cy="9"
+                    r="3.5"
+                    stroke={colors.primary}
+                    strokeWidth="3.2"
+                    fill="none"
+                  />
+                  {/* Hook Shank & Deep Bend */}
+                  <Path
+                    d="M 26 12.5 L 26 27 C 26 35, 14 36.5, 13 28 L 13 18"
+                    stroke={colors.primary}
+                    strokeWidth="3.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                  {/* Hook Barb */}
+                  <Path
+                    d="M 13 22 L 16.5 24.5"
+                    stroke={colors.primary}
+                    strokeWidth="2.8"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </Svg>
+              )}
             </LinearGradient>
           </View>
           {/* Glow effect for active session */}
           {hasActiveSession && (
-            <View style={[styles.glowEffect, {
-              shadowColor: colors.success,
-              backgroundColor: colors.success + '20',
-            }]} />
+            <View
+              style={[
+                styles.glowEffect,
+                {
+                  shadowColor: colors.success,
+                  backgroundColor: colors.success + '20',
+                },
+              ]}
+            />
           )}
         </TouchableOpacity>
 
-        {/* Catches */}
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={() => router.push('/catches')}
-          activeOpacity={0.7}
-        >
-          <View style={[
-            styles.iconContainer,
-            isActive('/catches') && { backgroundColor: colors.accent + '15' }
-          ]}>
-            <Ionicons
-              name={isActive('/catches') ? 'fish' : 'fish-outline'}
-              size={24}
-              color={isActive('/catches') ? colors.accent : colors.iconDefault}
-            />
-          </View>
-          {isActive('/catches') && <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />}
-        </TouchableOpacity>
+        {/* Right Side Custom Nav Item (Slot 3) */}
+        {rightRoutes.map((route) => {
+          const item = getNavItem(route);
+          const active = isActive(route);
 
-        {/* More - Opens Drawer */}
+          return (
+            <TouchableOpacity
+              key={route}
+              style={styles.navButton}
+              onPress={() => handleNavPress(route)}
+              activeOpacity={0.75}
+            >
+              <View
+                style={[
+                  styles.iconContainer,
+                  active && { backgroundColor: colors.accent + '18' },
+                ]}
+              >
+                <Ionicons
+                  name={active ? item.iconActive : item.iconInactive}
+                  size={24}
+                  color={active ? colors.accent : colors.iconDefault}
+                />
+              </View>
+              {active && (
+                <View
+                  style={[
+                    styles.activeIndicator,
+                    { backgroundColor: colors.accent },
+                  ]}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+
+        {/* Slot 4 / More Menu Button */}
         <TouchableOpacity
           style={styles.navButton}
-          onPress={onMorePress}
-          activeOpacity={0.7}
+          onPress={handleMenuPress}
+          activeOpacity={0.75}
         >
           <View style={styles.iconContainer}>
-            <Ionicons
-              name="menu"
-              size={24}
-              color={colors.iconDefault}
-            />
+            <Ionicons name="menu" size={25} color={colors.iconDefault} />
           </View>
         </TouchableOpacity>
       </View>
@@ -157,23 +223,24 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 6,
+    zIndex: 999,
   },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 8,
-    borderRadius: 24,
-    borderTopWidth: 0,
+    borderRadius: 26,
+    borderWidth: 1,
   },
   navButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    minWidth: 56,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    minWidth: 54,
     position: 'relative',
   },
   iconContainer: {
@@ -186,59 +253,51 @@ const styles = StyleSheet.create({
   activeIndicator: {
     position: 'absolute',
     bottom: 2,
-    width: 4,
-    height: 4,
+    width: 14,
+    height: 3,
     borderRadius: 2,
   },
   centerButtonContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -28,
+    marginTop: -26,
     position: 'relative',
   },
   centerButtonOuter: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'transparent',
     ...Platform.select({
       ios: {
-        shadowColor: '#0A2540',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
       },
       android: {
-        elevation: 8,
+        elevation: 10,
       },
     }),
   },
   centerButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   centerButtonActive: {
-    // Active animation would go here
+    transform: [{ scale: 1.05 }],
   },
   glowEffect: {
     position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 0,
-      },
-    }),
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     zIndex: -1,
   },
 });

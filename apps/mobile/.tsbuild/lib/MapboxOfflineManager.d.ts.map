@@ -1,0 +1,1 @@
+{"version":3,"file":"MapboxOfflineManager.d.ts","sourceRoot":"","sources":["../../lib/MapboxOfflineManager.ts"],"names":[],"mappings":"AAAA,qBAAa,oBAAoB;WAClB,iBAAiB,CAC5B,QAAQ,EAAE,MAAM,EAChB,MAAM,EAAE,CAAC,CAAC,MAAM,EAAE,MAAM,CAAC,EAAE,CAAC,MAAM,EAAE,MAAM,CAAC,CAAC,EAC5C,OAAO,GAAE,MAAW,EACpB,OAAO,GAAE,MAAW,EACpB,QAAQ,GAAE,MAAW;WAKV,eAAe;WAIf,iBAAiB,CAAC,QAAQ,EAAE,MAAM;CAGhD"}

@@ -46,28 +46,38 @@ export async function favoriteSpotRoutes(fastify: FastifyInstance) {
         orderBy: { createdAt: 'desc' }
       });
 
-      // Get catch count for each spot
-      const spotsWithCounts = await Promise.all(spots.map(async (spot) => {
-        const catchCount = await prisma.catch.count({
-          where: {
-            userId,
-            latitude: {
-              gte: spot.latitude - 0.01,
-              lte: spot.latitude + 0.01
-            },
-            longitude: {
-              gte: spot.longitude - 0.01,
-              lte: spot.longitude + 0.01
-            },
-            isDraft: false
-          }
-        });
+      if (spots.length === 0) {
+        return reply.code(200).send([]);
+      }
+
+      // Fetch user catches once to count spots without N+1 queries
+      const userCatches = await prisma.catch.findMany({
+        where: {
+          userId,
+          isDraft: false,
+          latitude: { not: null },
+          longitude: { not: null },
+        },
+        select: {
+          latitude: true,
+          longitude: true,
+        },
+      });
+
+      const spotsWithCounts = spots.map((spot) => {
+        const catchCount = userCatches.filter(
+          (c) =>
+            c.latitude! >= spot.latitude - 0.01 &&
+            c.latitude! <= spot.latitude + 0.01 &&
+            c.longitude! >= spot.longitude - 0.01 &&
+            c.longitude! <= spot.longitude + 0.01
+        ).length;
 
         return {
           ...spot,
-          catchCount
+          catchCount,
         };
-      }));
+      });
 
       reply.code(200).send(spotsWithCounts);
     } catch (error) {

@@ -10,6 +10,7 @@ export interface User {
   provider: string;
   premium?: boolean;
   groqApiKey?: string;
+  geminiApiKey?: string;
   userId?: string;
 }
 
@@ -52,12 +53,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data);
       } else {
       }
-    } catch (error) {
-      console.error('Auth check failed, clearing tokens:', error);
-      // Clear tokens and user state on auth failure
-      await clearTokens();
-      setUser(null);
-      setToken(null);
+    } catch (error: any) {
+      const isAuthError = error?.response?.status === 401 || error?.response?.status === 403;
+      if (isAuthError) {
+        console.warn('Auth check failed with 401/403, clearing tokens');
+        await clearTokens();
+        setUser(null);
+        setToken(null);
+      } else {
+        console.log('Auth check encountered network/offline error, retaining stored token for offline mode:', error?.message);
+      }
     } finally {
       setLoading(false);
     }

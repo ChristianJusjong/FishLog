@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getSecureItem, TOKEN_KEYS } from "@/lib/secureStorage";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../contexts/ThemeContext";
@@ -19,6 +20,7 @@ import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from "@/constants/branding";
 import { FAB_STYLE, FAB } from "@/constants/theme";
 import PageLayout from "../components/PageLayout";
 import WeatherLocationCard from "../components/WeatherLocationCard";
+import ScreenLoading from "../components/ScreenLoading";
 
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
@@ -470,7 +472,7 @@ export default function EventsScreen() {
 
   const fetchEvents = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem("accessToken");
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const url =
         filter === "all"
           ? `${API_URL}/events`
@@ -515,7 +517,7 @@ export default function EventsScreen() {
   const fetchChallenges = async () => {
     try {
       setChallengesLoading(true);
-      const accessToken = await AsyncStorage.getItem("accessToken");
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/challenges`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -539,7 +541,7 @@ export default function EventsScreen() {
 
   const joinChallenge = async (challengeId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem("accessToken");
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(
         `${API_URL}/challenges/${challengeId}/join`,
         {
@@ -615,23 +617,9 @@ export default function EventsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: colors.backgroundLight }}
-        edges={["top"]}
-      >
-        <View style={styles.loadingContainer}>
-          <LinearGradient
-            colors={[colors.accent, colors.accentDark || '#D4880F']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.logoGradient}
-          >
-            <Ionicons name="calendar" size={40} color={colors.primary} />
-          </LinearGradient>
-          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: SPACING.lg }} />
-          <Text style={styles.loadingText}>Indlæser events...</Text>
-        </View>
-      </SafeAreaView>
+      <PageLayout>
+        <ScreenLoading message="Indlæser events og turneringer..." />
+      </PageLayout>
     );
   }
 

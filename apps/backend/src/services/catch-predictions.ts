@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import Groq from 'groq-sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 
 interface PredictionFactors {
@@ -203,16 +203,23 @@ class CatchPredictionService {
   }
 
   /**
-   * Generate AI insights using Groq
+   * Generate AI insights using Google Gemini
    */
   private async generateAIInsights(catches: any[], factors: PredictionFactors, userApiKey?: string): Promise<string[]> {
     try {
-      const apiKey = userApiKey || process.env.GROQ_API_KEY;
+      const apiKey = userApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GROQ_API_KEY;
       if (!apiKey) {
         return this.getFallbackInsights(factors);
       }
 
-      const groq = new Groq({ apiKey });
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 500,
+        },
+      });
 
       const prompt = `Du er en ekspert i fiskeri-analyse. Baseret på følgende data, giv 3-5 korte indsigter på dansk om de bedste tidspunkter at fiske:
 
@@ -221,19 +228,13 @@ Top tider: ${factors.timeOfDay.slice(0, 3).map((t) => `${t.hour}:00 (${t.avgCatc
 Top måneder: ${factors.seasonality.slice(0, 3).map((s) => `Måned ${s.month + 1} (${s.avgCatches} fangster)`).join(', ')}
 ${factors.weather.length > 0 ? `Top vejr: ${factors.weather[0].conditions}` : ''}
 
-Giv specifikke, handlingsrettede råd.`;
+Giv specifikke, handlingsrettede råd som korte linjer.`;
 
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.7,
-        max_tokens: 500,
-      });
-
-      const response = completion.choices[0]?.message?.content || '';
-      return response.split('\n').filter((line) => line.trim().length > 0).slice(0, 5);
+      const result = await model.generateContent(prompt);
+      const response = result.response.text() || '';
+      return response.split('\n').filter((line: string) => line.trim().length > 0).slice(0, 5);
     } catch (error) {
-      console.error('Error generating AI insights:', error);
+      console.error('Error generating AI insights with Google Gemini:', error);
       return this.getFallbackInsights(factors);
     }
   }

@@ -4,11 +4,14 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
+import ScreenLoading from '../components/ScreenLoading';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, EMPTY_STATE, LOADING_CONTAINER, GRADIENTS } from '@/constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { exportCatchesToPDF, exportCatchesToCSV } from '@/lib/exportUtils';
+import { generateAndShareYearbookPDF } from '@/lib/pdfYearbookGenerator';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
 
@@ -195,33 +198,40 @@ const useStyles = () => {
       backgroundColor: colors.surface,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
-      paddingHorizontal: SPACING.md,
+      paddingHorizontal: SPACING.lg,
     },
     tab: {
       flex: 1,
       paddingVertical: SPACING.md,
       alignItems: 'center',
-      borderBottomWidth: 3,
-      borderBottomColor: 'transparent',
+      justifyContent: 'center',
+      minHeight: 48,
+      position: 'relative',
     },
     activeTab: {
-      borderBottomColor: colors.primary,
+      // active
+    },
+    activeIndicator: {
+      position: 'absolute',
+      bottom: 0,
+      left: SPACING.xl,
+      right: SPACING.xl,
+      height: 3,
+      borderRadius: 1.5,
     },
     tabContent: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: SPACING.xs,
     },
-    tabEmoji: {
-      fontSize: 20,
-    },
     tabText: {
       ...TYPOGRAPHY.styles.body,
       color: colors.textSecondary,
-      fontWeight: TYPOGRAPHY.fontWeight.semibold,
+      fontWeight: '600',
     },
     activeTabText: {
-      color: colors.primary,
+      color: colors.accent,
+      fontWeight: '700',
     },
     statsCard: {
       flexDirection: 'row',
@@ -414,6 +424,9 @@ interface Catch {
   longitude?: number;
   createdAt: string;
   isDraft?: boolean;
+  waterTemp?: number;
+  lure?: string;
+  released?: boolean;
 }
 
 type Species = {
@@ -464,7 +477,7 @@ export default function CatchesScreen() {
 
   const fetchCatches = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       if (!accessToken) {
         Alert.alert('Ikke logget ind', 'Du skal logge ind først', [
@@ -516,7 +529,7 @@ export default function CatchesScreen() {
     if (!confirmed) return;
 
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/catches/${catchId}`, {
         method: 'DELETE',
@@ -556,7 +569,7 @@ export default function CatchesScreen() {
       if (!refreshing) {
         setLoading(true);
       }
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/catches/fiskedex`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -623,6 +636,45 @@ export default function CatchesScreen() {
     }
   };
 
+  const handleExportYearbook = async () => {
+    if (catches.length === 0) {
+      Alert.alert('Ingen fangster', 'Du har ingen fangster at generere årbog for endnu');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const uniqueSpecies = new Set(catches.map((c) => c.species)).size;
+      const totalWeight = catches.reduce((sum, c) => sum + (c.weightKg || 0), 0);
+
+      await generateAndShareYearbookPDF({
+        userName: 'Lystfisker',
+        year: new Date().getFullYear(),
+        totalCatches: catches.length,
+        totalSpecies: uniqueSpecies,
+        totalWeightKg: totalWeight,
+        catches: catches.map((c) => ({
+          id: c.id,
+          species: c.species || 'Fisk',
+          weightKg: c.weightKg,
+          lengthCm: c.lengthCm,
+          createdAt: c.createdAt,
+          photoUrl: c.photoUrl,
+          waterTemp: c.waterTemp,
+          lure: c.lure,
+          bait: c.bait,
+          technique: c.technique,
+          released: c.released,
+        })),
+      });
+    } catch (error) {
+      console.error('Yearbook export error:', error);
+      Alert.alert('Fejl', 'Kunne ikke generere årbog');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'common':
@@ -658,21 +710,9 @@ export default function CatchesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.safeArea}>
-        <WeatherLocationCard showLocation={true} showWeather={true} />
-        <View style={styles.loadingContainer}>
-          <LinearGradient
-            colors={[colors.accent, colors.accentDark || '#D4880F']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.logoGradient}
-          >
-            <Ionicons name="fish" size={40} color={colors.primary} />
-          </LinearGradient>
-          <ActivityIndicator size="large" color={colors.accent} style={styles.loader} />
-          <Text style={styles.loadingText}>Indlæser fangster...</Text>
-        </View>
-      </View>
+      <PageLayout>
+        <ScreenLoading message="Indlæser dine fangster..." />
+      </PageLayout>
     );
   }
 
@@ -682,56 +722,87 @@ export default function CatchesScreen() {
         <WeatherLocationCard showLocation={true} showWeather={true} />
 
         {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'catches' && styles.activeTab]}
-          onPress={() => setActiveTab('catches')}
-        >
-          <View style={styles.tabContent}>
-            <Text style={styles.tabEmoji}>🎣</Text>
-            <Text style={[styles.tabText, activeTab === 'catches' && styles.activeTabText]}>
-              Fangster
-            </Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'fiskedex' && styles.activeTab]}
-          onPress={() => setActiveTab('fiskedex')}
-        >
-          <View style={styles.tabContent}>
-            <Text style={styles.tabEmoji}>🐟</Text>
-            <Text style={[styles.tabText, activeTab === 'fiskedex' && styles.activeTabText]}>
-              FiskeDex
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Export Buttons - Only show on Catches tab */}
-      {activeTab === 'catches' && catches.length > 0 && (
-        <View style={styles.exportContainer}>
+        <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[styles.exportButton, exporting && styles.exportButtonDisabled]}
-            onPress={handleExportPDF}
-            disabled={exporting}
+            style={[styles.tab, activeTab === 'catches' && styles.activeTab]}
+            onPress={() => setActiveTab('catches')}
+            activeOpacity={0.8}
           >
-            <Ionicons name="document-text" size={16} color={colors.white} />
-            <Text style={styles.exportButtonText}>
-              {exporting ? 'Eksporterer...' : 'PDF'}
-            </Text>
+            <View style={styles.tabContent}>
+              <Ionicons
+                name={activeTab === 'catches' ? 'fish' : 'fish-outline'}
+                size={20}
+                color={activeTab === 'catches' ? colors.accent : colors.textSecondary}
+              />
+              <Text style={[styles.tabText, activeTab === 'catches' && styles.activeTabText]}>
+                Fangster
+              </Text>
+            </View>
+            {activeTab === 'catches' && <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.exportButton, styles.exportButtonCSV, exporting && styles.exportButtonDisabled]}
-            onPress={handleExportCSV}
-            disabled={exporting}
+            style={[styles.tab, activeTab === 'fiskedex' && styles.activeTab]}
+            onPress={() => setActiveTab('fiskedex')}
+            activeOpacity={0.8}
           >
-            <Ionicons name="stats-chart" size={16} color={colors.white} />
-            <Text style={styles.exportButtonText}>
-              {exporting ? 'Eksporterer...' : 'CSV'}
-            </Text>
+            <View style={styles.tabContent}>
+              <Ionicons
+                name={activeTab === 'fiskedex' ? 'book' : 'book-outline'}
+                size={20}
+                color={activeTab === 'fiskedex' ? colors.accent : colors.textSecondary}
+              />
+              <Text style={[styles.tabText, activeTab === 'fiskedex' && styles.activeTabText]}>
+                FiskeDex
+              </Text>
+            </View>
+            {activeTab === 'fiskedex' && <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />}
           </TouchableOpacity>
         </View>
-      )}
+
+        {/* Export & Action Buttons - Only show on Catches tab */}
+        {activeTab === 'catches' && catches.length > 0 && (
+          <View style={styles.exportContainer}>
+            <TouchableOpacity
+              style={[
+                styles.exportButton,
+                { backgroundColor: '#F5A623' },
+                exporting && styles.exportButtonDisabled,
+              ]}
+              onPress={handleExportYearbook}
+              disabled={exporting}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="book" size={15} color="#0A2540" />
+              <Text style={[styles.exportButtonText, { color: '#0A2540', fontWeight: '800' }]}>
+                {exporting ? 'Genererer...' : 'Årbog PDF'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.exportButton, exporting && styles.exportButtonDisabled]}
+              onPress={handleExportPDF}
+              disabled={exporting}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="document-text" size={15} color={colors.white} />
+              <Text style={styles.exportButtonText}>
+                {exporting ? 'Eksporterer...' : 'PDF'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.exportButton, styles.exportButtonCSV, exporting && styles.exportButtonDisabled]}
+              onPress={handleExportCSV}
+              disabled={exporting}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="stats-chart" size={15} color={colors.white} />
+              <Text style={styles.exportButtonText}>
+                {exporting ? 'Eksporterer...' : 'CSV'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
       <ScrollView
         contentContainerStyle={styles.scrollContainer}

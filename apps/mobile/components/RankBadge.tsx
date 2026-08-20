@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useDynamicStyles } from '@/contexts/ThemeContext';
 
 interface Rank {
   title: string;
-  icon: string;
+  icon?: string;
   color: string;
 }
 
@@ -25,22 +26,27 @@ export default function RankBadge({
 }: RankBadgeProps) {
   const styles = useDynamicStyles(createStyles);
 
+  const iconSizes = {
+    small: 14,
+    medium: 18,
+    large: 24,
+  };
+
+  const currentIconSize = iconSizes[size];
+
   const sizeConfig = {
     small: {
       container: styles.containerSmall,
-      icon: styles.iconSmall,
       text: styles.textSmall,
       level: styles.levelSmall,
     },
     medium: {
       container: styles.containerMedium,
-      icon: styles.iconMedium,
       text: styles.textMedium,
       level: styles.levelMedium,
     },
     large: {
       container: styles.containerLarge,
-      icon: styles.iconLarge,
       text: styles.textLarge,
       level: styles.levelLarge,
     },
@@ -53,13 +59,36 @@ export default function RankBadge({
       style={[
         styles.container,
         config.container,
-        { backgroundColor: rank.color + '20', borderColor: rank.color },
+        { backgroundColor: rank.color + '18', borderColor: rank.color + '40' },
         style,
       ]}
     >
-      <Text style={config.icon}>{rank.icon}</Text>
+      {/* Vector Shield Emblem */}
+      <Svg width={currentIconSize} height={currentIconSize} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M 12 2 L 20 5 V 11 C 20 16.5, 12 21, 12 21 C 12 21, 4 16.5, 4 11 V 5 L 12 2 Z"
+          fill={rank.color}
+          opacity={0.3}
+        />
+        <Path
+          d="M 12 2 L 20 5 V 11 C 20 16.5, 12 21, 12 21 C 12 21, 4 16.5, 4 11 V 5 L 12 2 Z"
+          stroke={rank.color}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+          fill="none"
+        />
+        <Path
+          d="M 9 11 L 11 13 L 15 9"
+          stroke={rank.color}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </Svg>
+
       <View style={styles.textContainer}>
-        <Text style={[styles.rankTitle, config.text]} numberOfLines={1}>
+        <Text style={[styles.rankTitle, config.text, { color: rank.color }]} numberOfLines={1}>
           {rank.title}
         </Text>
         {showLevel && (
@@ -75,8 +104,8 @@ const createStyles = (theme: any) =>
     container: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: 8,
-      borderWidth: 1.5,
+      borderRadius: 12,
+      borderWidth: 1.2,
       paddingHorizontal: 8,
       paddingVertical: 4,
     },
@@ -84,56 +113,47 @@ const createStyles = (theme: any) =>
       marginLeft: 6,
     },
     rankTitle: {
-      fontWeight: 'bold',
-      color: theme.text,
+      fontWeight: '800',
     },
     levelText: {
       color: theme.textSecondary,
-      fontWeight: '600',
+      fontWeight: '700',
+      fontSize: 10,
     },
     // Small size
     containerSmall: {
       paddingHorizontal: 6,
-      paddingVertical: 3,
-      borderRadius: 6,
-    },
-    iconSmall: {
-      fontSize: 14,
+      paddingVertical: 2,
+      borderRadius: 8,
     },
     textSmall: {
-      fontSize: 11,
+      fontSize: 10,
     },
     levelSmall: {
-      fontSize: 9,
+      fontSize: 8,
     },
     // Medium size
     containerMedium: {
-      paddingHorizontal: 8,
+      paddingHorizontal: 10,
       paddingVertical: 4,
-      borderRadius: 8,
-    },
-    iconMedium: {
-      fontSize: 18,
+      borderRadius: 10,
     },
     textMedium: {
-      fontSize: 13,
+      fontSize: 12,
     },
     levelMedium: {
-      fontSize: 11,
+      fontSize: 10,
     },
     // Large size
     containerLarge: {
-      paddingHorizontal: 10,
+      paddingHorizontal: 14,
       paddingVertical: 6,
-      borderRadius: 10,
-    },
-    iconLarge: {
-      fontSize: 24,
+      borderRadius: 14,
     },
     textLarge: {
-      fontSize: 16,
+      fontSize: 15,
     },
     levelLarge: {
-      fontSize: 13,
+      fontSize: 11,
     },
   });

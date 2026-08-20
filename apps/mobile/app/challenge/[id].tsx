@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/branding';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -378,7 +379,7 @@ export default function ChallengeDetailScreen() {
 
   const fetchChallenge = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/challenges/${id}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -404,7 +405,7 @@ export default function ChallengeDetailScreen() {
 
   const fetchComments = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/challenges/${id}/comments`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -422,7 +423,7 @@ export default function ChallengeDetailScreen() {
 
   const fetchPhotos = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/catches?challengeId=${id}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -461,7 +462,7 @@ export default function ChallengeDetailScreen() {
 
     setSending(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
       const response = await fetch(`${API_URL}/challenges/${id}/comments`, {
         method: 'POST',
         headers: {

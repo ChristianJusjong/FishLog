@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 env:
-  NODE_VERSION: '18.x'
+  NODE_VERSION: '20.x'
 
 jobs:
   # Security and dependency scanning
@@ -95,19 +95,25 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: |
-          npm ci
-          cd apps/backend && npm ci
+        run: npm ci
 
       - name: Generate Prisma client
         working-directory: apps/backend
         run: npx prisma generate
 
-      - name: Run database migrations
+      - name: Run database schema sync
         working-directory: apps/backend
         env:
           DATABASE_URL: postgresql://fishlog:fishlog123@localhost:5432/fishlog_test
-        run: npx prisma migrate deploy
+        run: npx prisma db push --skip-generate --accept-data-loss
+
+      - name: Run backend tests
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://fishlog:fishlog123@localhost:5432/fishlog_test
+          JWT_SECRET: test-jwt-secret-key-for-ci-testing-12345
+          NODE_ENV: test
+        run: npm test -- --run
 
       - name: Build backend
         working-directory: apps/backend
@@ -138,9 +144,7 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: |
-          npm ci
-          cd apps/mobile && npm ci
+        run: npm ci
 
       - name: Check TypeScript types
         working-directory: apps/mobile
@@ -149,6 +153,10 @@ jobs:
       - name: Lint mobile app
         working-directory: apps/mobile
         run: npm run lint
+
+      - name: Run mobile unit tests
+        working-directory: apps/mobile
+        run: npm test -- --watchAll=false
 
   # Dependency updates check
   dependency-review:

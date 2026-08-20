@@ -27,6 +27,8 @@ export default function GlobalAddCatchFAB() {
     '/signup',
     '/index',
     '/auth/callback',
+    '/active-session',
+    '/session-tracking',
   ];
 
   // Check if FAB should be visible - with null safety
@@ -141,23 +143,22 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
   fab: {
-    width: 100, // Double size (was 70)
-    height: 100, // Double size (was 70)
-    borderRadius: 50, // Half of width/height
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: COLORS.accent,
     justifyContent: 'center',
     alignItems: 'center',
     ...SHADOWS.xl,
-    // Extra shadow for prominence
     ...Platform.select({
       ios: {
         shadowColor: COLORS.accent,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.5,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.45,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 20,
+        elevation: 16,
       },
     }),
   },

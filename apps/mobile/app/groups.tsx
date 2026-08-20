@@ -22,6 +22,7 @@ import WeatherLocationCard from '../components/WeatherLocationCard';
 import { API_URL } from '../config/api';
 import { logger } from '../utils/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 
 type Group = {
   id: string;
@@ -367,7 +368,7 @@ export default function GroupsScreen() {
 
   const fetchGroups = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       // Fetch my groups
       const myGroupsResponse = await fetch(`${API_URL}/groups/my-groups`, {
@@ -407,7 +408,7 @@ export default function GroupsScreen() {
 
     setCreating(true);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/groups`, {
         method: 'POST',
@@ -444,7 +445,7 @@ export default function GroupsScreen() {
 
   const requestMembership = async (groupId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/groups/${groupId}/request`, {
         method: 'POST',
@@ -468,7 +469,7 @@ export default function GroupsScreen() {
 
   const joinGroup = async (groupId: string) => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await getSecureItem(TOKEN_KEYS.ACCESS_TOKEN);
 
       const response = await fetch(`${API_URL}/groups/${groupId}/join`, {
         method: 'POST',

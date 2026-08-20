@@ -1,53 +1,21 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuth } from '../contexts/AuthContext';
-import { TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
+import { Logo } from '../components/Logo';
+import { LoadingBar } from '../components/LoadingBar';
+import { TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 
 // Keep splash screen visible while loading
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const useStyles = () => {
-  const { colors } = useTheme();
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center' as const,
-      alignItems: 'center' as const,
-      backgroundColor: colors.background,
-    },
-    logoContainer: {
-      width: 120,
-      height: 120,
-      borderRadius: RADIUS['2xl'],
-      backgroundColor: colors.primaryLight + '20',
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      marginBottom: SPACING.lg,
-    },
-    title: {
-      ...TYPOGRAPHY.styles.h1,
-      fontSize: TYPOGRAPHY.fontSize['4xl'],
-      color: colors.primary,
-      marginBottom: SPACING.xl,
-    },
-    loader: {
-      marginBottom: SPACING.md,
-    },
-    text: {
-      ...TYPOGRAPHY.styles.body,
-      color: colors.textSecondary,
-    },
-  });
-};
-
 export default function Index() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const styles = useStyles();
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     if (!loading) {
@@ -59,20 +27,72 @@ export default function Index() {
         } else {
           router.replace('/login');
         }
-      }, 500);
+      }, 600);
 
       return () => clearTimeout(timer);
     }
-  }, [loading, user]);
+  }, [loading, user, router]);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.logoContainer}>
-        <Ionicons name="fish" size={64} color={styles.title.color} />
+    <View style={[styles.container, { backgroundColor: isDark ? '#071524' : '#0A2540' }]}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Ambient background glow */}
+      <LinearGradient
+        colors={['#0A2540', '#0E3860', '#071A2E']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <View style={styles.centerCard}>
+        {/* Brand Vector Logo */}
+        <Logo size={90} variant="light" layout="vertical" subtitle="SMART ANGLING APP" />
+
+        {/* Animated Gradient Progress / Loading Bar */}
+        <View style={styles.loaderContainer}>
+          <LoadingBar
+            height={4}
+            width={180}
+            glow={true}
+            colors={['#00D4B2', '#FFB800', '#F97316']}
+            trackColor="rgba(255, 255, 255, 0.15)"
+          />
+        </View>
+
+        <Text style={styles.subtext}>Gør klar til fiskeri...</Text>
       </View>
-      <Text style={styles.title}>Hook</Text>
-      <ActivityIndicator size="large" color={styles.title.color} style={styles.loader} />
-      <Text style={styles.text}>Indlæser...</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  centerCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING['2xl'],
+    paddingHorizontal: SPACING.xl,
+    borderRadius: RADIUS['2xl'],
+    width: '100%',
+    maxWidth: 340,
+  },
+  loaderContainer: {
+    marginTop: 36,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  subtext: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+});
+
