@@ -648,13 +648,24 @@ export default function ProfileScreen() {
         <View style={styles.secondaryButtonsRow}>
           <TouchableOpacity
             style={styles.secondaryButton}
+            onPress={() => router.push('/packing-checklist' as any)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="checkbox-outline" size={20} color="#00D4B2" style={styles.buttonIcon} />
+            <Text style={[styles.secondaryButtonText, { color: '#00D4B2', fontWeight: '800' }]}>Pakkeliste 🧳</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
             onPress={() => router.push('/sessions' as any)}
             activeOpacity={0.8}
           >
             <Ionicons name="map-outline" size={20} color={colors.primary} style={styles.buttonIcon} />
             <Text style={styles.secondaryButtonText}>Fisketure</Text>
           </TouchableOpacity>
+        </View>
 
+        <View style={styles.secondaryButtonsRow}>
           <TouchableOpacity
             style={styles.secondaryButton}
             onPress={() => router.push('/segments')}
