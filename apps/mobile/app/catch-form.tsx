@@ -755,8 +755,27 @@ export default function CatchFormScreen() {
             [{ text: 'Fedt!', onPress: () => router.back() }]
           );
         } else {
-          Alert.alert('Succes!', 'Fangst færdiggjort');
-          router.back();
+          Alert.alert(
+            '🎉 Fangst Logget & Verificeret!',
+            `Flot fangst af ${species || 'fisk'}! Du har optjent +150 XP mod din næste rang i Hook.`,
+            [
+              {
+                text: '👑 Vis Fangstkort / Story',
+                onPress: () => {
+                  if (catchId) {
+                    router.replace(`/catch-detail?id=${catchId}`);
+                  } else {
+                    router.back();
+                  }
+                },
+              },
+              {
+                text: 'Tilbage til Feed',
+                style: 'cancel',
+                onPress: () => router.back(),
+              },
+            ]
+          );
         }
       } else {
         Alert.alert('Fejl', 'Kunne ikke færdiggøre fangst');

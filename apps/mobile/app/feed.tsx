@@ -18,6 +18,7 @@ import { API_URL } from '@/config/api';
 import CatchCard from '../components/CatchCard';
 import CatchCardSkeleton from '../components/CatchCardSkeleton';
 import ScreenLoading from '../components/ScreenLoading';
+import DailyChallengesWidget from '../components/DailyChallengesWidget';
 import { useCatchesFeed, FeedCatch } from '../hooks/useCatches';
 
 interface User {
@@ -386,6 +387,7 @@ export default function FeedScreen() {
             data={filteredCatches}
             renderItem={renderCatchItem}
             keyExtractor={(item) => item.id}
+            ListHeaderComponent={<DailyChallengesWidget />}
             contentContainerStyle={[styles.container, { backgroundColor: colors.backgroundLight }]}
             showsVerticalScrollIndicator={true}
             refreshControl={
