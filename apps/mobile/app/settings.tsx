@@ -12,8 +12,7 @@ import { useNavConfig } from '@/contexts/NavConfigContext';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
 import i18n from '../i18n';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fishlog-production.up.railway.app';
+import { API_URL } from '@/config/api';
 
 export default function SettingsScreen() {
   const router = useRouter();
