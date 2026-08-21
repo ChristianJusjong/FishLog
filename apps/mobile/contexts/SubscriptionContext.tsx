@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { getSecureItem, TOKEN_KEYS } from '@/lib/secureStorage';
 import { API_URL } from '@/config/api';
+import { IAP_PRODUCT_IDS, purchaseSubscription, restoreNativePurchases } from '../services/inAppPurchases';
 
 export type SubscriptionTier = 'free' | 'pro' | 'premium';
 
@@ -66,8 +67,15 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const upgradeToPro = async (plan: 'monthly' | 'yearly'): Promise<boolean> => {
     try {
+      const productId = plan === 'yearly' ? IAP_PRODUCT_IDS.YEARLY_PRO : IAP_PRODUCT_IDS.MONTHLY_PRO;
+      const result = await purchaseSubscription(productId);
+
+      if (!result.success) {
+        return false;
+      }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      // In production: trigger Apple In-App Purchase / Google Play Billing
+      
       // Persist Pro state
       setTier('pro');
       await AsyncStorage.setItem(STORAGE_KEY, 'pro');
@@ -80,7 +88,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ tier: 'pro' }),
+          body: JSON.stringify({ tier: 'pro', transactionId: result.transactionId }),
         }).catch(() => {});
       }
       return true;
