@@ -127,7 +127,7 @@ if (fs.existsSync(publicPath)) {
   fastify.register(fastifyStatic, {
     root: publicPath,
     prefix: '/',
-    wildcard: false,
+    index: false, // Prevent default GET / route registration to avoid collision with dynamic domain router
   });
   console.log('Static files enabled from:', publicPath);
 
