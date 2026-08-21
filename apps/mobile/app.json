@@ -18,6 +18,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.cjusjong.hook",
       "associatedDomains": [
+        "applinks:hookapp.dk",
+        "applinks:questline.dk",
         "applinks:fishlog-production.up.railway.app"
       ]
     },
@@ -45,6 +47,14 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
+            {
+              "scheme": "https",
+              "host": "hookapp.dk"
+            },
+            {
+              "scheme": "https",
+              "host": "questline.dk"
+            },
             {
               "scheme": "https",
               "host": "fishlog-production.up.railway.app"

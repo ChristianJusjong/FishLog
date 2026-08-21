@@ -96,7 +96,13 @@ export const authRateLimit = {
 
 // CORS configuration - restrict origins in production
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? ['https://fishlog-production.up.railway.app', 'https://hook.app'] // Add your production domains
+  ? [
+      'https://fishlog-production.up.railway.app',
+      'https://questline.dk',
+      'https://www.questline.dk',
+      'https://hookapp.dk',
+      'https://www.hookapp.dk'
+    ]
   : true; // Allow all in development
 
 fastify.register(cors, {
