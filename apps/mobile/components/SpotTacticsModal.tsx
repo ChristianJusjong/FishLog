@@ -16,6 +16,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { FishingLocation } from '../data/fishingLocations';
 import { generateSpotTactics } from '../data/spotTacticsEngine';
+import TideChartWidget from './TideChartWidget';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -97,6 +98,9 @@ export default function SpotTacticsModal({
                 <Text style={[styles.goldenHourText, { color: colors.text }]}>{tactics.goldenHour}</Text>
               </View>
             </LinearGradient>
+
+            {/* Live DMI Water Level & Tidal Curve */}
+            <TideChartWidget latitude={spot.latitude} longitude={spot.longitude} />
 
             {/* Tactical Weather Advice */}
             <View style={[styles.card, { backgroundColor: isDark ? '#0A1E34' : '#F8FAFC' }]}>

@@ -11,6 +11,14 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useNavConfig } from '@/contexts/NavConfigContext';
 import PageLayout from '../components/PageLayout';
 import WeatherLocationCard from '../components/WeatherLocationCard';
+import OfflineCacheManager from '../components/OfflineCacheManager';
+import {
+  isBiometricSupported,
+  isBiometricsEnabledByUser,
+  setBiometricsEnabledByUser,
+  getBiometricTypeName,
+  authenticateWithBiometrics,
+} from '../services/biometricAuth';
 import i18n from '../i18n';
 import { API_URL } from '@/config/api';
 
@@ -23,10 +31,38 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(false);
   const [savedKey, setSavedKey] = useState('');
   const [profileVisibility, setProfileVisibility] = useState('public');
+  const [biometricsAvailable, setBiometricsAvailable] = useState(false);
+  const [biometricsEnabled, setBiometricsEnabled] = useState(false);
+  const [biometricName, setBiometricName] = useState('Biometri');
 
   useEffect(() => {
     loadSavedApiKey();
+    checkBiometrics();
   }, []);
+
+  const checkBiometrics = async () => {
+    const supported = await isBiometricSupported();
+    setBiometricsAvailable(supported);
+    if (supported) {
+      const enabled = await isBiometricsEnabledByUser();
+      setBiometricsEnabled(enabled);
+      const name = await getBiometricTypeName();
+      setBiometricName(name);
+    }
+  };
+
+  const handleToggleBiometrics = async (val: boolean) => {
+    if (val) {
+      const success = await authenticateWithBiometrics('Bekræft for at aktivere hurtig-login');
+      if (success) {
+        setBiometricsEnabled(true);
+        await setBiometricsEnabledByUser(true);
+      }
+    } else {
+      setBiometricsEnabled(false);
+      await setBiometricsEnabledByUser(false);
+    }
+  };
 
   const loadSavedApiKey = async () => {
     try {
@@ -362,6 +398,38 @@ export default function SettingsScreen() {
               <Text style={[styles.themeOptionText, { color: isDark ? colors.textPrimary : colors.textSecondary }]}>Mørk tilstand</Text>
             </View>
           </View>
+        </View>
+
+        {/* Biometrics Login Section */}
+        {biometricsAvailable && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="finger-print" size={24} color="#00D4B2" style={styles.sectionIcon} />
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Hurtig-Login ({biometricName})</Text>
+            </View>
+            <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+              Lås appen op lynhurtigt med {biometricName} ved kysten.
+            </Text>
+            <View style={[styles.menuItem, { backgroundColor: colors.surface, justifyContent: 'space-between', paddingVertical: 10 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Ionicons name="shield-checkmark" size={20} color="#00D4B2" />
+                <Text style={[styles.menuItemText, { color: colors.textPrimary, fontWeight: '700' }]}>
+                  Aktiver {biometricName}
+                </Text>
+              </View>
+              <Switch
+                value={biometricsEnabled}
+                onValueChange={handleToggleBiometrics}
+                trackColor={{ false: colors.border, true: '#00D4B2' }}
+                thumbColor={Platform.OS === 'android' ? colors.white : undefined}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Offline Maps & Cache Manager */}
+        <View style={styles.section}>
+          <OfflineCacheManager />
         </View>
 
         {/* Navigation Bar Customization Section */}
