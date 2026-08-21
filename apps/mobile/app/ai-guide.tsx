@@ -18,6 +18,7 @@ import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from "@/constants/branding";
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from "../contexts/ThemeContext";
+import { useSubscription } from "../contexts/SubscriptionContext";
 import { useOnboardingJourney } from "../contexts/OnboardingJourneyContext";
 import { api } from "../lib/api";
 import PageLayout from "../components/PageLayout";
@@ -820,6 +821,7 @@ const useStyles = () => {
 
 export default function AIGuideScreen() {
   const { colors } = useTheme();
+  const { isPro } = useSubscription();
   const { completeMilestone } = useOnboardingJourney();
   const styles = useStyles();
   const router = useRouter();
@@ -997,6 +999,18 @@ export default function AIGuideScreen() {
   };
 
   const getRecommendations = async () => {
+    if (!isPro) {
+      Alert.alert(
+        'Hook Pro Påkrævet 👑',
+        'Fiske-AI, live spot-taktik og vejranalyser er eksklusivt for Hook Pro medlemmer. Prøv 7 dage gratis!',
+        [
+          { text: 'Annuller', style: 'cancel' },
+          { text: 'Prøv Gratis i 7 Dage 👑', onPress: () => router.push('/upgrade-pro' as any) },
+        ]
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {

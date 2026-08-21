@@ -11,7 +11,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../contexts/ThemeContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { FishingLocation } from '../data/fishingLocations';
 import { generateSpotTactics } from '../data/spotTacticsEngine';
 
@@ -31,6 +33,8 @@ export default function SpotTacticsModal({
   weather,
 }: SpotTacticsModalProps) {
   const { colors, isDark } = useTheme();
+  const { isPro } = useSubscription();
+  const router = useRouter();
 
   if (!spot) return null;
 
@@ -106,44 +110,68 @@ export default function SpotTacticsModal({
               )}
             </View>
 
-            {/* Recommended Lures (Agnvalg) */}
-            <Text style={[styles.sectionHeading, { color: colors.text }]}>Anbefalet Endegrej Lige Nu</Text>
-            {tactics.recommendedLures.map((lure, idx) => (
-              <View
-                key={`lure-${idx}`}
-                style={[
-                  styles.lureCard,
-                  { backgroundColor: isDark ? '#0A1E34' : '#F8FAFC', borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
-                ]}
-              >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={[styles.lureName, { color: colors.text }]}>{lure.name}</Text>
-                  <View style={styles.lureBadge}>
-                    <Text style={styles.lureBadgeText}>{lure.type}</Text>
+            {!isPro ? (
+              <View style={[styles.card, { backgroundColor: isDark ? '#0A1E34' : '#F8FAFC', borderColor: '#F5A623', borderWidth: 1.5, alignItems: 'center', padding: 20, marginTop: 10 }]}>
+                <Ionicons name="lock-closed" size={32} color="#F5A623" style={{ marginBottom: 8 }} />
+                <Text style={[styles.title, { color: colors.text, textAlign: 'center' }]}>Lås op for AI Spot-Taktik 👑</Text>
+                <Text style={[styles.subtitle, { color: colors.textSecondary, textAlign: 'center', marginTop: 4, marginBottom: 14 }]}>
+                  Få præcise agnvalg, farvekombinationer og indspinningshastigheder skræddersyet til {spot.name} med Hook Pro.
+                </Text>
+                <TouchableOpacity
+                  style={{ borderRadius: 12, overflow: 'hidden', width: '100%' }}
+                  onPress={() => {
+                    onClose();
+                    router.push('/upgrade-pro' as any);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient colors={['#F5A623', '#D97706']} style={{ paddingVertical: 12, alignItems: 'center' }}>
+                    <Text style={{ color: '#071524', fontWeight: '900', fontSize: 13 }}>Prøv Hook Pro Gratis i 7 Dage 👑</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                {/* Recommended Lures (Agnvalg) */}
+                <Text style={[styles.sectionHeading, { color: colors.text }]}>Anbefalet Endegrej Lige Nu</Text>
+                {tactics.recommendedLures.map((lure, idx) => (
+                  <View
+                    key={`lure-${idx}`}
+                    style={[
+                      styles.lureCard,
+                      { backgroundColor: isDark ? '#0A1E34' : '#F8FAFC', borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
+                    ]}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={[styles.lureName, { color: colors.text }]}>{lure.name}</Text>
+                      <View style={styles.lureBadge}>
+                        <Text style={styles.lureBadgeText}>{lure.type}</Text>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 12, marginVertical: 4 }}>
+                      <Text style={[styles.lureMeta, { color: '#00D4B2' }]}>Farve: {lure.color}</Text>
+                      <Text style={[styles.lureMeta, { color: colors.textSecondary }]}>Vægt: {lure.weightSize}</Text>
+                    </View>
+                    <Text style={[styles.lureReason, { color: colors.textSecondary }]}>{lure.reason}</Text>
                   </View>
-                </View>
-                <View style={{ flexDirection: 'row', gap: 12, marginVertical: 4 }}>
-                  <Text style={[styles.lureMeta, { color: '#00D4B2' }]}>Farve: {lure.color}</Text>
-                  <Text style={[styles.lureMeta, { color: colors.textSecondary }]}>Vægt: {lure.weightSize}</Text>
-                </View>
-                <Text style={[styles.lureReason, { color: colors.textSecondary }]}>{lure.reason}</Text>
-              </View>
-            ))}
+                ))}
 
-            {/* Techniques */}
-            <Text style={[styles.sectionHeading, { color: colors.text }]}>Fisketeknik & Indspinning</Text>
-            {tactics.fishingTechniques.map((tech, idx) => (
-              <View
-                key={`tech-${idx}`}
-                style={[
-                  styles.techCard,
-                  { backgroundColor: isDark ? '#0A1E34' : '#F8FAFC', borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
-                ]}
-              >
-                <Text style={[styles.techTitle, { color: '#00D4B2' }]}>{tech.technique}</Text>
-                <Text style={[styles.techProTip, { color: colors.text }]}>💡 Pro Tip: {tech.proTip}</Text>
-              </View>
-            ))}
+                {/* Techniques */}
+                <Text style={[styles.sectionHeading, { color: colors.text }]}>Fisketeknik & Indspinning</Text>
+                {tactics.fishingTechniques.map((tech, idx) => (
+                  <View
+                    key={`tech-${idx}`}
+                    style={[
+                      styles.techCard,
+                      { backgroundColor: isDark ? '#0A1E34' : '#F8FAFC', borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
+                    ]}
+                  >
+                    <Text style={[styles.techTitle, { color: '#00D4B2' }]}>{tech.technique}</Text>
+                    <Text style={[styles.techProTip, { color: colors.text }]}>💡 Pro Tip: {tech.proTip}</Text>
+                  </View>
+                ))}
+              </>
+            )}
 
             <View style={{ height: 24 }} />
           </ScrollView>

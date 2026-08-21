@@ -26,6 +26,15 @@ function getTimeOfDay(date: Date): string {
   return 'nat';
 }
 
+async function isProSubscriber(userId?: string): Promise<boolean> {
+  if (!userId) return false;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { premium: true },
+  });
+  return user?.premium?.tier === 'pro' || user?.premium?.tier === 'premium' || (user as any)?.tier === 'pro';
+}
+
 function getGeminiClient(userApiKey?: string): GoogleGenerativeAI {
   const apiKey = userApiKey || GEMINI_API_KEY;
   if (!apiKey || apiKey === 'your_gemini_api_key_here' || apiKey === 'your_groq_api_key_here') {
@@ -177,11 +186,21 @@ export async function aiRoutes(fastify: FastifyInstance) {
           pressure?: number;
         };
 
+        const userId = request.user?.userId;
+        const isPro = await isProSubscriber(userId);
+        if (!isPro) {
+          return reply.status(403).send({
+            error: 'Hook Pro Påkrævet',
+            code: 'PRO_SUBSCRIPTION_REQUIRED',
+            message: 'Fiske-AI, live spot-taktik og artsgenkendelse kræver et aktivt Hook Pro abonnement.',
+          });
+        }
+
         fastify.log.info(`Generating Google Gemini recommendations for ${payload.species}`);
 
         // Get user's Gemini/Google API key from profile
         const user = await prisma.user.findUnique({
-          where: { id: request.user?.userId || '' },
+          where: { id: userId || '' },
           select: { geminiApiKey: true, groqApiKey: true },
         });
 
@@ -373,9 +392,19 @@ Du SKAL returnere svaret KUN som valid JSON (uden markdown code blocks) med føl
           season: string;
         };
 
+        const userId = request.user?.userId;
+        const isPro = await isProSubscriber(userId);
+        if (!isPro) {
+          return reply.status(403).send({
+            error: 'Hook Pro Påkrævet',
+            code: 'PRO_SUBSCRIPTION_REQUIRED',
+            message: 'Fiske-AI, live spot-taktik og rådgivning kræver et aktivt Hook Pro abonnement.',
+          });
+        }
+
         // Get user's Gemini API key from profile
         const user = await prisma.user.findUnique({
-          where: { id: request.user?.userId || '' },
+          where: { id: userId || '' },
           select: { geminiApiKey: true, groqApiKey: true },
         });
 
@@ -518,11 +547,21 @@ Hold det KORT og KONKRET. Maks 3-4 punkter per sektion.`;
       try {
         const { imageUrl } = request.body as { imageUrl: string };
 
+        const userId = request.user?.userId;
+        const isPro = await isProSubscriber(userId);
+        if (!isPro) {
+          return reply.status(403).send({
+            error: 'Hook Pro Påkrævet',
+            code: 'PRO_SUBSCRIPTION_REQUIRED',
+            message: 'AI Artsgenkendelse fra billeder kræver et aktivt Hook Pro abonnement.',
+          });
+        }
+
         fastify.log.info('Identifying fish species from image using Google Gemini Vision');
 
         // Get user's Gemini API key from profile
         const user = await prisma.user.findUnique({
-          where: { id: request.user?.userId || '' },
+          where: { id: userId || '' },
           select: { geminiApiKey: true, groqApiKey: true },
         });
 
