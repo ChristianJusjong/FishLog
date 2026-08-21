@@ -14,15 +14,15 @@
             --bg-card: #08192C;
             --bg-card-hover: #0C233D;
             --teal: #00D4B2;
+            --teal-glow: rgba(0, 212, 178, 0.35);
             --gold: #F5A623;
             --emerald: #10B981;
             --purple: #A855F7;
             --cyan: #38BDF8;
-            --orange: #FB923C;
             --text-main: #FFFFFF;
             --text-muted: #94A3B8;
             --border: rgba(255, 255, 255, 0.08);
-            --border-glow: rgba(0, 212, 178, 0.3);
+            --border-teal: rgba(0, 212, 178, 0.3);
         }
 
         * {
@@ -39,12 +39,11 @@
             overflow-x: hidden;
         }
 
-        /* Glow background elements */
         .ambient-glow {
             position: absolute;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(0, 212, 178, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(0, 212, 178, 0.09) 0%, rgba(0, 0, 0, 0) 70%);
             top: -100px;
             left: 50%;
             transform: translateX(-50%);
@@ -52,14 +51,13 @@
             pointer-events: none;
         }
 
-        /* Nav */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 22px 8%;
+            padding: 20px 8%;
             border-bottom: 1px solid var(--border);
-            background: rgba(4, 13, 23, 0.85);
+            background: rgba(4, 13, 23, 0.88);
             backdrop-filter: blur(16px);
             position: sticky;
             top: 0;
@@ -85,7 +83,7 @@
             font-weight: 900;
             font-size: 22px;
             color: #040D17;
-            box-shadow: 0 0 25px rgba(0, 212, 178, 0.35);
+            box-shadow: 0 0 25px var(--teal-glow);
         }
 
         .logo-text {
@@ -100,11 +98,6 @@
             font-weight: 800;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-        }
-
-        nav {
-            display: flex;
-            align-items: center;
         }
 
         nav a {
@@ -122,7 +115,7 @@
 
         .nav-btn {
             background: rgba(0, 212, 178, 0.12);
-            border: 1px solid var(--border-glow);
+            border: 1px solid var(--border-teal);
             color: var(--teal) !important;
             padding: 8px 18px;
             border-radius: 10px;
@@ -137,7 +130,7 @@
 
         /* Hero */
         .hero {
-            padding: 100px 8% 70px;
+            padding: 90px 8% 60px;
             text-align: center;
             max-width: 1050px;
             margin: 0 auto;
@@ -151,7 +144,7 @@
             gap: 8px;
             padding: 6px 18px;
             background: rgba(0, 212, 178, 0.12);
-            border: 1px solid var(--border-glow);
+            border: 1px solid var(--border-teal);
             border-radius: 30px;
             color: var(--teal);
             font-size: 12px;
@@ -161,7 +154,7 @@
         }
 
         .hero h1 {
-            font-size: clamp(38px, 6vw, 68px);
+            font-size: clamp(38px, 5.8vw, 66px);
             font-weight: 900;
             line-height: 1.1;
             margin-bottom: 22px;
@@ -175,27 +168,27 @@
         }
 
         .hero p {
-            font-size: clamp(16px, 2.2vw, 21px);
+            font-size: clamp(16px, 2.1vw, 20px);
             color: var(--text-muted);
-            max-width: 760px;
+            max-width: 780px;
             margin: 0 auto 36px;
             line-height: 1.6;
         }
 
         /* Manifesto Card */
         .manifesto-section {
-            padding: 20px 8% 80px;
-            max-width: 1100px;
+            padding: 10px 8% 80px;
+            max-width: 1150px;
             margin: 0 auto;
             position: relative;
             z-index: 1;
         }
 
         .manifesto-box {
-            background: linear-gradient(135deg, rgba(8, 25, 44, 0.9), rgba(12, 35, 61, 0.6));
+            background: linear-gradient(135deg, rgba(8, 25, 44, 0.92), rgba(12, 35, 61, 0.65));
             border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 40px;
+            border-radius: 26px;
+            padding: 44px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             text-align: center;
         }
@@ -203,7 +196,7 @@
         .manifesto-quote {
             font-size: clamp(18px, 2.4vw, 24px);
             font-weight: 800;
-            line-height: 1.4;
+            line-height: 1.45;
             color: #E2E8F0;
             margin-bottom: 16px;
         }
@@ -215,51 +208,33 @@
         .manifesto-sub {
             color: var(--text-muted);
             font-size: 15px;
-            max-width: 800px;
+            max-width: 820px;
             margin: 0 auto;
         }
 
-        /* Portfolio Suite */
-        .portfolio-section {
-            padding: 60px 8% 100px;
+        /* Flagship Suite */
+        .flagship-section {
+            padding: 40px 8% 90px;
             max-width: 1250px;
             margin: 0 auto;
             position: relative;
             z-index: 1;
         }
 
-        .section-header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
-        .section-title {
-            font-size: 34px;
-            font-weight: 900;
-            margin-bottom: 10px;
-            letter-spacing: -0.5px;
-        }
-
-        .section-subtitle {
-            color: var(--text-muted);
-            font-size: 16px;
-        }
-
-        /* Flagship Card (Hook) */
-        .flagship-grid {
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 40px;
+        .flagship-card-hero {
             background: var(--bg-card);
-            border: 2px solid var(--border-glow);
-            border-radius: 28px;
+            border: 2px solid var(--border-teal);
+            border-radius: 30px;
             padding: 48px;
-            margin-bottom: 40px;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 48px;
             align-items: center;
             box-shadow: 0 0 50px rgba(0, 212, 178, 0.12);
+            overflow: hidden;
         }
 
-        .flagship-badge {
+        .flagship-badge-pill {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -273,25 +248,26 @@
             margin-bottom: 16px;
         }
 
-        .flagship-title {
+        .flagship-h2 {
             font-size: 36px;
             font-weight: 900;
             line-height: 1.15;
             margin-bottom: 14px;
         }
 
-        .flagship-desc {
+        .flagship-desc-text {
             color: var(--text-muted);
             font-size: 15px;
             margin-bottom: 24px;
+            line-height: 1.6;
         }
 
-        .feature-bullets {
+        .flagship-bullets {
             list-style: none;
             margin-bottom: 28px;
         }
 
-        .feature-bullets li {
+        .flagship-bullets li {
             margin-bottom: 10px;
             font-size: 14px;
             display: flex;
@@ -300,13 +276,13 @@
             color: #E2E8F0;
         }
 
-        .cta-btn-group {
+        .cta-btns {
             display: flex;
             gap: 14px;
             flex-wrap: wrap;
         }
 
-        .btn-link {
+        .btn-action {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -318,64 +294,87 @@
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .btn-teal {
+        .btn-action-teal {
             background: var(--teal);
             color: #040D17;
         }
 
-        .btn-outline {
+        .btn-action-outline {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid var(--border);
             color: var(--text-main);
         }
 
-        .btn-link:hover {
+        .btn-action:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
 
-        .telemetry-card {
-            background: rgba(4, 13, 23, 0.85);
+        .telemetry-preview-box {
+            background: rgba(4, 13, 23, 0.9);
             border: 1px solid var(--border);
-            border-radius: 20px;
+            border-radius: 22px;
             padding: 24px;
         }
 
-        .telemetry-row {
+        .telemetry-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
 
-        .telemetry-row:last-child {
+        .telemetry-item:last-child {
             border-bottom: none;
         }
 
-        /* 4 Future Quests Grid */
-        .quests-grid {
+        /* 4 Future Quests Pipeline */
+        .pipeline-section {
+            padding: 40px 8% 100px;
+            max-width: 1250px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-header-center {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header-center h2 {
+            font-size: 34px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .section-header-center p {
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        .quests-grid-4 {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 24px;
         }
 
-        .quest-card {
+        .card-quest {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 22px;
             padding: 28px;
             transition: transform 0.25s, border-color 0.25s;
-            position: relative;
         }
 
-        .quest-card:hover {
+        .card-quest:hover {
             transform: translateY(-4px);
             border-color: var(--teal);
             background: var(--bg-card-hover);
         }
 
-        .quest-icon {
+        .quest-icon-wrapper {
             width: 52px;
             height: 52px;
             border-radius: 14px;
@@ -386,20 +385,20 @@
             margin-bottom: 18px;
         }
 
-        .quest-title {
+        .quest-heading {
             font-size: 20px;
             font-weight: 800;
             margin-bottom: 8px;
         }
 
-        .quest-desc {
+        .quest-body {
             color: var(--text-muted);
             font-size: 13px;
             line-height: 1.5;
             margin-bottom: 18px;
         }
 
-        .quest-status {
+        .badge-status {
             display: inline-block;
             font-size: 10px;
             font-weight: 800;
@@ -417,7 +416,7 @@
             font-size: 13px;
         }
 
-        .footer-grid {
+        .footer-grid-3 {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr;
             gap: 40px;
@@ -425,14 +424,14 @@
             margin: 0 auto 40px;
         }
 
-        .footer-logo {
-            font-size: 19px;
+        .footer-logo-title {
+            font-size: 20px;
             font-weight: 900;
             color: var(--text-main);
             margin-bottom: 10px;
         }
 
-        .footer-links a {
+        .footer-nav-col a {
             display: block;
             color: var(--text-muted);
             text-decoration: none;
@@ -440,11 +439,11 @@
             transition: color 0.2s;
         }
 
-        .footer-links a:hover {
+        .footer-nav-col a:hover {
             color: var(--teal);
         }
 
-        .copyright-bar {
+        .copyright-bottom {
             text-align: center;
             padding-top: 24px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -452,10 +451,10 @@
         }
 
         @media (max-width: 900px) {
-            .flagship-grid {
+            .flagship-card-hero {
                 grid-template-columns: 1fr;
             }
-            .footer-grid {
+            .footer-grid-3 {
                 grid-template-columns: 1fr;
             }
         }
@@ -486,10 +485,10 @@
     <section class="hero">
         <div class="hero-badge">⚔️ DANSK APP-STUDIE • CVR 46373936</div>
         <h1>Apps bygget til livets <span>største quests</span></h1>
-        <p>Fra kystens havørreder og barske gravel-ruter til sneklædte bjergtinder og episke D&D-kampagner. Questline Studios udvikler kompromisløse apps skræddersyet til ægte passioner.</p>
+        <p>Fra kystens havørreder og barske gravel-ruter til sneklædte bjergtinder og episke tabletop rollespilskampagner. Questline Studios udvikler kompromisløse apps skræddersyet til ægte passioner.</p>
     </section>
 
-    <!-- Manifesto Quote -->
+    <!-- Manifesto -->
     <section class="manifesto-section">
         <div class="manifesto-box">
             <div class="manifesto-quote">
@@ -502,59 +501,53 @@
         </div>
     </section>
 
-    <!-- Portfolio Section -->
-    <section id="pipeline" class="portfolio-section">
-        <div class="section-header">
-            <h2 class="section-title">Vores Produktportefølje</h2>
-            <p class="section-subtitle">Udforsk vores live og kommende passion-apps:</p>
-        </div>
-
-        <!-- Flagship: HOOK -->
-        <div id="flagship" class="flagship-grid">
+    <!-- Flagship: HOOK -->
+    <section id="flagship" class="flagship-section">
+        <div class="flagship-card-hero">
             <div>
-                <div class="flagship-badge">★ Vores Flagskib • Live Nu</div>
-                <h3 class="flagship-title">Hook — Danmarks Førende Fiskeapp</h3>
-                <p class="flagship-desc">
+                <div class="flagship-badge-pill">★ Vores Flagskib • Live Nu</div>
+                <h2 class="flagship-h2">Hook — Danmarks Førende Fiskeapp</h2>
+                <p class="flagship-desc-text">
                     Den ultimative digitale fiskejournal. Log kyst- og søfangster på 15 sekunder, bliv advaret ved fredede å-udløb med GPS-geofence, og se dit personlige glødende kyst-heatmap.
                 </p>
 
-                <ul class="feature-bullets">
+                <ul class="flagship-bullets">
                     <li>⚡ <strong>Live Kyst-Radar:</strong> Friske kystfangster i realtid.</li>
                     <li>🛑 <strong>Fredningszone-Alarm:</strong> Beskytter dig mod bøder ved 500m å-udløb.</li>
                     <li>🌊 <strong>DMI Vandstand & Strømskifte:</strong> 12-timers tidevandskurve.</li>
                     <li>👑 <strong>Hook Pro:</strong> 100% annoncefri, offline dybdekort & intelligent Fiske-AI.</li>
                 </ul>
 
-                <div class="cta-btn-group">
-                    <a href="https://hookapp.dk" class="btn-link btn-teal">
+                <div class="cta-btns">
+                    <a href="https://hookapp.dk" class="btn-action btn-action-teal">
                         <span>Gå til Hookapp.dk ↗</span>
                     </a>
-                    <a href="#" class="btn-link btn-outline">
+                    <a href="https://hookapp.dk#download" class="btn-action btn-action-outline">
                         <span>🍏 App Store & Google Play</span>
                     </a>
                 </div>
             </div>
 
             <div>
-                <div class="telemetry-card">
+                <div class="telemetry-preview-box">
                     <div style="font-size: 11px; font-weight: 800; color: var(--teal); letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">
                         Hook Live Telemetri
                     </div>
-                    <div class="telemetry-row">
+                    <div class="telemetry-item">
                         <div>
                             <div style="font-size: 12px; color: var(--text-muted);">Personligt Kyst-Heatmap</div>
                             <div style="font-size: 18px; font-weight: 900;">38.4 km Logget Kyst</div>
                         </div>
                         <div style="font-size: 24px;">🗺️</div>
                     </div>
-                    <div class="telemetry-row">
+                    <div class="telemetry-item">
                         <div>
                             <div style="font-size: 12px; color: var(--text-muted);">Personlig Rekord (PB)</div>
                             <div style="font-size: 18px; font-weight: 900; color: var(--gold);">Havørred 64 cm</div>
                         </div>
                         <div style="font-size: 24px;">👑</div>
                     </div>
-                    <div class="telemetry-row">
+                    <div class="telemetry-item">
                         <div>
                             <div style="font-size: 12px; color: var(--text-muted);">DMI Strømskifte</div>
                             <div style="font-size: 18px; font-weight: 900; color: var(--emerald);">Optimalt kl. 14:00</div>
@@ -564,74 +557,77 @@
                 </div>
             </div>
         </div>
+    </section>
 
-        <!-- 4 Upcoming Quests -->
-        <div class="quests-grid">
+    <!-- Pipeline -->
+    <section id="pipeline" class="pipeline-section">
+        <div class="section-header-center">
+            <h2>Kommende Questline Udgivelser</h2>
+            <p>Vores passioner driver vores kode. Her er hvad der brygges i studiet:</p>
+        </div>
+
+        <div class="quests-grid-4">
             <!-- Cycling -->
-            <div class="quest-card">
-                <div class="quest-icon" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">🚴</div>
-                <h3 class="quest-title">Cykling & Gravel</h3>
-                <p class="quest-desc">Segmentjagt, ruteplanlægning på grusveje og live watt/puls telemetri til eventyrlige gravel- og landevejsryttere.</p>
-                <div class="quest-status" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">Under Udvikling</div>
+            <div class="card-quest">
+                <div class="quest-icon-wrapper" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">🚴</div>
+                <h3 class="quest-heading">Cykling & Gravel</h3>
+                <p class="quest-body">Segmentjagt, ruteplanlægning på grusveje og live watt/puls telemetri til eventyrlige gravel- og landevejsryttere.</p>
+                <div class="badge-status" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">Under Udvikling</div>
             </div>
 
             <!-- Hunting -->
-            <div class="quest-card">
-                <div class="quest-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">🏹</div>
-                <h3 class="quest-title">Jagt & Natur</h3>
-                <p class="quest-desc">Territorie-GPS, digital skudjournal, vildtkamera-synkronisering og sol/måne jagttider i skoven.</p>
-                <div class="quest-status" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">Koncept</div>
+            <div class="card-quest">
+                <div class="quest-icon-wrapper" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">🏹</div>
+                <h3 class="quest-heading">Jagt & Natur</h3>
+                <p class="quest-body">Territorie-GPS, digital skudjournal, vildtkamera-synkronisering og sol/måne jagttider i skoven.</p>
+                <div class="badge-status" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">Koncept</div>
             </div>
 
             <!-- Skiing -->
-            <div class="quest-card">
-                <div class="quest-icon" style="background: rgba(56, 189, 248, 0.15); color: var(--cyan);">⛷️</div>
-                <h3 class="quest-title">Skiløb & Alpin</h3>
-                <p class="quest-desc">Hældningsmåler til off-piste, lavinesikkerhed, pulversne-varsler og telemetri over dine højdemeter.</p>
-                <div class="quest-status" style="background: rgba(56, 189, 248, 0.15); color: var(--cyan);">Koncept</div>
+            <div class="card-quest">
+                <div class="quest-icon-wrapper" style="background: rgba(56, 189, 248, 0.15); color: var(--cyan);">⛷️</div>
+                <h3 class="quest-heading">Skiløb & Alpin</h3>
+                <p class="quest-body">Hældningsmåler til off-piste, lavinesikkerhed, pulversne-varsler og telemetri over dine højdemeter.</p>
+                <div class="badge-status" style="background: rgba(56, 189, 248, 0.15); color: var(--cyan);">Koncept</div>
             </div>
 
             <!-- RPG -->
-            <div class="quest-card">
-                <div class="quest-icon" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">🐉</div>
-                <h3 class="quest-title">Tabletop RPG & Rollespil</h3>
-                <p class="quest-desc">Den ultimative digitale tabletop RPG-companion med karakter-ark, spellbook og 3D-terningfysik.</p>
-                <div class="quest-status" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">Idé-fase</div>
+            <div class="card-quest">
+                <div class="quest-icon-wrapper" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">🐉</div>
+                <h3 class="quest-heading">Tabletop RPG & Rollespil</h3>
+                <p class="quest-body">Den ultimative digitale tabletop RPG-companion med karakter-ark, spellbook og 3D-terningfysik.</p>
+                <div class="badge-status" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">Idé-fase</div>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer>
-        <div class="footer-grid">
+        <div class="footer-grid-3">
             <div>
-                <div class="footer-logo">QUESTLINE STUDIOS</div>
+                <div class="footer-logo-title">QUESTLINE STUDIOS</div>
                 <p style="max-width: 380px; margin-bottom: 14px;">
                     Uafhængigt dansk app-studie der bygger software til cykling, jagt, fiskeri, skiløb og gaming.
                 </p>
                 <p><strong>CVR:</strong> 46373936 • Danmark</p>
             </div>
 
-            <div>
+            <div class="footer-nav-col">
                 <h4 style="color: var(--text-main); margin-bottom: 12px; font-size: 14px;">PRODUKTER</h4>
-                <div class="footer-links">
-                    <a href="https://hookapp.dk">Hook (Fiskeapp)</a>
-                    <a href="https://hookapp.dk">Hook Pro</a>
-                    <a href="#pipeline">Kommende Apps</a>
-                </div>
+                <a href="https://hookapp.dk">Hook (Fiskeapp)</a>
+                <a href="https://hookapp.dk">Hook Pro</a>
+                <a href="#pipeline">Kommende Apps</a>
             </div>
 
-            <div>
+            <div class="footer-nav-col">
                 <h4 style="color: var(--text-main); margin-bottom: 12px; font-size: 14px;">JURIDISK & SUPPORT</h4>
-                <div class="footer-links">
-                    <a href="/privacy-policy.html">Privatlivspolitik (GDPR)</a>
-                    <a href="/privacy-policy.html">Vilkår & Betingelser</a>
-                    <a href="mailto:support@questline.dk">support@questline.dk</a>
-                </div>
+                <a href="/privacy-policy.html">Privatlivspolitik (GDPR)</a>
+                <a href="/privacy-policy.html">Vilkår & Betingelser</a>
+                <a href="mailto:support@questline.dk">support@questline.dk</a>
             </div>
         </div>
 
-        <div class="copyright-bar">
+        <div class="copyright-bottom">
             &copy; 2026 Questline Studios (CVR: 46373936). Alle rettigheder forbeholdes.
         </div>
     </footer>
