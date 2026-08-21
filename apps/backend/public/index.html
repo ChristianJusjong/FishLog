@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questline Studios • Passion-Driven Apps & Hook</title>
+    <meta name="description" content="Questline Studios bygger næste generations mobilapps til passionerede outdoor- og adventure-entusiaster. Skabere af Hook - Danmarks førende fiskeapp.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #05111D;
+            --bg-card: #0A1E34;
+            --teal: #00D4B2;
+            --gold: #F5A623;
+            --emerald: #10B981;
+            --purple: #A855F7;
+            --text-main: #FFFFFF;
+            --text-muted: #94A3B8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Nav */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 8%;
+            border-bottom: 1px solid var(--border);
+            background: rgba(5, 17, 29, 0.85);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .logo-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--teal), #009688);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 20px;
+            color: #05111D;
+            box-shadow: 0 0 20px rgba(0, 212, 178, 0.3);
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-subtext {
+            font-size: 10px;
+            color: var(--teal);
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-left: 28px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--teal);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 90px 8% 60px;
+            text-align: center;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(0, 212, 178, 0.12);
+            border: 1px solid rgba(0, 212, 178, 0.3);
+            border-radius: 30px;
+            color: var(--teal);
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: clamp(36px, 5.5vw, 64px);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--teal), #60EFFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: clamp(16px, 2vw, 20px);
+            color: var(--text-muted);
+            max-width: 680px;
+            margin: 0 auto 36px;
+        }
+
+        /* Showcase Flagship App: HOOK */
+        .flagship-section {
+            padding: 40px 8% 80px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .flagship-card {
+            background: var(--bg-card);
+            border: 1.5px solid rgba(0, 212, 178, 0.35);
+            border-radius: 28px;
+            padding: 48px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 212, 178, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-badge-pill {
+            display: inline-block;
+            background: #F5A623;
+            color: #05111D;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .flagship-title {
+            font-size: 38px;
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 16px;
+        }
+
+        .flagship-desc {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .feature-bullets {
+            list-style: none;
+            margin-bottom: 32px;
+        }
+
+        .feature-bullets li {
+            margin-bottom: 10px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #E2E8F0;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .btn-store {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-apple {
+            background: #FFFFFF;
+            color: #05111D;
+        }
+
+        .btn-google {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: #FFFFFF;
+        }
+
+        .btn-store:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .mockup-preview {
+            background: linear-gradient(135deg, rgba(0, 212, 178, 0.15), rgba(245, 166, 35, 0.1));
+            border-radius: 20px;
+            padding: 32px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .mockup-stat-box {
+            background: rgba(5, 17, 29, 0.85);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Portfolio Pipeline */
+        .pipeline-section {
+            padding: 60px 8% 100px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        .pipeline-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .pipeline-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .pipeline-card:hover {
+            border-color: var(--teal);
+            transform: translateY(-3px);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .status-tag {
+            display: inline-block;
+            margin-top: 14px;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 60px 8% 40px;
+            background: #030A12;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto 40px;
+        }
+
+        .footer-logo {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .footer-links a {
+            display: block;
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-bottom: 8px;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--teal);
+        }
+
+        .copyright-bar {
+            text-align: center;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 12px;
+        }
+
+        @media (max-width: 868px) {
+            .flagship-card {
+                grid-template-columns: 1fr;
+            }
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Header -->
+    <header>
+        <a href="/" class="logo-container">
+            <div class="logo-badge">Q</div>
+            <div>
+                <div class="logo-text">QUESTLINE STUDIOS</div>
+                <div class="logo-subtext">Passion-Driven Apps</div>
+            </div>
+        </a>
+        <nav>
+            <a href="#hook">Hook (Fiskeri)</a>
+            <a href="#pipeline">Fremtidige Apps</a>
+            <a href="/privacy-policy.html">Privatliv</a>
+            <a href="mailto:support@questlinestudios.dk">Kontakt</a>
+        </nav>
+    </header>
+
+    <!-- Studio Hero -->
+    <section class="hero">
+        <div class="hero-badge">⚡ DANSK APP-STUDIE • CVR 46373936</div>
+        <h1>Vi bygger <span>passionerede apps</span> til livets største eventyr</h1>
+        <p>Fra kystens havørreder og barske gravel-ruter til sneklædte bjergtinder og episke D&D-kampagner. Questline Studios udvikler kompromisløse apps skræddersyet til ægte entusiaster.</p>
+    </section>
+
+    <!-- Flagship Product: HOOK -->
+    <section id="hook" class="flagship-section">
+        <div class="flagship-card">
+            <div>
+                <div class="app-badge-pill">★ Vores Flagskib</div>
+                <h2 class="flagship-title">Hook — Danmarks Førende Fiskeapp</h2>
+                <p class="flagship-desc">Strava for lystfiskere. Log dine kyst- og søfangster, beskyt dig mod bøder med realtime fredningszone-alarm, og se dit personlige glødende fiske-heatmap.</p>
+                
+                <ul class="feature-bullets">
+                    <li>⚡ <strong>Live Kyst-Radar:</strong> Følg friske fangster i realtid langs Danmarks kyster.</li>
+                    <li>🛑 <strong>Fredningszone-Geofence:</strong> Akut advarsel ved 500m fredede å-udløb.</li>
+                    <li>🌊 <strong>DMI Vandstand & Strømskifte:</strong> 12-timers tidevandskurve.</li>
+                    <li>👑 <strong>Hook Pro:</strong> 100% annoncefri, offline dybdekort og Google Gemini Fiske-AI.</li>
+                </ul>
+
+                <div class="cta-group">
+                    <a href="#" class="btn-store btn-apple">
+                        <span>🍏 Hent i App Store</span>
+                    </a>
+                    <a href="#" class="btn-store btn-google">
+                        <span>🤖 Hent i Google Play</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="mockup-preview">
+                <div class="mockup-stat-box">
+                    <div style="text-align: left;">
+                        <div style="color: var(--teal); font-weight: 800; font-size: 13px;">MIT FISKE-HEATMAP</div>
+                        <div style="font-size: 20px; font-weight: 900;">38.4 km Kyst</div>
+                    </div>
+                    <div style="font-size: 24px;">🗺️</div>
+                </div>
+
+                <div class="mockup-stat-box">
+                    <div style="text-align: left;">
+                        <div style="color: var(--gold); font-weight: 800; font-size: 13px;">PERSONLIG REKORD (PB)</div>
+                        <div style="font-size: 20px; font-weight: 900;">Havørred 64 cm</div>
+                    </div>
+                    <div style="font-size: 24px;">👑</div>
+                </div>
+
+                <div class="mockup-stat-box">
+                    <div style="text-align: left;">
+                        <div style="color: var(--emerald); font-weight: 800; font-size: 13px;">STRØMSKIFTE</div>
+                        <div style="font-size: 20px; font-weight: 900;">Optimalt kl. 14:00</div>
+                    </div>
+                    <div style="font-size: 24px;">🎯</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Studio Portfolio Pipeline -->
+    <section id="pipeline" class="pipeline-section">
+        <div class="section-header">
+            <h2 class="section-title">Kommende Questline Udgivelser</h2>
+            <p class="section-subtitle">Vores passioner driver vores kode. Her er hvad der brygges i studiet:</p>
+        </div>
+
+        <div class="pipeline-grid">
+            <!-- Cycling -->
+            <div class="pipeline-card">
+                <div class="card-icon" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">🚴</div>
+                <h3 class="card-title">Cykling & Gravel</h3>
+                <p class="card-desc">Segmentjagt, ruteplanlægning på grus og telemetri-tracking for landevejs- og gravel-ryttere.</p>
+                <div class="status-tag" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">Under Udvikling</div>
+            </div>
+
+            <!-- Hunting -->
+            <div class="pipeline-card">
+                <div class="card-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">🏹</div>
+                <h3 class="card-title">Jagt & Natur</h3>
+                <p class="card-desc">Territorie-opmåling, skudjournal, vildtkamera-synkronisering og sol/måne jagttider.</p>
+                <div class="status-tag" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">Koncept</div>
+            </div>
+
+            <!-- Skiing -->
+            <div class="pipeline-card">
+                <div class="card-icon" style="background: rgba(96, 239, 255, 0.15); color: #60EFFF);">⛷️</div>
+                <h3 class="card-title">Skiløb & Alpin</h3>
+                <p class="card-desc">Hældningsmåler til off-piste, lavinesikkerhed, pulversne-varsler og piste-telemetri.</p>
+                <div class="status-tag" style="background: rgba(96, 239, 255, 0.15); color: #60EFFF);">Koncept</div>
+            </div>
+
+            <!-- D&D -->
+            <div class="pipeline-card">
+                <div class="card-icon" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">🐉</div>
+                <h3 class="card-title">Dungeons & Dragons</h3>
+                <p class="card-desc">Den ultimative tabletop RPG-companion med karakter-ark, spellbook og terning-fysik.</p>
+                <div class="status-tag" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">Idé-fase</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-grid">
+            <div>
+                <div class="footer-logo">QUESTLINE STUDIOS</div>
+                <p style="max-width: 380px; margin-bottom: 14px;">Uafhængigt dansk app-studie der bygger skræddersyede softwareoplevelser til cykling, jagt, fiskeri, skiløb og gaming.</p>
+                <p><strong>CVR:</strong> 46373936 • Danmark</p>
+            </div>
+
+            <div>
+                <h4 style="color: var(--text-main); margin-bottom: 12px; font-size: 14px;">PRODUKTER</h4>
+                <div class="footer-links">
+                    <a href="#hook">Hook (Fiskeapp)</a>
+                    <a href="#hook">Hook Pro Medlemskab</a>
+                    <a href="#pipeline">Kommende Apps</a>
+                </div>
+            </div>
+
+            <div>
+                <h4 style="color: var(--text-main); margin-bottom: 12px; font-size: 14px;">JURIDISK & SUPPORT</h4>
+                <div class="footer-links">
+                    <a href="/privacy-policy.html">Privatlivspolitik (GDPR)</a>
+                    <a href="/privacy-policy.html">Vilkår & Betingelser</a>
+                    <a href="mailto:support@questlinestudios.dk">support@questlinestudios.dk</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="copyright-bar">
+            &copy; 2026 Questline Studios (CVR: 46373936). Alle rettigheder forbeholdes.
+        </div>
+    </footer>
+
+</body>
+</html>

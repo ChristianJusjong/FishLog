@@ -474,13 +474,31 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Language Section (placeholder for future) */}
+        {/* Language Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="language" size={24} color={colors.primary} style={styles.sectionIcon} />
             <Text style={styles.sectionTitle}>{i18n.t('settings.language')}</Text>
           </View>
           <Text style={styles.comingSoonText}>Dansk (standard)</Text>
+        </View>
+
+        {/* Publisher & Legal Info */}
+        <View style={[styles.section, { alignItems: 'center', paddingVertical: 20 }]}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textPrimary, letterSpacing: 0.5 }}>
+            HOOK v1.1.0
+          </Text>
+          <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+            Udgivet af Questline Studios • CVR: 46373936
+          </Text>
+          <TouchableOpacity
+            style={{ marginTop: 10 }}
+            onPress={() => Linking.openURL(`${API_URL}/privacy-policy.html`).catch(() => {})}
+          >
+            <Text style={{ fontSize: 12, color: '#00D4B2', fontWeight: '700' }}>
+              Privatlivspolitik & Betingelser ↗
+            </Text>
+          </TouchableOpacity>
         </View>
           </ScrollView>
         </View>
