@@ -21,6 +21,7 @@ import ScreenLoading from '../components/ScreenLoading';
 import DailyChallengesWidget from '../components/DailyChallengesWidget';
 import AnglerJourneyWidget from '../components/AnglerJourneyWidget';
 import LiveCatchRadar from '../components/LiveCatchRadar';
+import NativeSponsoredCard from '../components/NativeSponsoredCard';
 import { useCatchesFeed, FeedCatch } from '../hooks/useCatches';
 
 interface User {
@@ -248,8 +249,14 @@ export default function FeedScreen() {
     };
   }, [connected, activeTab, addEventListener]);
 
-  const renderCatchItem = useCallback(({ item: catch_ }: { item: FeedCatch }) => (
-    <CatchCard catchItem={catch_} colors={colors} styles={styles} />
+  const renderCatchItem = useCallback(({ item: catch_, index }: { item: FeedCatch; index: number }) => (
+    <View>
+      <CatchCard catchItem={catch_} colors={colors} styles={styles} />
+      {/* Seamless Native In-Feed Sponsored Card after every 6 catches */}
+      {index > 0 && index % 6 === 0 && (
+        <NativeSponsoredCard />
+      )}
+    </View>
   ), [colors]);
 
   if (catchesLoading && activeTab === 'catches') {
