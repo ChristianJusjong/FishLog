@@ -218,11 +218,12 @@ fastify.get('/health', async (request, reply) => {
   }
 });
 
-// Root endpoint
-fastify.get('/', async () => {
+// Root API info endpoint for explicit /api requests
+fastify.get('/api', async () => {
   return {
-    message: 'Hook API',
-    version: '1.0.0',
+    message: 'Hook & Questline Studios API',
+    version: '1.1.0',
+    status: 'online',
     endpoints: {
       health: '/health',
       auth: {
