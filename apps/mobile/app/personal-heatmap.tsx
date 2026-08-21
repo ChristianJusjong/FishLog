@@ -141,7 +141,7 @@ export default function PersonalHeatmapScreen() {
               <Text style={[styles.title, { color: colors.text }]}>Mit Fiske-Heatmap</Text>
             </View>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              The Glowing Trail – Strava for lystfiskere
+              The Glowing Trail – Dit personlige kyst-spor
             </Text>
           </View>
 
