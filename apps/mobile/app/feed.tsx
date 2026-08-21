@@ -22,6 +22,7 @@ import DailyChallengesWidget from '../components/DailyChallengesWidget';
 import AnglerJourneyWidget from '../components/AnglerJourneyWidget';
 import LiveCatchRadar from '../components/LiveCatchRadar';
 import NativeSponsoredCard from '../components/NativeSponsoredCard';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { useCatchesFeed, FeedCatch } from '../hooks/useCatches';
 
 interface User {
@@ -63,6 +64,7 @@ const LOCATION_CACHE_KEY = '@location_cache';
 export default function FeedScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { isAdFree } = useSubscription();
   const styles = useStyles();
   const { connected, addEventListener } = useWebSocket();
   const { logout } = useAuth();
@@ -252,12 +254,12 @@ export default function FeedScreen() {
   const renderCatchItem = useCallback(({ item: catch_, index }: { item: FeedCatch; index: number }) => (
     <View>
       <CatchCard catchItem={catch_} colors={colors} styles={styles} />
-      {/* Seamless Native In-Feed Sponsored Card after every 6 catches */}
-      {index > 0 && index % 6 === 0 && (
+      {/* Seamless Native In-Feed Sponsored Card after every 6 catches (hidden for Hook Pro ad-free members) */}
+      {!isAdFree && index > 0 && index % 6 === 0 && (
         <NativeSponsoredCard />
       )}
     </View>
-  ), [colors]);
+  ), [colors, isAdFree]);
 
   if (catchesLoading && activeTab === 'catches') {
     return (

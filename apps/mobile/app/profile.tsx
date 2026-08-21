@@ -608,6 +608,47 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Hook Pro Subscription Banner */}
+        <TouchableOpacity
+          onPress={() => router.push('/upgrade-pro' as any)}
+          activeOpacity={0.85}
+          style={{
+            marginHorizontal: 16,
+            marginBottom: 12,
+            borderRadius: 16,
+            overflow: 'hidden',
+            borderWidth: 1.5,
+            borderColor: '#F5A623',
+            shadowColor: '#F5A623',
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.25,
+            shadowRadius: 6,
+            elevation: 4,
+          }}
+        >
+          <LinearGradient
+            colors={['#F5A623', '#D97706']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Ionicons name="trophy" size={24} color="#071524" />
+              <View>
+                <Text style={{ color: '#071524', fontSize: 14, fontWeight: '900' }}>HOOK PRO MEDLEM</Text>
+                <Text style={{ color: '#071524', fontSize: 11, fontWeight: '600', opacity: 0.9 }}>100% Annoncefri • Dybdekort • Fiske-AI</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#071524" />
+          </LinearGradient>
+        </TouchableOpacity>
+
         {/* Action Buttons */}
         <TouchableOpacity
           onPress={() => router.push('/edit-profile')}
