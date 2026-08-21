@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hook • Danmarks Førende Fiskeapp & Kystguide</title>
-    <meta name="description" content="Den ultimative digitale fiskejournal til danske kyster og søer. Log fangster på 15 sekunder, se fredningsbælter ved å-udløb, DMI vandstandskurver og dit personlige kyst-heatmap.">
+    <title>Hook • Det Sociale Fiskefællesskab & Danmarks Førende Fiskeapp</title>
+    <meta name="description" content="Hook er Danmarks sociale fiskeapp. Del dine fangster med vennerne, send 'Hug! ⚡', dyst om at blive Kystkonge, log ture på 15 sekunder og hold styr på fredningsbælter og DMI strømskifte.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -13,16 +13,20 @@
             --bg-dark: #05111D;
             --bg-card: #0A1E34;
             --bg-card-subtle: #081728;
+            --bg-card-hover: #0E2845;
             --teal: #00D4B2;
             --teal-glow: rgba(0, 212, 178, 0.35);
             --gold: #F5A623;
+            --gold-glow: rgba(245, 166, 35, 0.3);
             --emerald: #10B981;
             --red: #EF4444;
             --blue: #38BDF8;
+            --purple: #A855F7;
             --text-main: #FFFFFF;
             --text-muted: #94A3B8;
             --border: rgba(255, 255, 255, 0.08);
             --border-teal: rgba(0, 212, 178, 0.25);
+            --border-gold: rgba(245, 166, 35, 0.3);
         }
 
         * {
@@ -30,6 +34,7 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            scroll-behavior: smooth;
         }
 
         body {
@@ -39,27 +44,38 @@
             overflow-x: hidden;
         }
 
-        /* Ambient Glow */
-        .ambient-glow {
+        /* Ambient Background Lighting */
+        .ambient-glow-top {
             position: absolute;
-            width: 800px;
-            height: 800px;
+            width: 900px;
+            height: 900px;
             background: radial-gradient(circle, rgba(0, 212, 178, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
-            top: -200px;
+            top: -250px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 0;
             pointer-events: none;
         }
 
-        /* Header */
+        .ambient-glow-mid {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+            top: 1800px;
+            left: 10%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Sticky Header */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 18px 8%;
+            padding: 16px 8%;
             border-bottom: 1px solid var(--border);
-            background: rgba(5, 17, 29, 0.88);
+            background: rgba(5, 17, 29, 0.92);
             backdrop-filter: blur(16px);
             position: sticky;
             top: 0;
@@ -75,15 +91,22 @@
         }
 
         .logo-img {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 12px;
             border: 1px solid var(--border-teal);
             box-shadow: 0 0 20px var(--teal-glow);
+            background: #00D4B2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 900;
+            color: #05111D;
         }
 
         .logo-text {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 900;
             letter-spacing: -0.5px;
         }
@@ -92,14 +115,19 @@
             font-size: 10px;
             color: var(--teal);
             font-weight: 800;
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
         }
 
         nav a {
             color: var(--text-muted);
             text-decoration: none;
-            margin-left: 28px;
+            margin-left: 24px;
             font-size: 14px;
             font-weight: 600;
             transition: color 0.2s;
@@ -112,22 +140,22 @@
         .btn-header-cta {
             background: var(--teal);
             color: #05111D !important;
-            padding: 8px 18px;
+            padding: 9px 20px;
             border-radius: 10px;
             font-weight: 800 !important;
-            margin-left: 28px;
+            margin-left: 24px;
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .btn-header-cta:hover {
-            transform: scale(1.04);
-            box-shadow: 0 0 20px var(--teal-glow);
+            transform: translateY(-2px);
+            box-shadow: 0 0 22px var(--teal-glow);
         }
 
-        /* Hero */
+        /* Hero Section */
         .hero {
             padding: 80px 8% 60px;
-            max-width: 1250px;
+            max-width: 1280px;
             margin: 0 auto;
             display: grid;
             grid-template-columns: 1.15fr 0.85fr;
@@ -149,10 +177,12 @@
             font-size: 12px;
             font-weight: 800;
             margin-bottom: 24px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .hero h1 {
-            font-size: clamp(38px, 5.2vw, 64px);
+            font-size: clamp(38px, 5.2vw, 62px);
             font-weight: 900;
             line-height: 1.1;
             margin-bottom: 22px;
@@ -168,7 +198,7 @@
         .hero p {
             font-size: clamp(16px, 1.8vw, 19px);
             color: var(--text-muted);
-            margin-bottom: 36px;
+            margin-bottom: 34px;
             line-height: 1.6;
         }
 
@@ -182,7 +212,7 @@
         .btn-store {
             display: inline-flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             padding: 14px 26px;
             border-radius: 14px;
             font-size: 14px;
@@ -203,14 +233,14 @@
         }
 
         .btn-store:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
         }
 
         .hero-social-proof {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 16px;
             font-size: 13px;
             color: var(--text-muted);
         }
@@ -218,11 +248,11 @@
         .stars-row {
             color: var(--gold);
             font-weight: 900;
-            font-size: 15px;
+            font-size: 16px;
             letter-spacing: 2px;
         }
 
-        /* Phone Mockup Frame */
+        /* Phone Device Mockup */
         .phone-mockup-wrap {
             position: relative;
             display: flex;
@@ -230,12 +260,12 @@
         }
 
         .phone-frame {
-            width: 320px;
-            height: 640px;
+            width: 325px;
+            height: 660px;
             background: #02070D;
             border: 4px solid #1E293B;
-            border-radius: 44px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 50px var(--teal-glow);
+            border-radius: 46px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 0 0 60px var(--teal-glow);
             padding: 14px;
             display: flex;
             flex-direction: column;
@@ -245,7 +275,7 @@
 
         .phone-notch {
             width: 110px;
-            height: 24px;
+            height: 22px;
             background: #1E293B;
             border-radius: 20px;
             margin: 0 auto 12px;
@@ -254,84 +284,195 @@
         .phone-screen {
             flex: 1;
             background: #071524;
-            border-radius: 32px;
+            border-radius: 34px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             border: 1px solid rgba(255, 255, 255, 0.05);
             padding: 14px;
+            gap: 10px;
         }
 
         .mockup-app-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .mockup-live-card {
             background: #0A1E34;
             border: 1px solid var(--border-teal);
-            border-radius: 16px;
-            padding: 12px;
-            margin-bottom: 10px;
+            border-radius: 14px;
+            padding: 10px 12px;
+        }
+
+        .mockup-sanctuary-alert {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 14px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .mockup-catch-banner {
-            background: linear-gradient(135deg, rgba(0, 212, 178, 0.15), rgba(245, 166, 35, 0.1));
-            border-radius: 12px;
-            padding: 10px;
-            border: 1px solid rgba(0, 212, 178, 0.2);
-            margin-bottom: 10px;
+            background: linear-gradient(135deg, rgba(0, 212, 178, 0.15), rgba(245, 166, 35, 0.12));
+            border-radius: 14px;
+            padding: 12px;
+            border: 1px solid rgba(0, 212, 178, 0.3);
         }
 
-        /* 360 Feature Deep-Dive */
-        .features-section {
-            padding: 80px 8% 100px;
-            max-width: 1250px;
+        .mockup-trail-box {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 14px;
+            border: 1px dashed var(--border-teal);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 12px;
+        }
+
+        /* Value Pillars Bar */
+        .value-bar-section {
+            padding: 30px 8% 70px;
+            max-width: 1280px;
             margin: 0 auto;
             position: relative;
             z-index: 1;
         }
 
+        .value-bar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .value-pill-card {
+            background: var(--bg-card-subtle);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 22px 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .value-pill-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--teal);
+        }
+
+        .value-icon {
+            font-size: 26px;
+            flex-shrink: 0;
+        }
+
+        .value-title {
+            font-size: 15px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .value-desc {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        /* Standard Section Headers */
         .section-header {
             text-align: center;
-            margin-bottom: 60px;
+            margin-bottom: 56px;
+        }
+
+        .section-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--teal);
+            background: rgba(0, 212, 178, 0.1);
+            border: 1px solid var(--border-teal);
+            padding: 4px 14px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
         }
 
         .section-title {
-            font-size: 36px;
+            font-size: clamp(28px, 3.8vw, 42px);
             font-weight: 900;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             letter-spacing: -0.5px;
         }
 
         .section-subtitle {
             color: var(--text-muted);
             font-size: 16px;
-            max-width: 650px;
+            max-width: 680px;
             margin: 0 auto;
+            line-height: 1.6;
         }
 
-        .feature-grid-3x2 {
+        /* Feature Grid & Interactive Cards */
+        .features-section {
+            padding: 80px 8% 100px;
+            max-width: 1280px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-grid-4x2 {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 28px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 26px;
         }
 
         .card-feature {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 34px;
-            transition: transform 0.25s, border-color 0.25s;
+            border-radius: 22px;
+            padding: 30px;
+            transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            text-align: left;
         }
 
         .card-feature:hover {
-            transform: translateY(-4px);
+            transform: translateY(-5px);
             border-color: var(--teal);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+        }
+
+        .card-feature::after {
+            content: 'Se detaljer ➔';
+            position: absolute;
+            bottom: 22px;
+            right: 26px;
+            font-size: 11.5px;
+            font-weight: 800;
+            color: var(--teal);
+            opacity: 0;
+            transform: translateX(-5px);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .card-feature:hover::after {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .card-icon-box {
@@ -346,7 +487,7 @@
         }
 
         .card-heading {
-            font-size: 20px;
+            font-size: 19px;
             font-weight: 800;
             margin-bottom: 10px;
         }
@@ -355,34 +496,211 @@
             color: var(--text-muted);
             font-size: 14px;
             line-height: 1.6;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+            flex-grow: 1;
         }
 
         .card-badge-pill {
             display: inline-block;
             font-size: 11px;
             font-weight: 800;
-            padding: 4px 10px;
+            padding: 5px 12px;
+            border-radius: 8px;
+            align-self: flex-start;
+        }
+
+        /* "Sådan Virker Det" / How-To Section */
+        .howto-section {
+            padding: 80px 8% 100px;
+            background: linear-gradient(180deg, #05111D 0%, #071727 50%, #05111D 100%);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        .howto-wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .howto-steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 24px;
+            position: relative;
+        }
+
+        .step-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 24px;
+            position: relative;
+            transition: transform 0.25s, border-color 0.25s;
+            cursor: pointer;
+        }
+
+        .step-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--teal);
+        }
+
+        .step-number {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: rgba(0, 212, 178, 0.15);
+            color: var(--teal);
+            border: 1px solid var(--border-teal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 900;
+            margin-bottom: 18px;
+        }
+
+        .step-title {
+            font-size: 17px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .step-text {
+            color: var(--text-muted);
+            font-size: 13.5px;
+            line-height: 1.55;
+        }
+
+        /* FiskeDex & Gamification Showcase */
+        .fiskedex-section {
+            padding: 90px 8% 100px;
+            max-width: 1280px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .fiskedex-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .species-cards-preview {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .dex-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .dex-card:hover {
+            transform: scale(1.02);
+            border-color: var(--teal);
+        }
+
+        .dex-rarity-badge {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            padding: 3px 8px;
             border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .dex-fish-name {
+            font-size: 16px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .dex-fish-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Strava Segments & Local Legend */
+        .segments-section {
+            padding: 90px 8% 100px;
+            background: #030B14;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .segments-wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .leaderboard-preview-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-gold);
+            border-radius: 24px;
+            padding: 26px;
+            box-shadow: 0 0 40px rgba(245, 166, 35, 0.12);
+        }
+
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .leaderboard-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 14px;
+        }
+
+        .leaderboard-row.highlight {
+            background: rgba(0, 212, 178, 0.12);
+            border: 1px solid var(--border-teal);
+            font-weight: 800;
         }
 
         /* Hook Pro Showcase */
         .pro-section {
-            padding: 40px 8% 90px;
-            max-width: 1250px;
+            padding: 80px 8% 100px;
+            max-width: 1280px;
             margin: 0 auto;
         }
 
         .pro-card-big {
             background: linear-gradient(135deg, #0A1E34, #061423);
             border: 2px solid var(--gold);
-            border-radius: 30px;
-            padding: 48px;
+            border-radius: 32px;
+            padding: 50px;
             display: grid;
             grid-template-columns: 1.2fr 0.8fr;
             gap: 48px;
             align-items: center;
-            box-shadow: 0 0 50px rgba(245, 166, 35, 0.15);
+            box-shadow: 0 0 60px rgba(245, 166, 35, 0.15);
         }
 
         .pro-tag-crown {
@@ -393,14 +711,15 @@
             color: #05111D;
             font-size: 11px;
             font-weight: 900;
-            padding: 4px 12px;
-            border-radius: 6px;
+            padding: 5px 14px;
+            border-radius: 8px;
             text-transform: uppercase;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
+            letter-spacing: 0.5px;
         }
 
         .pro-h2 {
-            font-size: 34px;
+            font-size: clamp(28px, 3.5vw, 38px);
             font-weight: 900;
             line-height: 1.15;
             margin-bottom: 14px;
@@ -408,8 +727,9 @@
 
         .pro-p {
             color: var(--text-muted);
-            font-size: 15px;
+            font-size: 15.5px;
             margin-bottom: 24px;
+            line-height: 1.6;
         }
 
         .pro-check-list {
@@ -418,63 +738,320 @@
         }
 
         .pro-check-list li {
-            margin-bottom: 10px;
-            font-size: 14px;
+            margin-bottom: 12px;
+            font-size: 14.5px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             color: #E2E8F0;
         }
 
         .pro-pricing-box {
-            background: rgba(4, 13, 23, 0.9);
+            background: rgba(4, 13, 23, 0.94);
             border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 32px;
+            border-radius: 26px;
+            padding: 36px 30px;
             text-align: center;
         }
 
         .price-huge {
-            font-size: 42px;
+            font-size: 46px;
             font-weight: 900;
             color: var(--gold);
+            line-height: 1;
+            margin-bottom: 6px;
         }
 
         .price-sub {
             font-size: 13px;
             color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        /* FAQ Accordion Section */
+        .faq-section {
+            padding: 80px 8% 100px;
+            max-width: 950px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .faq-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .faq-item.active {
+            border-color: var(--teal);
+        }
+
+        .faq-question {
+            padding: 22px 24px;
+            font-size: 16.5px;
+            font-weight: 800;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .faq-icon {
+            font-size: 18px;
+            color: var(--teal);
+            transition: transform 0.25s ease;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding: 0 24px;
+            color: var(--text-muted);
+            font-size: 14.5px;
+            line-height: 1.65;
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 350px;
+            padding: 0 24px 22px 24px;
+        }
+
+        /* Support & Contact Card */
+        .support-card-section {
+            padding: 40px 8% 90px;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .support-box {
+            background: linear-gradient(135deg, #0A1E34, #081728);
+            border: 1px solid var(--border-teal);
+            border-radius: 28px;
+            padding: 44px;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .support-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--teal);
+            color: #05111D;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 800;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .support-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px var(--teal-glow);
+        }
+
+        /* Interactive Feature Modal / Detail Dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(2, 7, 13, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: #0A1E34;
+            border: 1px solid var(--border-teal);
+            border-radius: 28px;
+            max-width: 680px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 36px 32px;
+            position: relative;
+            transform: translateY(20px) scale(0.96);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 50px var(--teal-glow);
+        }
+
+        .modal-overlay.open .modal-card {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: #FFFFFF;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #EF4444;
+            transform: scale(1.08);
+        }
+
+        .modal-icon-badge {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
             margin-bottom: 20px;
+        }
+
+        .modal-tag {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--teal);
+            margin-bottom: 6px;
+        }
+
+        .modal-title {
+            font-size: 26px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            line-height: 1.25;
+        }
+
+        .modal-desc {
+            color: #CBD5E1;
+            font-size: 15px;
+            line-height: 1.65;
+            margin-bottom: 24px;
+        }
+
+        .modal-social-highlight {
+            background: rgba(0, 212, 178, 0.08);
+            border: 1px solid var(--border-teal);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .modal-social-title {
+            font-size: 13px;
+            font-weight: 900;
+            color: var(--teal);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-social-text {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .modal-points-list {
+            list-style: none;
+            margin-bottom: 28px;
+        }
+
+        .modal-points-list li {
+            font-size: 14px;
+            color: #E2E8F0;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .modal-points-list li span.check {
+            color: var(--teal);
+            font-weight: 900;
+        }
+
+        .modal-action-row {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            justify-content: flex-end;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
         }
 
         /* Footer */
         footer {
             border-top: 1px solid var(--border);
-            padding: 60px 8% 40px;
+            padding: 70px 8% 40px;
             background: #02070D;
             color: var(--text-muted);
-            font-size: 13px;
+            font-size: 13.5px;
         }
 
         .footer-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
+            grid-template-columns: 2fr 1fr 1fr 1.2fr;
             gap: 40px;
             max-width: 1200px;
-            margin: 0 auto 40px;
+            margin: 0 auto 50px;
         }
 
         .footer-logo {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 900;
             color: var(--text-main);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .footer-links a {
             display: block;
             color: var(--text-muted);
             text-decoration: none;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             transition: color 0.2s;
         }
 
@@ -484,15 +1061,24 @@
 
         .copyright-bar {
             text-align: center;
-            padding-top: 24px;
+            padding-top: 28px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
             font-size: 12px;
+            color: #64748B;
         }
 
-        @media (max-width: 900px) {
+        /* Mobile Responsiveness */
+        @media (max-width: 960px) {
+            header {
+                padding: 14px 5%;
+            }
+            nav {
+                display: none;
+            }
             .hero {
                 grid-template-columns: 1fr;
                 text-align: center;
+                padding: 50px 5% 40px;
             }
             .cta-badges-row {
                 justify-content: center;
@@ -500,33 +1086,54 @@
             .hero-social-proof {
                 justify-content: center;
             }
-            .pro-card-big {
+            .fiskedex-grid, .segments-wrap, .pro-card-big, .support-box {
                 grid-template-columns: 1fr;
+                gap: 36px;
             }
             .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .footer-grid {
                 grid-template-columns: 1fr;
+            }
+            .species-cards-preview {
+                grid-template-columns: 1fr;
+            }
+            .pro-card-big, .support-box {
+                padding: 26px 20px;
+            }
+            .modal-card {
+                padding: 26px 20px;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="ambient-glow"></div>
+    <div class="ambient-glow-top"></div>
+    <div class="ambient-glow-mid"></div>
 
-    <!-- Header -->
+    <!-- Sticky Header -->
     <header>
         <a href="/" class="logo-container">
-            <img src="/images/hook-icon.png" alt="Hook Logo" class="logo-img" onerror="this.style.display='none'">
+            <div class="logo-img">🎣</div>
             <div>
                 <div class="logo-text">HOOK</div>
-                <div class="logo-tag">The Angler Suite</div>
+                <div class="logo-tag">Det Sociale Fiskefællesskab</div>
             </div>
         </a>
         <nav>
             <a href="#features">Funktioner</a>
-            <a href="#pro">Hook Pro 👑</a>
-            <a href="https://questline.dk">Questline Studios ↗</a>
-            <a href="/privacy-policy.html">Privatliv</a>
+            <a href="#social">Det Sociale Feed ⚡</a>
+            <a href="#howto">Sådan Virker Det</a>
+            <a href="#fiskedex">FiskeDex 📖</a>
+            <a href="#segmenter">Kystkongen 👑</a>
+            <a href="#pro">Hook Pro</a>
+            <a href="#faq">FAQ</a>
+            <a href="#support">Support</a>
             <a href="#download" class="btn-header-cta">Hent Appen</a>
         </nav>
     </header>
@@ -534,144 +1141,473 @@
     <!-- Hero Section with Interactive Mockup -->
     <section class="hero">
         <div>
-            <div class="hero-pill">⚡ NORDENS MEST GENNEMFØRTE & INTUITIVE FISKEAPP</div>
-            <h1>Gør hver tur til en <span>legendarisk fangst</span></h1>
-            <p>Log dine havørreder, gedder og aborrer på under 15 sekunder. Undgå dyre bøder ved fredede å-udløb med GPS-geofence, og følg dit personlige glødende kyst-heatmap.</p>
+            <div class="hero-pill">⚡ DANMARKS SOCIALE FISKEAPP</div>
+            <h1>Fiskeri er bedst, når vi <span>deler det sammen</span></h1>
+            <p>
+                Hook er det ultimative fællesskab for danske lystfiskere. Følg dine venners friske fangster, send haptiske <em>"Giv Hug! ⚡"</em>, dyst om at blive Kystkonge på dit lokale rev, og log dine egne ture på under 15 sekunder med DMI vejr og fredningsbælte-alarm.
+            </p>
 
             <div id="download" class="cta-badges-row">
                 <a href="#" class="btn-store btn-store-apple">
-                    <span style="font-size: 18px;">🍏</span>
+                    <span style="font-size: 22px;">🍏</span>
                     <div style="text-align: left;">
-                        <div style="font-size: 9px; text-transform: uppercase;">Hent i</div>
-                        <div style="font-size: 14px; font-weight: 900;">App Store</div>
+                        <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;">Hent i</div>
+                        <div style="font-size: 15px; font-weight: 900;">App Store</div>
                     </div>
                 </a>
 
                 <a href="#" class="btn-store btn-store-google">
-                    <span style="font-size: 18px;">🤖</span>
+                    <span style="font-size: 22px;">🤖</span>
                     <div style="text-align: left;">
-                        <div style="font-size: 9px; text-transform: uppercase;">Hent i</div>
-                        <div style="font-size: 14px; font-weight: 900;">Google Play</div>
+                        <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;">Hent i</div>
+                        <div style="font-size: 15px; font-weight: 900;">Google Play</div>
                     </div>
                 </a>
             </div>
 
             <div class="hero-social-proof">
                 <div class="stars-row">★★★★★</div>
-                <div><strong>4.9 / 5</strong> • Skabt af danske lystfiskere til kyst, fjord og sø</div>
+                <div><strong>4.9 / 5</strong> • Skabt af danske lystfiskere til kyst, fjord, sø og å</div>
             </div>
         </div>
 
-        <!-- Phone Device Frame with Real-Time UI Preview -->
+        <!-- Phone Device Frame with Real-Time Dynamic Mockup -->
         <div class="phone-mockup-wrap">
             <div class="phone-frame">
                 <div class="phone-notch"></div>
                 <div class="phone-screen">
                     <div class="mockup-app-header">
-                        <div style="font-size: 13px; font-weight: 900; color: var(--teal);">⚡ HOOK RADAR</div>
-                        <div style="font-size: 10px; background: rgba(0, 212, 178, 0.2); color: var(--teal); padding: 2px 8px; border-radius: 6px; font-weight: 800;">LIVE GPS</div>
+                        <div style="font-size: 12.5px; font-weight: 900; color: var(--teal);">⚡ HOOK SOCIAL FEED</div>
+                        <div style="font-size: 9.5px; background: rgba(0, 212, 178, 0.2); color: var(--teal); padding: 2px 8px; border-radius: 6px; font-weight: 800;">LIVE FRA KYSTEN</div>
                     </div>
 
-                    <!-- Mockup Water Level Widget -->
+                    <!-- Mockup Catch Card with Social Kudos -->
+                    <div class="mockup-catch-banner">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                            <span style="font-size: 11px; font-weight: 900; color: var(--gold);">★ Ny Personlig Rekord</span>
+                            <span style="font-size: 9.5px; color: var(--emerald); font-weight: 800;">+250 XP ⚡</span>
+                        </div>
+                        <div style="font-size: 14px; font-weight: 900;">Havørred • 64 cm (2.8 kg)</div>
+                        <div style="font-size: 9.5px; color: var(--text-muted); margin-top: 2px;">
+                            📍 Stevns Klint • 🪱 Sandorm • ⚡ 18 Hug!
+                        </div>
+                        <div style="display: flex; gap: 6px; margin-top: 8px;">
+                            <span style="font-size: 9.5px; background: rgba(0,212,178,0.2); color: var(--teal); padding: 2px 8px; border-radius: 10px; font-weight: 800;">⚡ Giv Hug! (18)</span>
+                            <span style="font-size: 9.5px; background: rgba(255,255,255,0.06); color: #FFF; padding: 2px 8px; border-radius: 10px;">💬 4 kommentarer</span>
+                        </div>
+                    </div>
+
+                    <!-- Water Level & DMI Tidal Switch -->
                     <div class="mockup-live-card">
-                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
                             <span style="color: var(--teal); font-weight: 800;">🌊 DMI Strømskifte</span>
-                            <span style="color: var(--gold); font-weight: 800;">🎯 kl. 14:00</span>
+                            <span style="color: var(--gold); font-weight: 800;">🎯 Kl. 14:15</span>
                         </div>
                         <div style="font-size: 10px; color: var(--text-muted);">
-                            Stigende vand (+32 cm). Optimal hugperiode på kysten.
+                            Vandstand stiger (+28 cm). Høj bideaktivitet ved revkanten.
                         </div>
                     </div>
 
-                    <!-- Mockup Catch Card -->
-                    <div class="mockup-catch-banner">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span style="font-size: 12px; font-weight: 900; color: var(--gold);">★ Ny Personlig Rekord</span>
-                            <span style="font-size: 10px; color: var(--emerald); font-weight: 800;">+250 XP</span>
-                        </div>
-                        <div style="font-size: 15px; font-weight: 900;">Havørred • 64 cm (2.8 kg)</div>
-                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
-                            📍 Stevns Klint • 🪱 Sandorm • ⚡ 14 Hug!
+                    <!-- Sanctuary Warning Geofence -->
+                    <div class="mockup-sanctuary-alert">
+                        <span style="font-size: 16px;">🛑</span>
+                        <div>
+                            <div style="font-size: 10.5px; font-weight: 800; color: #FCA5A5;">Fredningsbælte Alarm: 620m</div>
+                            <div style="font-size: 9px; color: #FECACA;">Trygve Vælde Å • 500m helårsfredning</div>
                         </div>
                     </div>
 
                     <!-- Mockup Heatmap Trail -->
-                    <div style="flex: 1; background: rgba(0, 0, 0, 0.4); border-radius: 12px; border: 1px dashed var(--border-teal); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 12px;">
-                        <div style="font-size: 24px; margin-bottom: 4px;">🗺️</div>
-                        <div style="font-size: 11px; font-weight: 800; color: var(--teal);">Kyst-Heatmap Aktivt</div>
-                        <div style="font-size: 9px; color: var(--text-muted);">38.4 km kystlinje logget</div>
+                    <div class="mockup-trail-box">
+                        <div style="font-size: 22px; margin-bottom: 2px;">🗺️</div>
+                        <div style="font-size: 11px; font-weight: 800; color: var(--teal);">The Glowing Trail Aktiv</div>
+                        <div style="font-size: 9.5px; color: var(--text-muted);">4.2 km affisket kyst • 3 hug logget</div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 6 Core Feature Pillars -->
-    <section id="features" class="features-section">
-        <div class="section-header">
-            <h2 class="section-title">Designet Til Danske Kyster & Søer</h2>
-            <p class="section-subtitle">Hver eneste funktion er bygget til at gøre dig til en mere succesfuld og tryg lystfisker ved vandet.</p>
-        </div>
-
-        <div class="feature-grid-3x2">
-            <!-- 1. Fredningsbælter -->
-            <div class="card-feature">
-                <div class="card-icon-box" style="background: rgba(239, 68, 68, 0.15); color: var(--red);">🛑</div>
-                <h3 class="card-heading">Fredningsbælte-Alarm</h3>
-                <p class="card-text">
-                    Realtids GPS-overvågning med automatisk advarsel ved Danmarks 500m og 1200m fredede å-mundinger. Undgå utilsigtede ulovligheder og dyre bøder.
-                </p>
-                <div class="card-badge-pill" style="background: rgba(239, 68, 68, 0.15); color: var(--red);">Lovpligtig Kystsikkerhed</div>
+    <!-- Value Pillars Bar -->
+    <section class="value-bar-section">
+        <div class="value-bar-grid">
+            <div class="value-pill-card">
+                <div class="value-icon">⚡</div>
+                <div>
+                    <div class="value-title">Socialt Fiskefællesskab</div>
+                    <div class="value-desc">Giv 'Hug!' kudos, del fangster med venner og deltag i lystfiskergrupper.</div>
+                </div>
             </div>
 
-            <!-- 2. Personligt Kyst-Heatmap -->
-            <div class="card-feature">
-                <div class="card-icon-box" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">🗺️</div>
-                <h3 class="card-heading">Mit Personlige Fiske-Heatmap</h3>
+            <div class="value-pill-card">
+                <div class="value-icon">⏱️</div>
+                <div>
+                    <div class="value-title">15-Sekunders Logning</div>
+                    <div class="value-desc">Kamera-først med auto EXIF, DMI vejr- og tidevandstagging.</div>
+                </div>
+            </div>
+
+            <div class="value-pill-card">
+                <div class="value-icon">👑</div>
+                <div>
+                    <div class="value-title">Strava for Fiskeri</div>
+                    <div class="value-desc">Kyst-segmenter, 16 leaderboards og venskabelig dyst om Kystkonge-titlen.</div>
+                </div>
+            </div>
+
+            <div class="value-pill-card">
+                <div class="value-icon">🔒</div>
+                <div>
+                    <div class="value-title">100% Hemmelige Spots</div>
+                    <div class="value-desc">Slør dine hemmelige koordinater – del kun fangsten og stoltheden.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8 Core Feature Deep-Dives (CLICKABLE) -->
+    <section id="features" class="features-section">
+        <div class="section-header">
+            <div class="section-pill">KLIK PÅ EN FUNKTION FOR AT LÆSE MERE</div>
+            <h2 class="section-title">Udforsk Alle Funktioner i Hook</h2>
+            <p class="section-subtitle">
+                Hook kombinerer det bedste fra en social platform med professionelle værktøjer til kyst, fjord, sø og å. Klik på et kort nedenfor for at åbne en dybdegående gennemgang.
+            </p>
+        </div>
+
+        <div class="feature-grid-4x2">
+            <!-- 1. Det Sociale Fangstfeed -->
+            <div class="card-feature" onclick="openFeatureModal('feed')">
+                <div class="card-icon-box" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">⚡</div>
+                <h3 class="card-heading">Det Sociale Feed & "Giv Hug! ⚡"</h3>
                 <p class="card-text">
-                    Se præcis hvilke rev, badekar og kyststrækninger du har affisket, tegnet som et glødende neon-spor direkte på satellitkortet med live dørgefart i knob.
+                    Følg dine venners friske fangster i et rent og levende feed. Send haptiske 'Hug!' kudos, kommenter på grejvalg og deltag i lystfisker-klubber uden forstyrrende reklamer.
                 </p>
-                <div class="card-badge-pill" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">The Glowing Trail</div>
+                <div class="card-badge-pill" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">Fiskefællesskab</div>
+            </div>
+
+            <!-- 2. Fredningsbælter -->
+            <div class="card-feature" onclick="openFeatureModal('sanctuary')">
+                <div class="card-icon-box" style="background: rgba(239, 68, 68, 0.15); color: var(--red);">🛑</div>
+                <h3 class="card-heading">GPS Fredningsbælte-Alarm</h3>
+                <p class="card-text">
+                    Realtids GPS-overvågning med automatisk afstandsadvarsel ved Danmarks officielle 500m og 1200m fredede å-mundinger fra Fiskeristyrelsen. Undgå utilsigtede ulovligheder og bøder.
+                </p>
+                <div class="card-badge-pill" style="background: rgba(239, 68, 68, 0.15); color: var(--red);">Lovpligtig Sikkerhed</div>
             </div>
 
             <!-- 3. DMI Vandstandskurve -->
-            <div class="card-feature">
+            <div class="card-feature" onclick="openFeatureModal('dmi')">
                 <div class="card-icon-box" style="background: rgba(56, 189, 248, 0.15); color: var(--blue);">🌊</div>
                 <h3 class="card-heading">DMI Vandstand & Strømskifte</h3>
                 <p class="card-text">
-                    12-timers interaktiv vandstandskurve. Appen beregner automatisk hvornår strømmen vender, så du præcis kan time ankomsten til det gyldne hug-tidspunkt.
+                    12-timers interaktiv vandstandskurve med præcis beregning af hvornår strømmen vender. Time din ankomst til det gyldne hug-tidspunkt, hvor rovfiskene jager aktivt på kanten.
                 </p>
                 <div class="card-badge-pill" style="background: rgba(56, 189, 248, 0.15); color: var(--blue);">12-Timers Prognose</div>
             </div>
 
-            <!-- 4. Automatisk Mindstemål -->
-            <div class="card-feature">
-                <div class="card-icon-box" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">📏</div>
-                <h3 class="card-heading">Mindstemål & C&R Guide</h3>
+            <!-- 4. The Glowing Trail -->
+            <div class="card-feature" onclick="openFeatureModal('trail')">
+                <div class="card-icon-box" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">🗺️</div>
+                <h3 class="card-heading">The Glowing Trail Heatmap</h3>
                 <p class="card-text">
-                    Kender alle officielle mindstemål og fredningstider for 40+ danske fiskearter. Indeholder 3-trins skånsom Catch & Release guide med 30s genoplivningstimer.
+                    Se præcis hvilke rev, badekar og tangbælter du har affisket, tegnet som et glødende neon-spor direkte på satellitkortet. Inkluderer dørgefart i knob og batterioptimeret GPS-sporing.
                 </p>
-                <div class="card-badge-pill" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">Fiskepleje & Bæredygtighed</div>
+                <div class="card-badge-pill" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">Personligt Heatmap</div>
             </div>
 
-            <!-- 5. Giv Hug & Socialt Feed -->
-            <div class="card-feature">
-                <div class="card-icon-box" style="background: rgba(245, 166, 35, 0.15); color: var(--gold);">⚡</div>
-                <h3 class="card-heading">"Giv Hug! ⚡" Kudos & Feed</h3>
+            <!-- 5. Lynhurtig Fangstjournal -->
+            <div class="card-feature" onclick="openFeatureModal('catchlog')">
+                <div class="card-icon-box" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">⏱️</div>
+                <h3 class="card-heading">15-Sekunders Kamera-Log</h3>
                 <p class="card-text">
-                    Følg kammeraternes friske fangster i et elegant feed uden støj og forstyrrende fuldskærmsreklamer. Send haptiske 'Hug!' og deltag i lystfisker-rejsens milepæle.
+                    Tag et billede og slip for manuel indtastning. Hook udtrækker automatisk GPS, tid, DMI vandstand, vindretning, lufttryk og temperatur direkte i fangstøjeblikket.
                 </p>
-                <div class="card-badge-pill" style="background: rgba(245, 166, 35, 0.15); color: var(--gold);">Fiskefællesskab</div>
+                <div class="card-badge-pill" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">Auto EXIF & Vejr</div>
             </div>
 
-            <!-- 6. Offline Kystkladdelog -->
-            <div class="card-feature">
-                <div class="card-icon-box" style="background: rgba(168, 85, 247, 0.15); color: #A855F7;">📦</div>
-                <h3 class="card-heading">100% Offline Kystkladdelog</h3>
+            <!-- 6. FiskeDex & Mindstemål -->
+            <div class="card-feature" onclick="openFeatureModal('fiskedex')">
+                <div class="card-icon-box" style="background: rgba(245, 166, 35, 0.15); color: var(--gold);">📖</div>
+                <h3 class="card-heading">FiskeDex med 81 Arter</h3>
                 <p class="card-text">
-                    Ingen mobildækning ved klinten? Intet problem. Hook gemmer alle GPS-koordinater, billeder og dybdekort lokalt på enheden og synkroniserer automatisk.
+                    Et Pokédex-inspireret artskatalog for samtlige danske saltvands- og ferskvandsarter. Indeholder officielle mindstemål, fredningsperioder og skånsom Catch & Release guide.
                 </p>
-                <div class="card-badge-pill" style="background: rgba(168, 85, 247, 0.15); color: #A855F7);">Virker Uden Dækning</div>
+                <div class="card-badge-pill" style="background: rgba(245, 166, 35, 0.15); color: var(--gold);">Artsjagt & Regler</div>
+            </div>
+
+            <!-- 7. Strava Segmenter & Kystkongen -->
+            <div class="card-feature" onclick="openFeatureModal('segments')">
+                <div class="card-icon-box" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">👑</div>
+                <h3 class="card-heading">Kyst-Segmenter & Kystkongen</h3>
+                <p class="card-text">
+                    Dyst på kendte fiskepladser (Stevns, Kronborg, Djursland, Gudenåen). 16 forskellige leaderboards for flest fisk, største fisk og artsdiversitet med kåring af Local Legends.
+                </p>
+                <div class="card-badge-pill" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">Strava For Fiskeri</div>
+            </div>
+
+            <!-- 8. Intelligent AI Fiske-Guide -->
+            <div class="card-feature" onclick="openFeatureModal('aiguide')">
+                <div class="card-icon-box" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">🤖</div>
+                <h3 class="card-heading">Intelligent AI Fiske-Guide</h3>
+                <p class="card-text">
+                    Groq/Llama-3 drevet fiskeassistent der analyserer dit aktuelle spot, vandtemperatur, vind og barometer for at anbefale det optimale blink, flue, farvekode og fiskedybde.
+                </p>
+                <div class="card-badge-pill" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">Taktisk Rådgivning</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Spotting & Community Section -->
+    <section id="social" class="howto-section">
+        <div class="howto-wrap">
+            <div class="section-header">
+                <div class="section-pill">FÆLLESSKABET VED VANDET</div>
+                <h2 class="section-title">En Social Fiskeapp I Alt Sin Enkelthed</h2>
+                <p class="section-subtitle">
+                    Hook er skabt til at gøre det sjovere at være lystfisker sammen med andre. Del glæden ved fangsterne, lær af hinanden og hold kontakten til dine fiskemakkere.
+                </p>
+            </div>
+
+            <div class="howto-steps-grid">
+                <div class="step-card" onclick="openFeatureModal('feed')">
+                    <div class="step-number">⚡</div>
+                    <h3 class="step-title">Giv Hug! Kudos</h3>
+                    <p class="step-text">
+                        Tryk på den haptiske 'Giv Hug!' lyn-knap når kammeraten lander en flot havørred eller storgedde.
+                    </p>
+                </div>
+
+                <div class="step-card" onclick="openFeatureModal('clubs')">
+                    <div class="step-number">👥</div>
+                    <h3 class="step-title">Fiskeklubber & Grupper</h3>
+                    <p class="step-text">
+                        Opret lukkede klubber eller vennegrupper med intern chat, fælles ture og private leaderboards.
+                    </p>
+                </div>
+
+                <div class="step-card" onclick="openFeatureModal('tournaments')">
+                    <div class="step-number">🏆</div>
+                    <h3 class="step-title">Konkurrencer & Derbies</h3>
+                    <p class="step-text">
+                        Afhold live fiskekonkurrencer for venner eller klubben med fotovalidering og realtids placeringer.
+                    </p>
+                </div>
+
+                <div class="step-card" onclick="openFeatureModal('privacy')">
+                    <div class="step-number">🔒</div>
+                    <h3 class="step-title">100% Kontrol Over Spots</h3>
+                    <p class="step-text">
+                        Vælg hvem der ser dine spots: Offentligt, Kun Fiskemakkere eller 100% Hemmeligt med sløret GPS.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- "Sådan Virker Det" (How-To Section) -->
+    <section id="howto" class="features-section">
+        <div class="howto-wrap">
+            <div class="section-header">
+                <div class="section-pill">KOM I GANG PÅ 2 MINUTTER</div>
+                <h2 class="section-title">Sådan Får Du Succes Med Hook</h2>
+                <p class="section-subtitle">Fra planlægning i stuen til den gyldne hugperiode ved vandet og registrering i FiskeDex.</p>
+            </div>
+
+            <div class="howto-steps-grid">
+                <!-- Trin 1 -->
+                <div class="step-card" onclick="openFeatureModal('dmi')">
+                    <div class="step-number">01</div>
+                    <h3 class="step-title">Tjek DMI & Radar</h3>
+                    <p class="step-text">
+                        Åbn kortet for at se 12-timers strømskifte, vandstand, vindretning og solunar hug-indeks. Find det bedste tidspunkt før du kører hjemmefra.
+                    </p>
+                </div>
+
+                <!-- Trin 2 -->
+                <div class="step-card" onclick="openFeatureModal('sanctuary')">
+                    <div class="step-number">02</div>
+                    <h3 class="step-title">Start Din Fisketur</h3>
+                    <p class="step-text">
+                        Aktivér din session med ét tryk. Hook logger dit kystspor, dørgefart og overvåger fredningsbælter i baggrunden uden at tømme batteriet.
+                    </p>
+                </div>
+
+                <!-- Trin 3 -->
+                <div class="step-card" onclick="openFeatureModal('catchlog')">
+                    <div class="step-number">03</div>
+                    <h3 class="step-title">Fang & Log Lynhurtigt</h3>
+                    <p class="step-text">
+                        Knips et billede med kameraet. Hook trækker automatisk GPS, vejr og tidevand og beregner fiskens Fulton konditionsfaktor.
+                    </p>
+                </div>
+
+                <!-- Trin 4 -->
+                <div class="step-card" onclick="openFeatureModal('fiskedex')">
+                    <div class="step-number">04</div>
+                    <h3 class="step-title">Lås Op & Stig i Level</h3>
+                    <p class="step-text">
+                        Lås op for arten i din FiskeDex, optjen XP til dit Angler Tier (Level 1-50+), og kæmp om at overtage titlen som Kystkonge på segmentet.
+                    </p>
+                </div>
+
+                <!-- Trin 5 -->
+                <div class="step-card" onclick="openFeatureModal('privacy')">
+                    <div class="step-number">05</div>
+                    <h3 class="step-title">Del – Eller Hold Hemmeligt</h3>
+                    <p class="step-text">
+                        Del fangsten med venner i feedet for at få "Hug! ⚡", eller slør GPS-positionen så dit hemmelige spot forbliver 100% privat.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FiskeDex Showcase -->
+    <section id="fiskedex" class="fiskedex-section">
+        <div class="fiskedex-grid">
+            <div>
+                <div class="section-pill">DIT DIGITALE TROFÆSKAB</div>
+                <h2 class="section-title" style="text-align: left;">FiskeDex: 81 Danske Arter</h2>
+                <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 24px; line-height: 1.6;">
+                    Gør din lystfiskerrejse til et spil. Udforsk og lås op for Danmarks rige fiskefauna opdelt i sjældenhedsgrader fra <em>Common</em> til <em>Legendary</em>.
+                </p>
+
+                <ul style="list-style: none; margin-bottom: 30px;">
+                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 14.5px;">
+                        <span style="color: var(--gold); font-size: 18px;">★</span>
+                        <strong>Personlige Rekorder:</strong> Følg din største og tungeste fisk per art.
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 14.5px;">
+                        <span style="color: var(--emerald); font-size: 18px;">✓</span>
+                        <strong>Lovpligtige Mindstemål:</strong> Altid opdaterede fredningstider og regler.
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 14.5px;">
+                        <span style="color: var(--teal); font-size: 18px;">⏱️</span>
+                        <strong>30s C&R Genoplivningstimer:</strong> Skånsom afkrogning og genudsætning.
+                    </li>
+                </ul>
+
+                <button onclick="openFeatureModal('fiskedex')" class="btn-store btn-store-apple" style="padding: 12px 24px; border: none; cursor: pointer;">
+                    <span>Læs mere om FiskeDex 📖</span>
+                </button>
+            </div>
+
+            <!-- FiskeDex Cards Preview (Clickable) -->
+            <div class="species-cards-preview">
+                <div class="dex-card" onclick="openFeatureModal('fiskedex')">
+                    <div class="dex-rarity-badge" style="background: rgba(56, 189, 248, 0.15); color: var(--blue);">Uncommon</div>
+                    <div class="dex-fish-name">Havørred (Salmo trutta)</div>
+                    <div class="dex-fish-meta">
+                        Mindstemål: <strong>40 cm</strong><br>
+                        PR: <strong>64 cm • 2.8 kg</strong><br>
+                        Status: <span style="color: var(--emerald); font-weight: 800;">✓ Fanget (4x)</span>
+                    </div>
+                </div>
+
+                <div class="dex-card" onclick="openFeatureModal('fiskedex')">
+                    <div class="dex-rarity-badge" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">Common</div>
+                    <div class="dex-fish-name">Gedde (Esox lucius)</div>
+                    <div class="dex-fish-meta">
+                        Mindstemål: <strong>60 cm</strong><br>
+                        PR: <strong>92 cm • 6.4 kg</strong><br>
+                        Status: <span style="color: var(--emerald); font-weight: 800;">✓ Fanget (9x)</span>
+                    </div>
+                </div>
+
+                <div class="dex-card" onclick="openFeatureModal('fiskedex')">
+                    <div class="dex-rarity-badge" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">Rare</div>
+                    <div class="dex-fish-name">Sandart (Sander lucioperca)</div>
+                    <div class="dex-fish-meta">
+                        Mindstemål: <strong>50 cm</strong><br>
+                        PR: <strong>71 cm • 3.9 kg</strong><br>
+                        Status: <span style="color: var(--emerald); font-weight: 800;">✓ Fanget (2x)</span>
+                    </div>
+                </div>
+
+                <div class="dex-card" onclick="openFeatureModal('fiskedex')">
+                    <div class="dex-rarity-badge" style="background: rgba(245, 166, 35, 0.2); color: var(--gold);">Legendary</div>
+                    <div class="dex-fish-name">Pighvar (Scophthalmus)</div>
+                    <div class="dex-fish-meta">
+                        Mindstemål: <strong>30 cm</strong><br>
+                        PR: <strong>Låst</strong><br>
+                        Status: <span style="color: var(--text-muted); font-weight: 800;">🔒 Ikke låst op endnu</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Strava Segments & Kystkongen -->
+    <section id="segmenter" class="segments-section">
+        <div class="segments-wrap">
+            <!-- Leaderboard Mockup -->
+            <div class="leaderboard-preview-box" onclick="openFeatureModal('segments')" style="cursor: pointer;">
+                <div class="leaderboard-header">
+                    <div>
+                        <div style="font-size: 11px; color: var(--gold); font-weight: 800; text-transform: uppercase;">Segment Leaderboard</div>
+                        <div style="font-size: 18px; font-weight: 900;">📍 Stevns Klint - Fyrsporet</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; color: var(--teal); font-weight: 800;">Kategori: Flest Fangster</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Denne Måned</div>
+                    </div>
+                </div>
+
+                <div class="leaderboard-row">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 16px;">🥇</span>
+                        <span><strong>Jonas_Kystfisker</strong></span>
+                    </div>
+                    <span style="color: var(--gold); font-weight: 900;">14 Havørreder</span>
+                </div>
+
+                <div class="leaderboard-row highlight">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 16px;">🥈</span>
+                        <span><strong>Dig (Christian J.)</strong></span>
+                    </div>
+                    <span style="color: var(--teal); font-weight: 900;">11 Havørreder</span>
+                </div>
+
+                <div class="leaderboard-row">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 16px;">🥉</span>
+                        <span><strong>Mads_FlyCaster</strong></span>
+                    </div>
+                    <span style="color: #94A3B8; font-weight: 800;">8 Havørreder</span>
+                </div>
+
+                <div style="margin-top: 16px; padding: 12px; background: rgba(245, 166, 35, 0.08); border-radius: 12px; border: 1px dashed var(--border-gold); text-align: center; font-size: 12px; color: var(--gold);">
+                    👑 <strong>Local Legend:</strong> Jonas_Kystfisker (12 ture de seneste 90 dage)
+                </div>
+            </div>
+
+            <div>
+                <div class="section-pill" style="color: var(--purple); background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.3);">STRAVA FOR FISKERI</div>
+                <h2 class="section-title" style="text-align: left;">Dyst Om Titlen Som Kystkonge</h2>
+                <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 22px; line-height: 1.6;">
+                    Hook bringer sund konkurrence til de danske kyster. Vores unikke segment-motor opdeler kyststrækninger i zoner, hvor du automatisk deltager i 16 forskellige leaderboards, når du logger en tur.
+                </p>
+
+                <ul style="list-style: none; margin-bottom: 28px;">
+                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 14.5px;">
+                        <span style="color: var(--teal); font-weight: 900;">✓</span>
+                        <strong>4 Kategorier:</strong> Flest fangster, Største fisk, Total vægt og Artsdiversitet.
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 14.5px;">
+                        <span style="color: var(--teal); font-weight: 900;">✓</span>
+                        <strong>4 Tidsintervaller:</strong> Dyst på Uge, Måned, År og All-Time rekorder.
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 14.5px;">
+                        <span style="color: var(--gold); font-weight: 900;">👑</span>
+                        <strong>Local Legend Status:</strong> Bliv kronet på dit lokale rev ved flest registrerede ture.
+                    </li>
+                </ul>
+
+                <button onclick="openFeatureModal('segments')" class="btn-store btn-store-google" style="padding: 12px 24px; border: none; cursor: pointer;">
+                    <span>Læs om Kystkongen 👑</span>
+                </button>
             </div>
         </div>
     </section>
@@ -681,30 +1617,146 @@
         <div class="pro-card-big">
             <div>
                 <div class="pro-tag-crown">👑 Hook Pro Medlemskab</div>
-                <h2 class="pro-h2">Lås op for det ultimative kyst-arsenal</h2>
-                <p class="pro-p">Få adgang til avancerede taktiske analyser, ubegrænsede offline dybdekort og en 100% annoncefri oplevelse.</p>
+                <h2 class="pro-h2">Lås Op For Det Ultimative Kyst-Arsenal</h2>
+                <p class="pro-p">
+                    Få adgang til ubegrænset AI-fiskeguide, forudhentede offline dybdekort, avancerede flerårige trendanalyser og en 100% annoncefri oplevelse.
+                </p>
 
                 <ul class="pro-check-list">
                     <li>✓ <strong>100% Annoncefri Oplevelse:</strong> Rent feed og maksimalt fokus på fiskeriet.</li>
-                    <li>✓ <strong>Intelligent Fiske-AI:</strong> Skræddersyet agnvalg, farvekoder og dybdeguider for dit spot.</li>
-                    <li>✓ <strong>Offline Dybdekort:</strong> Forudhent sø- og kystkort til brug uden mobildækning.</li>
-                    <li>✓ <strong>Avancerede Kyst-Analyser:</strong> Dybdegående bide-score og personlige historiske mønstre.</li>
+                    <li>✓ <strong>Ubegrænset Fiske-AI:</strong> Skræddersyet agnvalg, farvekoder og dybder for dit præcise spot.</li>
+                    <li>✓ <strong>Offline Dybdekort & Søkort:</strong> Gem søer og kyster lokalt til brug uden dækning.</li>
+                    <li>✓ <strong>Avancerede Kystanalyser:</strong> Månefase-korrelationer, hug-score og personlige mønstre.</li>
+                    <li>✓ <strong>Eksklusiv Guld-Krone:</strong> Visuel Pro-status på profil og på segment-leaderboards.</li>
                 </ul>
 
-                <div style="color: var(--teal); font-size: 13px; font-weight: 800;">
+                <div style="color: var(--teal); font-size: 13.5px; font-weight: 800;">
                     ✓ 7 Dages Gratis Prøveperiode • Ingen Binding • Opsig Når Som Helst
                 </div>
             </div>
 
             <div class="pro-pricing-box">
                 <div class="price-huge">29 kr<span style="font-size: 16px; color: var(--text-muted); font-weight: 600;">/md</span></div>
-                <div class="price-sub">eller 249 kr/år (spar 28%)</div>
+                <div class="price-sub">eller 249 kr/år (spar over 28%)</div>
                 
-                <a href="#download" class="btn-store btn-store-apple" style="width: 100%; justify-content: center; margin-bottom: 12px;">
+                <a href="#download" class="btn-store btn-store-apple" style="width: 100%; justify-content: center; margin-bottom: 14px;">
                     <span>Prøv 7 Dage Gratis 👑</span>
                 </a>
-                <div style="font-size: 11px; color: var(--text-muted);">
-                    Faktureres via Apple App Store eller Google Play
+                <div style="font-size: 11.5px; color: var(--text-muted);">
+                    Sikker betaling via Apple App Store eller Google Play
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Support & FAQ Section -->
+    <section id="faq" class="faq-section">
+        <div class="section-header">
+            <div class="section-pill">SUPPORT & HJÆLP</div>
+            <h2 class="section-title">Ofte Stillede Spørgsmål</h2>
+            <p class="section-subtitle">Her finder du svar på de mest almindelige spørgsmål om funktioner, sikkerhed og data i Hook.</p>
+        </div>
+
+        <div class="faq-container">
+            <!-- Q1 -->
+            <div class="faq-item active">
+                <div class="faq-question">
+                    <span>Er fredningsbælterne opdateret med officielle regler fra Fiskeristyrelsen?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Ja, 100%. Hook synkroniserer direkte med Fiskeristyrelsens officielle geodata over alle helårs- og halvårsfredningsbælter (500 meter og 1200 meter zoner ved å- og bækudløb). Appens GPS-geofence advarer dig automatisk med haptisk feedback og lyd, hvis du bevæger dig for tæt på en fredningszone.
+                </div>
+            </div>
+
+            <!-- Q2 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Kan jeg holde mine hemmelige fiskepladser 100% hemmelige?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Ja! Vi ved, hvor meget en lystfisker værner om sine hemmelige spots ("hotspots"). Du har 3 niveauer af privatliv ved hver fangst: 1) Offentlig (viser spot), 2) Kun Venner, eller 3) 100% Privat / Sløret position. Når du slører positionen, kan andre se dit billede og fiskeart i feedet, mens GPS-koordinaterne og kortplaceringen forbliver skjult.
+                </div>
+            </div>
+
+            <!-- Q3 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Virker Hook uden mobilsignal på øde kyster eller ude på havet?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Ja, Hook er bygget med en robust offline-først arkitektur. Du kan starte GPS-sporing, registrere fangster i din kystkladde og tage billeder, selvom du har 0 bar dækning. Så snart din telefon fanger 4G/5G eller Wi-Fi igen, synkroniserer appen automatisk alle data sikkert til skyen.
+                </div>
+            </div>
+
+            <!-- Q4 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Hvad er FiskeDex og hvordan låser jeg op for nye arter?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    FiskeDex er dit personlige artsleksikon over 81 danske fiskearter. Hver gang du fanger en ny art (f.eks. havørred, gedde, aborre, pighvar eller hornfisk) og logger den i journalen, låses arten op med et officielt trofæ-kort, der gemmer dit personlige bedste mål (længde og vægt) samt dato for din første fangst.
+                </div>
+            </div>
+
+            <!-- Q5 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Hvordan fungerer Kystkonge (Local Legend) og segmenterne?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Segmenter fungerer som kendte strækninger på kysten eller i søer. Når du logger en fisketur inden for et segments afgrænsning, registrerer Hook automatisk din indsats. Den fisker, der har gennemført flest registrerede fisketure på segmentet inden for de seneste 90 dage (min. 3 ture), kåres automatisk som "Local Legend / Kystkonge" på segmentet.
+                </div>
+            </div>
+
+            <!-- Q6 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Hvad koster Hook, og hvad er forskellen på Gratis og Hook Pro?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Grundversionen af Hook er 100% gratis og inkluderer GPS-fangstjournal, fredningsbælte-alarm, DMI vandstandskurver, FiskeDex og adgang til segmenter. Hook Pro koster 29 kr./måned (eller 249 kr./år) og giver dig en 100% annoncefri oplevelse, ubegrænset AI-fiskeguide, forudhentede offline dybdekort samt avancerede flerårige kystanalyser. Der er 7 dages gratis prøveperiode uden binding.
+                </div>
+            </div>
+
+            <!-- Q7 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Hvordan opretter jeg en fiskekonkurrence for min klub eller venner?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Gå til sektionen 'Events & Konkurrencer' i appen. Her kan du oprette en privat eller offentlig fiskekonkurrence med definerede start-/sluttidspunkter, tilladte arter, regler og et live fotovalideret leaderboard. Deltagerne tilmelder sig direkte med en invitationskode.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Support Center Banner -->
+    <section id="support" class="support-card-section">
+        <div class="support-box">
+            <div>
+                <div style="font-size: 12px; color: var(--teal); font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">DEDIKERET BRUGERSUPPORT</div>
+                <h3 style="font-size: 26px; font-weight: 900; margin-bottom: 12px;">Har du brug for hjælp eller har et forslag?</h3>
+                <p style="color: var(--text-muted); font-size: 14.5px; line-height: 1.6;">
+                    Vores danske udviklingsteam sidder klar til at hjælpe dig med tekniske spørgsmål, feedback eller ønsker til nye funktioner og fiskepladser.
+                </p>
+                <div style="margin-top: 18px; font-size: 13px; color: #CBD5E1;">
+                    ✓ Svartid typisk under 24 timer &nbsp;•&nbsp; ✓ Direkte kontakt med udviklerne
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="mailto:support@questline.dk" class="support-btn">
+                    <span>📧 Kontakt Support</span>
+                </a>
+                <div style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">
+                    eller skriv direkte til <strong>support@questline.dk</strong>
                 </div>
             </div>
         </div>
@@ -715,27 +1767,41 @@
         <div class="footer-grid">
             <div>
                 <div class="footer-logo">HOOK</div>
-                <p style="max-width: 380px; margin-bottom: 14px;">
-                    Danmarks mest intuitive fiskeapp til kyst, fjord, sø og å.
+                <p style="max-width: 360px; margin-bottom: 16px; line-height: 1.55;">
+                    Danmarks mest gennemførte alt-i-én fiskeapp til kyst, fjord, sø og å. Skabt af passionerede lystfiskere.
                 </p>
-                <p>Udgivet af <strong><a href="https://questline.dk" style="color: var(--teal); text-decoration: none;">Questline Studios</a></strong> (CVR: 46373936)</p>
+                <p>Udgivet af <strong><a href="https://questline.dk" style="color: var(--teal); text-decoration: none;">Questline Studios</a></strong><br>CVR: 46373936 • København, Danmark</p>
             </div>
 
             <div>
-                <h4 style="color: var(--text-main); margin-bottom: 12px; font-size: 14px;">PRODUKT</h4>
+                <h4 style="color: var(--text-main); margin-bottom: 14px; font-size: 14.5px;">FUNKTIONER</h4>
                 <div class="footer-links">
-                    <a href="#features">Funktioner</a>
-                    <a href="#pro">Hook Pro</a>
-                    <a href="https://questline.dk">Questline Studios</a>
+                    <a href="#features" onclick="openFeatureModal('feed')">Det Sociale Feed</a>
+                    <a href="#features" onclick="openFeatureModal('sanctuary')">Fredningsbælter</a>
+                    <a href="#features" onclick="openFeatureModal('dmi')">DMI Strømskifte</a>
+                    <a href="#features" onclick="openFeatureModal('trail')">The Glowing Trail</a>
+                    <a href="#fiskedex" onclick="openFeatureModal('fiskedex')">FiskeDex (81 Arter)</a>
+                    <a href="#segmenter" onclick="openFeatureModal('segments')">Kystkongen & Leaderboards</a>
                 </div>
             </div>
 
             <div>
-                <h4 style="color: var(--text-main); margin-bottom: 12px; font-size: 14px;">JURIDISK & SUPPORT</h4>
+                <h4 style="color: var(--text-main); margin-bottom: 14px; font-size: 14.5px;">GUIDES & PRO</h4>
+                <div class="footer-links">
+                    <a href="#howto">Sådan Virker Det</a>
+                    <a href="#pro">Hook Pro Medlemskab</a>
+                    <a href="#faq">Ofte Stillede Spørgsmål</a>
+                    <a href="https://questline.dk">Questline Studios ↗</a>
+                </div>
+            </div>
+
+            <div>
+                <h4 style="color: var(--text-main); margin-bottom: 14px; font-size: 14.5px;">JURIDISK & SUPPORT</h4>
                 <div class="footer-links">
                     <a href="/privacy-policy.html">Privatlivspolitik (GDPR)</a>
                     <a href="/privacy-policy.html">Vilkår & Betingelser</a>
                     <a href="mailto:support@questline.dk">support@questline.dk</a>
+                    <a href="#download">Hent til iOS & Android</a>
                 </div>
             </div>
         </div>
@@ -745,5 +1811,275 @@
         </div>
     </footer>
 
+    <!-- Interactive Feature Modal / Detail Dialog -->
+    <div id="featureModal" class="modal-overlay" onclick="handleModalOverlayClick(event)">
+        <div class="modal-card">
+            <button class="modal-close-btn" onclick="closeFeatureModal()" aria-label="Luk vindue">✕</button>
+            <div id="modalIconBox" class="modal-icon-badge">⚡</div>
+            <div id="modalTag" class="modal-tag">FUNKTION I HOOK</div>
+            <h3 id="modalTitle" class="modal-title">Funktionstitel</h3>
+            <p id="modalDesc" class="modal-desc">Beskrivelse af funktionen.</p>
+
+            <div class="modal-social-highlight">
+                <div class="modal-social-title">
+                    <span>👥</span> Det Sociale Aspekt i Hook
+                </div>
+                <div id="modalSocialText" class="modal-social-text">
+                    Hvordan funktionen bringer lystfiskere sammen.
+                </div>
+            </div>
+
+            <ul id="modalPointsList" class="modal-points-list">
+                <!-- Dynamiske punkter indsættes her -->
+            </ul>
+
+            <div class="modal-action-row">
+                <button onclick="closeFeatureModal()" style="background: transparent; border: 1px solid var(--border); color: #94A3B8; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer;">
+                    Luk
+                </button>
+                <a href="#download" onclick="closeFeatureModal()" class="btn-store btn-store-apple" style="padding: 10px 20px; font-size: 13px;">
+                    <span>Prøv i Appen 🎣</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Modal & FAQ Scripts -->
+    <script>
+        // Feature Database for Dynamic Modals
+        const featureDetails = {
+            feed: {
+                icon: '⚡',
+                iconBg: 'rgba(0, 212, 178, 0.15)',
+                iconColor: 'var(--teal)',
+                tag: 'SOCIALT FISKEFÆLLESSKAB',
+                title: 'Det Sociale Feed & "Giv Hug! ⚡"',
+                desc: 'Hook er bygget som et levende socialt fællesskab for lystfiskere. Oplev glæden ved at følge kammeraternes seneste ture, se fotos fra kysten i realtid, og deltag i lystfisker-fællesskabet uden forstyrrende fuldskærmsreklamer.',
+                social: 'Fiskeri handler om oplevelserne og historierne. Med Hook kan du heppe på vennerne med ét tryk på "Giv Hug! ⚡", kommentere på agnvalg og udveksle erfaringer direkte i appen.',
+                points: [
+                    'Haptisk "Giv Hug! ⚡" feedback når du roser vennernes fangster.',
+                    'Rent og støjfrit feed med billeder, vægt, længde og grejtags.',
+                    'Følg dine faste fiskemakkere eller udforsk hvad der fanges i dit lokalområde.',
+                    'Vælg selv dit privatliv: Del med alle, kun venner eller hold hemmeligt.'
+                ]
+            },
+            sanctuary: {
+                icon: '🛑',
+                iconBg: 'rgba(239, 68, 68, 0.15)',
+                iconColor: 'var(--red)',
+                tag: 'LOVPLIGTIG KYSTSIKKERHED',
+                title: 'GPS Fredningsbælte-Alarm & Zoner',
+                desc: 'Undgå utilsigtede ulovligheder og dyre bøder ved de danske kyster. Hook indeholder et komplet, opdateret kort over samtlige 500 meter og 1200 meter fredningsbælter ved å- og bækudløb i Danmark i samarbejde med officielle Fiskeristyrelses-data.',
+                social: 'Hjælp hinanden med at passe på fiskebestandene og overholde reglerne. Del trygt fiskepladser med vennerne velvidende, at appen automatisk advarer, hvis man kommer for tæt på en fredningszone.',
+                points: [
+                    'Realtids GPS geofence-advarsel med haptisk vibration og lyd.',
+                    'Visuel markering af helårs- og halvårsfredninger direkte på kortet.',
+                    'Se præcis afstand i meter til nærmeste fredede å-munding.',
+                    'Kortet virker også offline, så du altid er beskyttet ved vandet.'
+                ]
+            },
+            dmi: {
+                icon: '🌊',
+                iconBg: 'rgba(56, 189, 248, 0.15)',
+                iconColor: 'var(--blue)',
+                tag: 'VEJR & STRØMPROGNOSE',
+                title: 'DMI Vandstandskurver & Strømskifte',
+                desc: 'Enhver erfaren kystfisker ved, at strømskiftet er det mest afgørende tidspunkt for havørredens bideaktivitet. Hook henter realtidsdata fra DMI og tegner en 12-timers interaktiv kurve, der viser præcis hvornår vandet vender.',
+                social: 'Planlæg den perfekte fisketur med gutterne! Koordiner ankomsttidspunktet til spottet ud fra det optimale hug-vindue og del strømprognosen i jeres fiskegruppe.',
+                points: [
+                    '12-timers interaktiv graf over tidevand og vandstandsstigninger.',
+                    'Automatisk beregning af det gyldne strømvendingstidspunkt.',
+                    'Live vandtemperatur, vindstyrke, vindretning og lufttryk (barometer).',
+                    'Solunar-tabeller der viser sol/måne-faser og generel bideaktivitet.'
+                ]
+            },
+            trail: {
+                icon: '🗺️',
+                iconBg: 'rgba(0, 212, 178, 0.15)',
+                iconColor: 'var(--teal)',
+                tag: 'GPS SPORING & VARMEKORT',
+                title: 'The Glowing Trail & Kyst-Heatmap',
+                desc: 'Se præcis hvor du har vadet eller dørget på kysten. Hook tegner din rute som et glødende neon-spor direkte over satellitkortet, så du kan analysere hvilke rev og badekar, der gav fisk.',
+                social: 'Sammenlign jeres affiskede ruter efter en lang dag på kysten. Hvem fandt fiskene, og ved hvilken dørgefart i knob huggede havørreden?',
+                points: [
+                    'Batterioptimeret GPS-sporing i baggrunden under hele turen.',
+                    'Live visning af dørgefart og ganghastighed i knob/km/t.',
+                    'Fangster kobles automatisk til det præcise punkt på dit kystspor.',
+                    'Personligt kyst-heatmap der samler alle dine historiske ture.'
+                ]
+            },
+            catchlog: {
+                icon: '⏱️',
+                iconBg: 'rgba(16, 185, 129, 0.15)',
+                iconColor: 'var(--emerald)',
+                tag: 'LYNHURTIG FANGSTJOURNAL',
+                title: '15-Sekunders Kamera-Først Log',
+                desc: 'Slut med at stå med våde fingre og taste felter i en uoverskuelig app. Med Hook tager du bare et foto af fisken – appen udtrækker automatisk GPS, tidspunkt, DMI-vandstand, vind og lufttryk direkte i fangstøjeblikket.',
+                social: 'Del øjeblikkets sus med dine fiskemakkere på sekunder. Fangstkortet oprettes automatisk med flotte billeder, vægt, længde og k-faktor, klar til at modtage "Hug! ⚡".',
+                points: [
+                    'Kamera-først workflow: Tag billedet og kom hurtigt tilbage til fiskeriet.',
+                    'Automatisk EXIF-udtræk af præcis position og tidspunkt.',
+                    'Automatisk DMI vejr-tagging (vandstand, vind, temperatur, barometer).',
+                    'Beregning af Fulton konditionsfaktor (k-værdi) for havørred.'
+                ]
+            },
+            fiskedex: {
+                icon: '📖',
+                iconBg: 'rgba(245, 166, 35, 0.15)',
+                iconColor: 'var(--gold)',
+                tag: 'ARTSJAGT & REGLER',
+                title: 'FiskeDex: Danmarks 81 Fiskearter',
+                desc: 'Gør din lystfiskerrejse til et spil! FiskeDex er dit personlige Pokédex for danske fisk. Hver gang du fanger en ny art (f.eks. havørred, gedde, aborre, sandart, pighvar osv.), låser du op for artens trofæ-kort.',
+                social: 'Hvem i fiskeklubben har fanget flest forskellige arter? Dyst mod vennerne om at låse op for de sjældne (Rare) og legendariske (Legendary) fiskearter i Danmark.',
+                points: [
+                    '81 registrerede danske fersk- og saltvandsarter med sjældenhedsgrader.',
+                    'Automatisk registrering af Personlig Rekord (PR) for længde og vægt.',
+                    'Altid opdaterede officielle mindstemål og fredningsperioder.',
+                    'Skånsom Catch & Release (C&R) guide med 30 sekunders genoplivningstimer.'
+                ]
+            },
+            segments: {
+                icon: '👑',
+                iconBg: 'rgba(168, 85, 247, 0.15)',
+                iconColor: 'var(--purple)',
+                tag: 'STRAVA FOR FISKERI',
+                title: 'Kyst-Segmenter & "Kystkongen"',
+                desc: 'Hook introducerer Danmarks første segment-motor til lystfiskere. Populære strækninger (som Stevns Klint, Kronborg, Djursland og Gudenåen) er opdelt i zoner med automatisk deltagelse i 16 forskellige leaderboards.',
+                social: 'En venskabelig dyst om hvem der kender revet bedst. Bliv kåret som "Local Legend / Kystkonge" på dit lokale spot, hvis du er den mest aktive fisker på segmentet!',
+                points: [
+                    '16 leaderboards per segment: Flest fisk, Største fisk, Total vægt & Diversitet.',
+                    'Tidsintervaller: Dyst på Uge, Måned, År og All-Time rekorder.',
+                    'Automatisk kåring af Local Legends ved mindst 3 ture inden for 90 dage.',
+                    'Præstations-score der vægter vejrforhold og sværhedsgrad.'
+                ]
+            },
+            aiguide: {
+                icon: '🤖',
+                iconBg: 'rgba(0, 212, 178, 0.15)',
+                iconColor: 'var(--teal)',
+                tag: 'INTELLIGENT FISKEASSISTENT',
+                title: 'Groq / Llama-3 Drevet Fiske-AI',
+                desc: 'Få en erfaren kystguide i lommen. Vores specialtrænede fiske-AI analyserer dit aktuelle spot, vandtemperaturen, vindretningen og barometerstanden for at give konkrete råd til agnvalg, farvekoder og indspinningshastighed.',
+                social: 'Lær nye teknikker og del de bedste AI-tips med dine fiskemakkere, når I står over for svære forhold med grumset vand eller højtryk.',
+                points: [
+                    'Konkrete anbefalinger til blink, kystwoblere, fluer og jigs.',
+                    'Farveanbefalinger tilpasset vandets sigtbarhed og lysforhold.',
+                    'Forudsigelse af de mest bide-aktive tidspunkter på døgnet.',
+                    'Ubegrænset sparring og rådgivning i Hook Pro.'
+                ]
+            },
+            clubs: {
+                icon: '👥',
+                iconBg: 'rgba(56, 189, 248, 0.15)',
+                iconColor: 'var(--blue)',
+                tag: 'KLUBBER & FÆLLESSKAB',
+                title: 'Fiskeklubber & Private Grupper',
+                desc: 'Opret dit eget fiskehold! Hvad enten det er den lokale lystfiskerforening, en flok barndomsvenner eller et trolling-team, samler Hook jer i et lukket forum med intern chat, fælles ture og klub-rekorder.',
+                social: 'Følg klubkammeraternes succes, planlæg weekendens fællestur og fejr nye rekorder sammen i et dedikeret klubfeed.',
+                points: [
+                    'Lukket klubfeed med interne fangster og kommentarer.',
+                    'Klub-leaderboards for årets største fisk og flest fangede arter.',
+                    'Fælles turplanlægning og koordinering af samkørsel til kysten.',
+                    'Direkte beskeder og gruppe-chat i appen.'
+                ]
+            },
+            tournaments: {
+                icon: '🏆',
+                iconBg: 'rgba(245, 166, 35, 0.15)',
+                iconColor: 'var(--gold)',
+                tag: 'KONKURRENCER & DERBIES',
+                title: 'Fiskekonkurrencer med Live Leaderboard',
+                desc: 'Gør weekendturen ekstra spændende med en rigtig fiskekonkurrence. Opret nemt et derby for vennerne eller klubben med faste tidsrammer, godkendte arter og fotovalidering.',
+                social: 'Oplev spændingen ved et live opdateret leaderboard, hvor du kan se stillingen i realtid mens du står i waders ved vandet!',
+                points: [
+                    'Live fotovalidering af fangster med målebånd og fangsttid.',
+                    'Automatisk pointberegning ud fra længde, vægt og sværhedsgrad.',
+                    'Enkel tilmelding for deltagere med invitationslink eller QR-kode.',
+                    'Præmieoverrækkelse og historisk arkiv over tidligere vindere.'
+                ]
+            },
+            privacy: {
+                icon: '🔒',
+                iconBg: 'rgba(168, 85, 247, 0.15)',
+                iconColor: 'var(--purple)',
+                tag: 'PRIVATLIV & HEMMELIGE SPOTS',
+                title: '100% Kontrol Over Dine Hemmelige Spots',
+                desc: 'Som lystfiskere ved vi, at hemmelige fiskepladser skal behandles med respekt. I Hook bestemmer du altid selv, hvem der kan se dine præcise GPS-koordinater.',
+                social: 'Del stoltheden over din fangst i det sociale feed, uden at bekymre dig om at dit hemmelige rev bliver overrendt næste morgen.',
+                points: [
+                    '3 niveauer af privatliv: Offentlig, Kun Venner eller 100% Privat.',
+                    'Mulighed for at sløre GPS-positionen, så kun billedet og arten vises.',
+                    'Dine hemmelige private spots gemmes sikkert og krypteret.',
+                    'Fuld GDPR-overholdelse med mulighed for eksport og sletning af data.'
+                ]
+            }
+        };
+
+        // Open Feature Modal
+        function openFeatureModal(key) {
+            const data = featureDetails[key];
+            if (!data) return;
+
+            const modal = document.getElementById('featureModal');
+            const iconBox = document.getElementById('modalIconBox');
+            
+            iconBox.textContent = data.icon;
+            iconBox.style.background = data.iconBg;
+            iconBox.style.color = data.iconColor;
+            
+            document.getElementById('modalTag').textContent = data.tag;
+            document.getElementById('modalTitle').textContent = data.title;
+            document.getElementById('modalDesc').textContent = data.desc;
+            document.getElementById('modalSocialText').textContent = data.social;
+
+            const pointsList = document.getElementById('modalPointsList');
+            pointsList.innerHTML = '';
+            data.points.forEach(point => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="check">✓</span> <span>${point}</span>`;
+                pointsList.appendChild(li);
+            });
+
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        // Close Feature Modal
+        function closeFeatureModal() {
+            const modal = document.getElementById('featureModal');
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // Close on clicking outside card
+        function handleModalOverlayClick(e) {
+            if (e.target.id === 'featureModal') {
+                closeFeatureModal();
+            }
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeFeatureModal();
+            }
+        });
+
+        // FAQ Accordion Toggle
+        document.querySelectorAll('.faq-question').forEach(button => {
+            button.addEventListener('click', () => {
+                const item = button.parentElement;
+                const isActive = item.classList.contains('active');
+                
+                // Close all items
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+                
+                // Toggle current
+                if (!isActive) {
+                    item.classList.add('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
