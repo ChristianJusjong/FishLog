@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hook • Danmarks Førende Fiskeapp & Kystguide</title>
+    <meta name="description" content="Strava for lystfiskere. Log dine kyst- og søfangster, tjek fredningsbælter ved å-udløb, se DMI vandstandskurver og opdag dit personlige fiske-heatmap.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #071524;
+            --bg-card: #0A1E34;
+            --teal: #00D4B2;
+            --gold: #F5A623;
+            --emerald: #10B981;
+            --text-main: #FFFFFF;
+            --text-muted: #94A3B8;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(0, 212, 178, 0.35);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow */
+        .ambient-glow {
+            position: absolute;
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(0, 212, 178, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 8%;
+            border-bottom: 1px solid var(--border);
+            background: rgba(7, 21, 36, 0.88);
+            backdrop-filter: blur(16px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .logo-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--teal), #00A389);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 22px;
+            color: #071524;
+            box-shadow: 0 0 20px rgba(0, 212, 178, 0.4);
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-tag {
+            font-size: 10px;
+            color: var(--teal);
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-left: 28px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--teal);
+        }
+
+        .btn-download-nav {
+            background: var(--teal);
+            color: #071524 !important;
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-weight: 800 !important;
+            margin-left: 28px;
+            transition: transform 0.2s;
+        }
+
+        .btn-download-nav:hover {
+            transform: scale(1.04);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 90px 8% 60px;
+            text-align: center;
+            max-width: 1050px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 18px;
+            background: rgba(0, 212, 178, 0.12);
+            border: 1px solid var(--border-glow);
+            border-radius: 30px;
+            color: var(--teal);
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: clamp(38px, 6vw, 68px);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            letter-spacing: -1.5px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--teal), #67E8F9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: clamp(16px, 2.2vw, 20px);
+            color: var(--text-muted);
+            max-width: 720px;
+            margin: 0 auto 36px;
+        }
+
+        .app-badges-group {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+        }
+
+        .btn-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 14px;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-apple {
+            background: #FFFFFF;
+            color: #071524;
+        }
+
+        .btn-google {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: #FFFFFF;
+        }
+
+        .btn-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Features Grid */
+        .features-section {
+            padding: 60px 8% 100px;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 34px;
+            font-weight: 900;
+            margin-bottom: 12px;
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 28px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            transition: transform 0.25s, border-color 0.25s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--teal);
+        }
+
+        .feature-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .feature-desc {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Hook Pro Showcase Banner */
+        .pro-banner {
+            background: linear-gradient(135deg, rgba(10, 30, 52, 0.95), rgba(7, 21, 36, 0.95));
+            border: 2px solid var(--gold);
+            border-radius: 28px;
+            padding: 48px;
+            margin-top: 60px;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 40px;
+            align-items: center;
+            box-shadow: 0 0 50px rgba(245, 166, 35, 0.15);
+        }
+
+        .pro-badge {
+            background: var(--gold);
+            color: #071524;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 4px 12px;
+            border-radius: 6px;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+        }
+
+        .pro-title {
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 12px;
+        }
+
+        .pro-desc {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .pro-price-box {
+            background: rgba(4, 13, 23, 0.85);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+            text-align: center;
+        }
+
+        .price-text {
+            font-size: 38px;
+            font-weight: 900;
+            color: var(--gold);
+        }
+
+        .price-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 60px 8% 40px;
+            background: #040E19;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto 40px;
+        }
+
+        .footer-logo {
+            font-size: 19px;
+            font-weight: 900;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            display: block;
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-bottom: 8px;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--teal);
+        }
+
+        .copyright-bar {
+            text-align: center;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 12px;
+        }
+
+        @media (max-width: 868px) {
+            .pro-banner {
+                grid-template-columns: 1fr;
+            }
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <!-- Header -->
+    <header>
+        <a href="/" class="logo-container">
+            <div class="logo-badge">⚡</div>
+            <div>
+                <div class="logo-text">HOOK</div>
+                <div class="logo-tag">The Angler Suite</div>
+            </div>
+        </a>
+        <nav>
+            <a href="#features">Funktioner</a>
+            <a href="#pro">Hook Pro 👑</a>
+            <a href="https://questline.dk">Questline Studios ↗</a>
+            <a href="/privacy-policy.html">Privatliv</a>
+            <a href="#" class="btn-download-nav">Hent Appen</a>
+        </nav>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-pill">🎣 STRAVA FOR LYSTFISKERE • NORDENS MEST INTUITIVE FISKEAPP</div>
+        <h1>Gør hver tur til en <span>legendarisk fangst</span></h1>
+        <p>Log dine havørreder, gedder og aborrer på under 15 sekunder. Undgå bøder ved fredede å-udløb med GPS-geofence, og følg dit personlige glødende kyst-heatmap.</p>
+
+        <div class="app-badges-group">
+            <a href="#" class="btn-badge btn-apple">
+                <span>🍏 Hent i App Store</span>
+            </a>
+            <a href="#" class="btn-badge btn-google">
+                <span>🤖 Hent i Google Play</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <div class="section-header">
+            <h2 class="section-title">Bygget Til Danske Kyster & Søer</h2>
+            <p class="section-subtitle">Slut med klumpede formularer og forstyrrende reklamer.</p>
+        </div>
+
+        <div class="features-grid">
+            <!-- Feature 1: Geofence -->
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(239, 68, 68, 0.15); color: #EF4444;">🛑</div>
+                <h3 class="feature-title">Fredningsbælte-Alarm</h3>
+                <p class="feature-desc">Realtids GPS-overvågning ved 500m og 1200m fredede å-mundinger i Danmark, så du aldrig risikerer bøder eller ulovligt fiskeri.</p>
+            </div>
+
+            <!-- Feature 2: Heatmap -->
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(0, 212, 178, 0.15); color: var(--teal);">🗺️</div>
+                <h3 class="feature-title">Dit Kyst-Heatmap</h3>
+                <p class="feature-desc">Se præcis hvilke kyststrækninger, rev og badekar du har affisket, tegnet som et glødende GPS-spor direkte på satellitkortet.</p>
+            </div>
+
+            <!-- Feature 3: DMI Tidevand -->
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8;">🌊</div>
+                <h3 class="feature-title">DMI Vandstandskurve</h3>
+                <p class="feature-desc">12-timers tidevandsprognose og beregning af det optimale strømskifte og hugperiode for din valgte plads.</p>
+            </div>
+
+            <!-- Feature 4: Mindstemål -->
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">📏</div>
+                <h3 class="feature-title">Automatisk Mindstemålskontrol</h3>
+                <p class="feature-desc">Kender alle officielle mindstemål og fredningstider for 40+ danske fiskearter. Vejleder automatisk ved undermålsfisk.</p>
+            </div>
+
+            <!-- Feature 5: Giv Hug -->
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(245, 166, 35, 0.15); color: var(--gold);">⚡</div>
+                <h3 class="feature-title">"Giv Hug! ⚡" Kudos & Feed</h3>
+                <p class="feature-desc">Følg kammeraternes friske fangster i et elegant feed uden støj. Send haptiske 'Hug!' og deltag i lystfisker-rejsens milepæle.</p>
+            </div>
+
+            <!-- Feature 6: Offline -->
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(168, 85, 247, 0.15); color: #A855F7;">📦</div>
+                <h3 class="feature-title">100% Offline Kystkladdelog</h3>
+                <p class="feature-desc">Ingen mobildækning ved klinten? Intet problem. Hook gemmer alle GPS-koordinater og billeder lokalt og synkroniserer automatisk.</p>
+            </div>
+        </div>
+
+        <!-- Hook Pro Banner -->
+        <div id="pro" class="pro-banner">
+            <div>
+                <div class="pro-badge">👑 Hook Pro Medlemskab</div>
+                <h3 class="pro-title">Lås op for det ultimative kyst-arsenal</h3>
+                <p class="pro-desc">100% annoncefri oplevelse, ubegrænsede offline dybdekort, Google Gemini Fiske-AI taktiske analyser og eksklusive Pro trofæer.</p>
+                <div style="font-size: 13px; color: var(--teal); font-weight: 700;">
+                    ✓ 7 Dages Gratis Prøveperiode • Ingen Binding
+                </div>
+            </div>
+
+            <div class="pro-price-box">
+                <div class="price-text">29 kr<span style="font-size: 16px; color: var(--text-muted);">/md</span></div>
+                <div class="price-sub">eller 249 kr/år (spar 28%)</div>
+                <a href="#" class="btn-badge btn-apple" style="width: 100%; justify-content: center;">
+                    <span>Prøv 7 Dage Gratis 👑</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-grid">
+            <div>
+                <div class="footer-logo">HOOK</div>
+                <p style="max-width: 380px; margin-bottom: 14px;">
+                    Danmarks mest intuitive fiskeapp til kyst, fjord, sø og å.
+                </p>
+                <p>Udgivet af <strong><a href="https://questline.dk" style="color: var(--teal); text-decoration: none;">Questline Studios</a></strong> (CVR: 46373936)</p>
+            </div>
+
+            <div>
+                <h4 style="color: var(--text-main); margin-bottom: 12px; font-size: 14px;">PRODUKT</h4>
+                <div class="footer-links">
+                    <a href="#features">Funktioner</a>
+                    <a href="#pro">Hook Pro</a>
+                    <a href="https://questline.dk">Questline Studios</a>
+                </div>
+            </div>
+
+            <div>
+                <h4 style="color: var(--text-main); margin-bottom: 12px; font-size: 14px;">JURIDISK & SUPPORT</h4>
+                <div class="footer-links">
+                    <a href="/privacy-policy.html">Privatlivspolitik (GDPR)</a>
+                    <a href="/privacy-policy.html">Vilkår & Betingelser</a>
+                    <a href="mailto:support@questline.dk">support@questline.dk</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="copyright-bar">
+            &copy; 2026 Hook • Questline Studios (CVR: 46373936). Alle rettigheder forbeholdes.
+        </div>
+    </footer>
+
+</body>
+</html>

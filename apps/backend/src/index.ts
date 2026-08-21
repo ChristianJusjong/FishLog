@@ -127,8 +127,26 @@ if (fs.existsSync(publicPath)) {
   fastify.register(fastifyStatic, {
     root: publicPath,
     prefix: '/',
+    wildcard: false,
   });
   console.log('Static files enabled from:', publicPath);
+
+  // Dynamic root routing: Serve Hook landing on hookapp.dk and Questline Studios on questline.dk
+  fastify.get('/', async (request, reply) => {
+    const host = (request.headers.host || '').toLowerCase();
+    if (host.includes('hookapp.dk')) {
+      return reply.sendFile('hook.html');
+    }
+    return reply.sendFile('questline.html');
+  });
+
+  fastify.get('/hook', async (_request, reply) => {
+    return reply.sendFile('hook.html');
+  });
+
+  fastify.get('/questline', async (_request, reply) => {
+    return reply.sendFile('questline.html');
+  });
 } else {
   console.warn('Public directory not found at:', publicPath);
 }
